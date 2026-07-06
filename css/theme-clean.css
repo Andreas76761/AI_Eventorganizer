@@ -1,0 +1,35 @@
+/* Design 03 – Corporate Clean: helles Dashboard mit blauer Sidebar. */
+
+:root {
+  --bg: #f1f5f9;
+  --bg2: #ffffff;
+  --karte: #ffffff;
+  --karte2: #eef2f7;
+  --rand: #d7dfe9;
+  --text: #0f172a;
+  --text2: #5b6b80;
+  --akzent: #2563eb;
+  --akzent2: #0891b2;
+  --gefahr: #dc2626;
+  --ok: #059669;
+  --radius: 10px;
+  --schatten: 0 1px 6px rgba(15, 23, 42, .08);
+}
+
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+}
+.sidebar { background: linear-gradient(180deg, #1e3a8a, #172554); border-right: none; }
+.sidebar .navlink { color: #bfdbfe; }
+.sidebar .navlink:hover { color: #fff; background: rgba(255, 255, 255, .08); }
+.sidebar .navlink.aktiv { color: #fff; background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .25); }
+.sidebar .logo b, .sidebar .logo span { color: #fff; }
+.sidebar-fuss { color: #93a8d8; border-color: rgba(255, 255, 255, .15); }
+.login-info { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .2); color: #fff; }
+.login-name span { color: #bfdbfe; }
+.kpi.akzent { background: linear-gradient(135deg, #2563eb, #0891b2); border: none; color: #fff; }
+.kpi.akzent .kpi-label { color: #dbeafe; }
+.btn.primaer { background: var(--akzent); }
+.balken { background: linear-gradient(90deg, #2563eb, #0891b2); }
+.modal-hintergrund { background: rgba(15, 23, 42, .45); }

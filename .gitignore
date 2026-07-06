@@ -1,0 +1,10 @@
+# Echte Zugangsdaten niemals committen – config.example.js kopieren und lokal befüllen
+js/config.js
+
+# Betriebssystem / Editor
+Thumbs.db
+.DS_Store
+*.swp
+
+# Vercel
+.vercel

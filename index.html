@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Messe Guide 2026</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/theme-neon.css" id="theme-css">
+  <script>
+    // Theme vor dem ersten Rendern anwenden (kein Aufblitzen des Standard-Designs)
+    (function () {
+      var t = localStorage.getItem("aimg2026_theme");
+      if (t && t !== "neon") document.getElementById("theme-css").href = "css/theme-" + t + ".css";
+    })();
+  </script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">🤖</div>
+      <div><b>AI Messe Guide</b><span>Deutschland 2026</span></div>
+    </div>
+    <div class="navlink" data-view="dashboard">📊 Dashboard</div>
+    <div class="navlink" data-view="kalender">📅 Kalender</div>
+    <div class="navlink" data-view="auswahl">📋 Auswahlliste</div>
+    <div class="navlink" data-view="events">🎪 Veranstaltungen</div>
+    <div class="navlink" data-view="kosten">💶 Kosten</div>
+    <div class="navlink" data-view="community">👥 Community</div>
+    <div class="navlink" data-view="nachrichten">💬 Nachrichten<span id="dm-badge"></span></div>
+    <div id="login-bereich" class="login-bereich"></div>
+    <div class="theme-leiste">
+      <button class="theme-knopf" data-theme="neon" onclick="A.theme('neon')" title="Design: Neon Deep">🌌</button>
+      <button class="theme-knopf" data-theme="editorial" onclick="A.theme('editorial')" title="Design: Editorial Light">📰</button>
+      <button class="theme-knopf" data-theme="clean" onclick="A.theme('clean')" title="Design: Corporate Clean">🏢</button>
+    </div>
+    <div class="sidebar-fuss">
+      Daten lokal im Browser gespeichert<br>(LocalStorage + IndexedDB)<br>
+      <a href="datenschutz.html">Datenschutz</a> · <a href="rechtliches.html">Impressum / EU AI Act</a>
+    </div>
+  </nav>
+
+  <main id="main"></main>
+  <div id="modal-wrap"></div>
+
+  <script src="js/config.js" onerror="console.info('Kein config.js – lokaler Modus.')"></script>
+  <script src="js/data.js"></script>
+  <script src="js/auswahl.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
