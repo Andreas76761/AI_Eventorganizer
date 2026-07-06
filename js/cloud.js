@@ -13,7 +13,11 @@ const CLOUD = {
 
   async init() {
     const k = window.APP_KONFIG;
-    if (!k || !k.SUPABASE_URL || k.SUPABASE_URL.includes("DEIN-PROJEKT") || !k.SUPABASE_ANON_KEY) return false;
+    // Nur aktivieren, wenn URL und Key echt aussehen: Supabase-Keys sind JWTs ("eyJ…")
+    // oder neue Publishable-Keys ("sb_publishable_…") – alles andere ist Platzhalter.
+    if (!k || !k.SUPABASE_URL || k.SUPABASE_URL.includes("DEIN-PROJEKT")) return false;
+    const key = k.SUPABASE_ANON_KEY || "";
+    if (!(key.startsWith("eyJ") || key.startsWith("sb_publishable_")) || key.length < 40) return false;
     // supabase-js erst laden, wenn wirklich konfiguriert (kein CDN-Zugriff im Lokalmodus)
     if (!window.supabase) {
       await new Promise((resolve, reject) => {
