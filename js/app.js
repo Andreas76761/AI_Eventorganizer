@@ -29,7 +29,9 @@ function defaultState() {
     bewertungen: {},   // evId -> 1..5 Sterne
     merker: {},        // evId -> true (vorgemerkt)
     sessions: {},      // evId -> [{id, titel, tag, start, ende, buehne, thema, speakerIds:[], beschreibung, favorit}]
-    speaker: {}        // evId -> [{id, name, firma, rolle, thema, bio, linkedin, rating}]
+    speaker: {},       // evId -> [{id, name, firma, rolle, thema, bio, linkedin, rating}]
+    trends: {},        // evId -> [{id, titel, relevanz(1-5), beschreibung}]
+    nuggets: {}        // evId -> [{id, text, quelle}]
   };
 }
 
@@ -1596,7 +1598,8 @@ A.dmSenden = function (evt, partnerId) {
 const TABS = [
   ["uebersicht", "Übersicht"], ["programm", "Programm"], ["speaker", "Speaker"],
   ["anmeldung", "Anmeldung & Bezahlung"], ["reise", "Reise"],
-  ["kosten", "Kosten"], ["community", "Community"], ["materialien", "Materialien"]
+  ["kosten", "Kosten"], ["community", "Community"], ["materialien", "Materialien"],
+  ["erkenntnisse", "Trends & Nuggets"]
 ];
 
 function vEventDetail() {
@@ -1626,6 +1629,7 @@ function tabInhalt(e) {
     case "kosten": return tKostenEvent(e);
     case "community": return tCommunity(e);
     case "materialien": return tMaterialien(e);
+    case "erkenntnisse": return tErkenntnisse(e);
   }
   return "";
 }
@@ -2464,6 +2468,7 @@ async function nachladenMaterialien() {
         <span class="reise-icon">📄</span>
         <div class="ez-mitte"><div class="ez-name">${esc(d.name)} ${d.ownerId ? (d.geteilt !== false ? '<span class="tag">🔗 geteilt</span>' : '<span class="tag">🔒 privat</span>') : ""}</div>
           <div class="ez-sub">${besitzer ? "von " + esc(besitzer.name) + " · " : ""}${esc(d.datum)} · ${(d.blob.size / 1024).toFixed(0)} KB</div></div>
+        ${d.mime === "application/pdf" || /\.pdf$/i.test(d.name) ? `<button class="btn klein" onclick="A.folienAnsehen('${d.id}')" title="Folien in der App ansehen">📖</button>` : ""}
         ${meins ? `<button class="btn klein" onclick="A.dateiTeilen('${d.id}')" title="Freigabe umschalten">${d.geteilt !== false ? "🔒" : "🔗"}</button>` : ""}
         <button class="btn klein" onclick="A.dateiDownload('${d.id}')">⬇</button>
         ${meins || !d.ownerId ? `<button class="btn klein gefahr" onclick="A.dateiLoeschen('${d.id}')">✕</button>` : ""}
@@ -2568,6 +2573,135 @@ A.notizSpeichern = function (evt, evId, notizId) {
 A.notizLoeschen = function (evId, notizId) {
   S.notizen[evId] = (S.notizen[evId] || []).filter(x => x.id !== notizId);
   save(); closeModal(); render();
+};
+
+/* ---- Tab: Trends & Nuggets (Erkenntnisse, wie Festival-App – hier selbst gepflegt) ---- */
+
+function tErkenntnisse(e) {
+  const trends = (S.trends[e.id] || []).slice().sort((a, b) => (b.relevanz || 0) - (a.relevanz || 0));
+  const nuggets = S.nuggets[e.id] || [];
+  return `
+  <div class="spalten">
+    <div class="karte">
+      <div class="karte-kopf"><h2>🧭 Trends (${trends.length})</h2><button class="btn primaer klein" onclick="A.trendFormular('${e.id}')">+ Trend</button></div>
+      ${trends.map(t => `
+      <div class="trend-zeile" onclick="A.trendFormular('${e.id}','${t.id}')">
+        <div class="ez-mitte">
+          <div class="ez-name">${esc(t.titel)} <span class="sterne-mini">${"●".repeat(t.relevanz || 0)}${"○".repeat(5 - (t.relevanz || 0))}</span></div>
+          ${t.beschreibung ? `<div class="ez-sub">${esc(t.beschreibung)}</div>` : ""}
+        </div>
+      </div>`).join("") || '<p class="leer">Noch keine Trends – halte nach der Messe fest, welche Entwicklungen dir aufgefallen sind (Relevanz 1–5).</p>'}
+    </div>
+    <div class="karte">
+      <div class="karte-kopf"><h2>💎 Nuggets (${nuggets.length})</h2><button class="btn primaer klein" onclick="A.nuggetFormular('${e.id}')">+ Nugget</button></div>
+      ${nuggets.map(n => `
+      <div class="nugget" onclick="A.nuggetFormular('${e.id}','${n.id}')">
+        <div class="nugget-text">„${esc(n.text)}“</div>
+        ${n.quelle ? `<div class="ez-sub">— ${esc(n.quelle)}</div>` : ""}
+      </div>`).join("") || '<p class="leer">Noch keine Nuggets – die eine Kernaussage, das überraschende Zitat, die Zahl zum Merken.</p>'}
+    </div>
+  </div>`;
+}
+
+A.trendFormular = function (evId, trendId) {
+  const t = trendId ? listOf(S.trends, evId).find(x => x.id === trendId) : null;
+  openModal(t ? "Trend bearbeiten" : "Trend festhalten", `
+    <form onsubmit="return A.trendSpeichern(event,'${evId}','${trendId || ""}')">
+      <label>Trend <input name="titel" required placeholder="z. B. Agenten ersetzen Chatbots" value="${esc(t?.titel || "")}"></label>
+      <label>Relevanz <select name="relevanz">${[5, 4, 3, 2, 1].map(n => `<option value="${n}" ${(t?.relevanz ?? 3) === n ? "selected" : ""}>${"●".repeat(n)}${"○".repeat(5 - n)} (${n}/5)</option>`).join("")}</select></label>
+      <label>Einschätzung <textarea name="beschreibung" rows="4" placeholder="Was bedeutet das – und was folgt daraus für dich?">${esc(t?.beschreibung || "")}</textarea></label>
+      <div class="modal-aktionen">
+        ${t ? `<button type="button" class="btn gefahr" onclick="A.trendLoeschen('${evId}','${t.id}')">Löschen</button>` : ""}
+        <button type="submit" class="btn primaer">Speichern</button>
+      </div>
+    </form>`);
+};
+
+A.trendSpeichern = function (evt, evId, trendId) {
+  evt.preventDefault();
+  const f = new FormData(evt.target);
+  const daten = { titel: f.get("titel"), relevanz: Number(f.get("relevanz")) || 3, beschreibung: f.get("beschreibung") };
+  const arr = listOf(S.trends, evId);
+  if (trendId) Object.assign(arr.find(x => x.id === trendId), daten);
+  else arr.push({ id: uid(), ...daten });
+  save(); closeModal(); render();
+  return false;
+};
+
+A.trendLoeschen = function (evId, trendId) {
+  S.trends[evId] = (S.trends[evId] || []).filter(x => x.id !== trendId);
+  save(); closeModal(); render();
+};
+
+A.nuggetFormular = function (evId, nuggetId) {
+  const n = nuggetId ? listOf(S.nuggets, evId).find(x => x.id === nuggetId) : null;
+  openModal(n ? "Nugget bearbeiten" : "Nugget festhalten", `
+    <form onsubmit="return A.nuggetSpeichern(event,'${evId}','${nuggetId || ""}')">
+      <label>Kernaussage / Zitat <textarea name="text" rows="3" required placeholder="z. B. 80 % der Trainingskosten stecken in der Datenaufbereitung">${esc(n?.text || "")}</textarea></label>
+      <label>Quelle <input name="quelle" placeholder="z. B. Keynote Dr. Beispiel, Main Stage" value="${esc(n?.quelle || "")}"></label>
+      <div class="modal-aktionen">
+        ${n ? `<button type="button" class="btn gefahr" onclick="A.nuggetLoeschen('${evId}','${n.id}')">Löschen</button>` : ""}
+        <button type="submit" class="btn primaer">Speichern</button>
+      </div>
+    </form>`);
+};
+
+A.nuggetSpeichern = function (evt, evId, nuggetId) {
+  evt.preventDefault();
+  const f = new FormData(evt.target);
+  const daten = { text: f.get("text"), quelle: f.get("quelle") };
+  const arr = listOf(S.nuggets, evId);
+  if (nuggetId) Object.assign(arr.find(x => x.id === nuggetId), daten);
+  else arr.push({ id: uid(), ...daten });
+  save(); closeModal(); render();
+  return false;
+};
+
+A.nuggetLoeschen = function (evId, nuggetId) {
+  S.nuggets[evId] = (S.nuggets[evId] || []).filter(x => x.id !== nuggetId);
+  save(); closeModal(); render();
+};
+
+/* ---------------- In-App-Foliengalerie (pdf.js, wie Festival-App) ---------------- */
+
+async function pdfjsLaden() {
+  if (window.pdfjsLib) return;
+  await new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js";
+    s.onload = res;
+    s.onerror = () => rej(new Error("pdf.js konnte nicht geladen werden (offline?)"));
+    document.head.appendChild(s);
+  });
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+}
+
+A.folienAnsehen = async function (id) {
+  try {
+    const d = await dbGetFile(id);
+    if (!d) return;
+    openModal("Folien: " + d.name, `<p class="hinweis" id="folien-status">Lade PDF-Anzeige …</p><div class="folien-galerie" id="folien-galerie"></div>`);
+    await pdfjsLaden();
+    const pdf = await pdfjsLib.getDocument({ data: await d.blob.arrayBuffer() }).promise;
+    const behaelter = document.getElementById("folien-galerie");
+    const maxSeiten = Math.min(pdf.numPages, 40);
+    for (let i = 1; i <= maxSeiten && behaelter && behaelter.isConnected; i++) {
+      const seite = await pdf.getPage(i);
+      const basis = seite.getViewport({ scale: 1 });
+      const vp = seite.getViewport({ scale: 960 / basis.width });
+      const cv = document.createElement("canvas");
+      cv.width = vp.width; cv.height = vp.height; cv.className = "folie";
+      await seite.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
+      behaelter.appendChild(cv);
+      const st = document.getElementById("folien-status");
+      if (st) st.textContent = `Seite ${i} von ${pdf.numPages}`;
+    }
+    const st = document.getElementById("folien-status");
+    if (st) st.textContent = `${maxSeiten} von ${pdf.numPages} Seiten` + (pdf.numPages > maxSeiten ? " (Anzeige auf 40 begrenzt – vollständig per ⬇ Download)" : "");
+  } catch (e) {
+    alert("PDF-Anzeige fehlgeschlagen: " + e.message);
+    closeModal();
+  }
 };
 
 /* ---------------- Diktierfunktion (Web Speech API, wie Festival-App) ---------------- */

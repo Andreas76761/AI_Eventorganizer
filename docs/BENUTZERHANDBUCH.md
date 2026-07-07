@@ -68,7 +68,8 @@ Das Suchfeld filtert live nach Name, Ort, Venue, Kategorie und Beschreibung. Tre
 | **Reise** | Reiseabschnitte (Pkw, Bahn, Flug, ÖPNV, Fernbus …) mit Zeiten und Kosten; Unterkünfte mit Check-in/-out |
 | **Kosten** | alle Posten der Veranstaltung; Eintritt/Fahrt/Hotel entstehen automatisch, Verpflegung & Sonstiges manuell |
 | **Community** | Teilnehmer, Treffen, Mitfahrgelegenheiten, Austausch-Feed (siehe 7) |
-| **Materialien** | Notizen, Präsentationen mit Sharing-Runde, Bildergalerie (siehe 8) |
+| **Materialien** | Notizen (mit 🎤 Diktat), Präsentationen mit Sharing-Runde und 📖 Foliengalerie, Bildergalerie mit 🔎 OCR (siehe 8) |
+| **Trends & Nuggets** | Nachbetrachtung: 🧭 Trends mit Relevanz (1–5 ●) und Einschätzung, 💎 Nuggets als Kernaussagen/Zitate mit Quelle |
 
 ### 4.4 Details-Popup
 Der **Details**-Button (Dashboard/Listen) öffnet die Kurzübersicht: Datum, Ort, Status, Kosten mit Aufteilung, Inhalt, Website – plus **Bewertung (1–5 Sterne)**, **Teilnahme ✓/✕** und **🔖 Merker** zum Vormerken.
@@ -111,7 +112,7 @@ Die Community-Ansicht hat oben rechts ein **☰-Menü** mit sechs Bereichen: �
 ## 8. Materialien & Sharing
 
 - **Notizen:** je Veranstaltung, mit Titel und Änderungszeit — und **🎤 Diktierfunktion**: Im Notiz-Formular auf „Diktieren“ klicken und sprechen (deutsch); der Text erscheint satzweise im Feld (Chrome/Edge, Mikrofon-Freigabe nötig).
-- **Präsentationen & Dokumente:** Upload (PDF, PPTX, DOCX …). Jede Datei gehört ihrem Uploader; über 🔗/🔒 schaltest du sie geteilt/privat. Geteilte Dateien sehen nur Mitglieder der **Sharing-Runde** der Veranstaltung („Zum Sharing anmelden“).
+- **Präsentationen & Dokumente:** Upload (PDF, PPTX, DOCX …). Jede Datei gehört ihrem Uploader; über 🔗/🔒 schaltest du sie geteilt/privat. Geteilte Dateien sehen nur Mitglieder der **Sharing-Runde** der Veranstaltung („Zum Sharing anmelden“). PDFs haben einen **📖-Knopf**: Die Folien werden direkt in der App durchblätterbar angezeigt (bis 40 Seiten, Anzeige lädt einmalig eine Bibliothek aus dem Netz).
 - **Bilder:** Galerie mit Vollbild-Ansicht und **🔎 Texterkennung (OCR)**: Der 🔎-Knopf auf einem Bild erkennt den Folientext (deutsch+englisch; der erste Lauf lädt einmalig Sprachdaten, online nötig). Erkannter Text wird am Bild gespeichert (grüne Markierung), ist über das Suchfeld der Galerie **durchsuchbar** und lässt sich per Klick **als Notiz übernehmen** — so werden abfotografierte Folien wiederauffindbar.
 
 Dateien liegen in der IndexedDB deines Browsers (kein automatischer Cloud-Upload).
