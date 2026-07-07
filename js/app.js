@@ -731,13 +731,14 @@ function vAuswahl() {
   if (auswahlFilter.status === "offen") liste = liste.filter(k => !kandidatTeilnahme(k.id));
   else if (auswahlFilter.status !== "alle") liste = liste.filter(k => kandidatTeilnahme(k.id) === auswahlFilter.status);
   const ja = AUSWAHL_KANDIDATEN.filter(k => kandidatTeilnahme(k.id) === "ja");
+  const vielleicht = AUSWAHL_KANDIDATEN.filter(k => kandidatTeilnahme(k.id) === "vielleicht");
   const jaSumme = ja.reduce((s, k) => s + (Number(kandidatKosten(k)) || 0), 0);
   return `
   <div class="kopf"><h1>Auswahlliste AI-Veranstaltungen</h1>
     <p class="unter">2025 &amp; 2026 – aus Web-Recherche und deinem Google-Kalender. Teilnahme wählen, Kosten anpassen – „Ja" übernimmt die Veranstaltung in die App.</p></div>
   <div class="kpi-reihe">
-    <div class="kpi"><div class="kpi-wert">${AUSWAHL_KANDIDATEN.length}</div><div class="kpi-label">Kandidaten gesamt</div></div>
     <div class="kpi"><div class="kpi-wert">${ja.length}</div><div class="kpi-label">Teilnahme: Ja</div></div>
+    <div class="kpi"><div class="kpi-wert" style="color:#fbbf24">${vielleicht.length}</div><div class="kpi-label">Vielleicht</div></div>
     <div class="kpi"><div class="kpi-wert">${AUSWAHL_KANDIDATEN.filter(k => kandidatTeilnahme(k.id) === "nein").length}</div><div class="kpi-label">Teilnahme: Nein</div></div>
     <div class="kpi akzent"><div class="kpi-wert">${fmtEUR(jaSumme)}</div><div class="kpi-label">Ticketkosten der Zusagen</div></div>
   </div>
@@ -745,11 +746,11 @@ function vAuswahl() {
     <div class="filter-gruppe">
       ${["alle", "2025", "2026"].map(j => `<button class="filter ${auswahlFilter.jahr === j ? 'aktiv' : ''}" onclick="A.setAuswahlFilter('jahr','${j}')">${j === "alle" ? "Alle Jahre" : j}</button>`).join("")}
       <span style="width:14px"></span>
-      ${[["alle", "Alle"], ["offen", "Offen"], ["ja", "Ja"], ["nein", "Nein"]].map(([w, l]) => `<button class="filter ${auswahlFilter.status === w ? 'aktiv' : ''}" onclick="A.setAuswahlFilter('status','${w}')">${l}</button>`).join("")}
+      ${[["alle", "Alle"], ["offen", "Offen"], ["ja", "Ja"], ["vielleicht", "Vielleicht"], ["nein", "Nein"]].map(([w, l]) => `<button class="filter ${auswahlFilter.status === w ? 'aktiv' : ''}" onclick="A.setAuswahlFilter('status','${w}')">${l}</button>`).join("")}
     </div>
   </div>
   <div class="karte">
-    <div class="karte-kopf"><h2>Kandidaten</h2><button class="btn klein" onclick="A.icsZusagen()">⬇ .ics aller Zusagen (Google-Kalender-Import)</button></div>
+    <div class="karte-kopf"><h2>Kandidaten (${AUSWAHL_KANDIDATEN.length})</h2><button class="btn klein" onclick="A.icsZusagen()">⬇ .ics aller Zusagen (Google-Kalender-Import)</button></div>
     <table class="tabelle auswahl-tabelle">
       <thead><tr><th>Termin</th><th>Veranstaltung</th><th>Ort</th><th>Quelle</th><th class="rechts">Kosten (€)</th><th>Teilnahme</th></tr></thead>
       <tbody>
@@ -757,6 +758,8 @@ function vAuswahl() {
         const t = kandidatTeilnahme(k.id);
         const vorbei = k.end < heute();
         const verknuepft = S.auswahl[k.id]?.eventId && ev(S.auswahl[k.id].eventId);
+        const zielEv = verknuepft ? S.auswahl[k.id].eventId : (k.eventId && ev(k.eventId) ? k.eventId : null);
+        const dabei = zielEv ? (S.teilnehmer[zielEv] || []).filter(id => id !== S.session).map(user).filter(Boolean) : [];
         return `
         <tr class="${t === 'nein' ? 'gedimmt' : ''}">
           <td class="nowrap">${eventZeitraum(k)}${vorbei ? ' <span class="tag">vorbei</span>' : ""}</td>
@@ -768,14 +771,16 @@ function vAuswahl() {
           <td class="rechts"><input type="number" class="kosten-feld" min="0" step="1" value="${kandidatKosten(k)}" onchange="A.auswahlKosten('${k.id}',this.value)"></td>
           <td class="nowrap">
             <button class="btn klein ja-btn ${t === 'ja' ? 'gewaehlt-ja' : ''}" onclick="A.teilnahme('${k.id}','ja')">✓ Ja</button>
+            <button class="btn klein vlt-btn ${t === 'vielleicht' ? 'gewaehlt-vlt' : ''}" onclick="A.teilnahme('${k.id}','vielleicht')" title="Noch unentschieden – vormerken">? Vlt</button>
             <button class="btn klein nein-btn ${t === 'nein' ? 'gewaehlt-nein' : ''}" onclick="A.teilnahme('${k.id}','nein')">✕ Nein</button>
             <a class="btn klein" href="${gcalUrl(k)}" target="_blank" rel="noopener" title="In Google Kalender eintragen">📆</a>
+            ${dabei.length ? `<span class="tag aktiv-tag" title="Aus der Community dabei: ${esc(dabei.map(u => u.name).join(", "))}">👥 ${dabei.length}</span>` : ""}
           </td>
         </tr>`;
       }).join("") || '<tr><td colspan="6" class="leer">Keine Kandidaten für diesen Filter.</td></tr>'}
       </tbody>
     </table>
-    <p class="hinweis">Quelle „📆 Kalender": aus deinem Google-Kalender (inkl. Abos „KI-Café" und „AI xpress"). Quelle „🔎 Recherche": Web-Recherche Juli 2026 – Termine und Preise vor Buchung auf der verlinkten Website prüfen. Bei „Ja" wird die Veranstaltung mit Status „Interessiert" und dem Kostenwert als Ticketpreis in die App übernommen; bei „Nein" wird eine automatisch übernommene Veranstaltung wieder entfernt (bereits erfasste Daten bleiben erhalten, dann Status „Abgesagt").</p>
+    <p class="hinweis">Quelle „📆 Kalender": aus deinem Google-Kalender (inkl. Abos „KI-Café" und „AI xpress"). Quelle „🔎 Recherche": Web-Recherche Juli 2026 – Termine und Preise vor Buchung auf der verlinkten Website prüfen. Bei „Ja" wird die Veranstaltung mit Status „Interessiert" und dem Kostenwert als Ticketpreis in die App übernommen; „? Vlt" merkt sie als unentschieden vor (keine Übernahme); bei „Nein" wird eine automatisch übernommene Veranstaltung wieder entfernt (bereits erfasste Daten bleiben erhalten, dann Status „Abgesagt"). 👥 zeigt, wie viele andere Community-Mitglieder bei der verknüpften Veranstaltung als Teilnehmer eingetragen sind.</p>
   </div>`;
 }
 
@@ -810,7 +815,7 @@ A.teilnahme = function (kid, wert) {
       S.events = S.events.filter(x => x.id !== a.eventId);
       delete S.anmeldungen[a.eventId];
       delete a.eventId;
-    } else if (e) {
+    } else if (e && wert === "nein") { // nur echtes Nein sagt ab; „vielleicht" lässt den Status unangetastet
       S.anmeldungen[a.eventId] = Object.assign(S.anmeldungen[a.eventId] || {}, { status: "Abgesagt" });
     }
   }

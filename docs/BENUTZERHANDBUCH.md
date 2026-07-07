@@ -75,7 +75,8 @@ Der **Details**-Button (Dashboard/Listen) öffnet die Kurzübersicht: Datum, Ort
 ## 5. Auswahlliste
 
 Kuratierte AI-Veranstaltungen 2025/2026 aus Web-Recherche und deinem Google-Kalender:
-- **Teilnahme Ja/Nein** je Zeile; „Ja“ übernimmt die Veranstaltung mit Status „Interessiert“ in deine Liste (verknüpfte Events werden nicht dupliziert), „Nein“ räumt automatisch Übernommenes wieder auf.
+- **Teilnahme Ja / ? Vlt / Nein** je Zeile; „Ja“ übernimmt die Veranstaltung mit Status „Interessiert“ in deine Liste (verknüpfte Events werden nicht dupliziert), „? Vlt“ merkt sie als unentschieden vor (eigener Filter und Zähler, keine Übernahme), „Nein“ räumt automatisch Übernommenes wieder auf.
+- **👥-Anzeige:** Bei verknüpften Veranstaltungen zeigt ein Badge, wie viele andere Community-Mitglieder dort bereits als Teilnehmer eingetragen sind (Namen im Tooltip).
 - **Kosten** direkt in der Tabelle editierbar – fließen als Ticketpreis in die Übernahme ein.
 - **📆-Button** je Zeile trägt den Termin in Google Kalender ein; **„.ics aller Zusagen“** exportiert alle Ja-Termine gesammelt.
 - Filter nach Jahr und Entscheidungsstatus; Quelle je Eintrag (📆 Kalender / 🔎 Recherche).
