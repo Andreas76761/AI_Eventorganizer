@@ -849,21 +849,170 @@ function passtZurSuche(e, q) {
   return [e.name, e.kurz, e.ort, e.venue, e.kategorie, e.beschreibung].filter(Boolean).join(" ").toLowerCase().includes(q);
 }
 
-function vEvents() {
+const EVENT_BEREICHE = [
+  ["uebersicht", "🎪 Übersicht"],
+  ["karte", "🗺 Deutschlandkarte"],
+  ["zeitleiste", "📆 Zeitleiste"],
+  ["merkliste", "🔖 Merkliste"],
+  ["archiv", "🗄 Archiv"]
+];
+let eventsSub = "uebersicht";
+let eventsBurgerOffen = false;
+
+A.eventsBurger = function () {
+  eventsBurgerOffen = !eventsBurgerOffen;
+  const m = document.getElementById("events-burger-menue");
+  if (m) m.style.display = eventsBurgerOffen ? "block" : "none";
+};
+
+A.eventsBereich = function (sub) {
+  eventsBurgerOffen = false;
+  eventsSub = sub;
+  render();
+};
+
+function gefilterteEvents() {
   let liste = [...S.events].sort((a, b) => a.start.localeCompare(b.start));
   if (eventFilter === "kommend") liste = liste.filter(e => e.end >= heute());
   else if (eventFilter !== "alle") liste = liste.filter(e => statusVon(e.id) === eventFilter);
   const q = eventSuche.trim().toLowerCase();
   if (q) liste = liste.filter(e => passtZurSuche(e, q));
-  const kandidatenTreffer = q ? AUSWAHL_KANDIDATEN.filter(k => passtZurSuche(k, q) && !(S.auswahl[k.id]?.eventId && ev(S.auswahl[k.id].eventId))) : [];
+  return liste;
+}
+
+function eventWerkzeuge() {
   const filter = ["alle", "kommend", "Angemeldet", "Bezahlt", "Besucht"];
   return `
-  <div class="kopf"><h1>Veranstaltungen</h1><p class="unter">AI-Messen &amp; Konferenzen verwalten – anmelden, bezahlen, planen</p></div>
   <div class="werkzeuge">
     <input id="suchfeld" class="suchfeld" placeholder="🔍 Messe suchen – Name, Ort, Thema…" value="${esc(eventSuche)}" oninput="A.suche(this.value)">
     <div class="filter-gruppe">${filter.map(f => `<button class="filter ${eventFilter === f ? 'aktiv' : ''}" onclick="A.setEventFilter('${f}')">${f === "alle" ? "Alle" : f === "kommend" ? "Anstehend" : f}</button>`).join("")}</div>
     <button class="btn primaer" onclick="A.eventFormular()">+ Neue Veranstaltung</button>
+  </div>`;
+}
+
+function vEvents() {
+  const bereichName = Object.fromEntries(EVENT_BEREICHE)[eventsSub] || "Bereich";
+  let inhalt = "";
+  switch (eventsSub) {
+    case "karte": inhalt = eBereichKarte(); break;
+    case "zeitleiste": inhalt = eBereichZeitleiste(); break;
+    case "merkliste": inhalt = eBereichMerkliste(); break;
+    case "archiv": inhalt = eBereichArchiv(); break;
+    default: inhalt = eBereichUebersicht();
+  }
+  return `
+  <div class="kopf community-kopf">
+    <div><h1>Veranstaltungen</h1><p class="unter">AI-Messen &amp; Konferenzen – Bereich über das ☰-Menü wählen</p></div>
+    <div class="burger-wrap">
+      <button class="btn burger-btn" onclick="A.eventsBurger()">☰ ${bereichName}</button>
+      <div class="burger-menue" id="events-burger-menue" style="display:${eventsBurgerOffen ? "block" : "none"}">
+        ${EVENT_BEREICHE.map(([id, label]) => `<div class="burger-punkt ${eventsSub === id ? "aktiv" : ""}" onclick="A.eventsBereich('${id}')">${label}</div>`).join("")}
+      </div>
+    </div>
   </div>
+  ${inhalt}`;
+}
+
+/* ---- Bereich: Deutschlandkarte ---- */
+
+function eBereichKarte() {
+  const liste = gefilterteEvents();
+  const proStadt = {};
+  liste.forEach(e => { (proStadt[e.ort] = proStadt[e.ort] || []).push(e); });
+  const punkte = [], ohneKoords = [];
+  Object.entries(proStadt).forEach(([stadt, evs]) => {
+    const k = STADT_KOORDS[stadt];
+    if (!k) { ohneKoords.push(...evs); return; }
+    const [x, y] = kartePx(k[0], k[1]);
+    punkte.push({ stadt, evs, x, y });
+  });
+  return `
+  ${eventWerkzeuge()}
+  <div class="karten-layout">
+    <div class="karte">
+      <svg viewBox="0 0 ${KARTE_W} ${KARTE_H}" class="de-karte" role="img" aria-label="Deutschlandkarte mit Veranstaltungsorten">
+        ${DE_BUNDESLAENDER.map(b => `<path d="${b.d}" class="bl-pfad"><title>${esc(b.name)}</title></path>`).join("")}
+        ${punkte.map(p => `
+        <g class="stadt-punkt" onclick="A.kartePopup('${esc(p.stadt)}')">
+          <circle cx="${p.x}" cy="${p.y}" r="${8 + Math.min(5, p.evs.length * 1.5)}" fill="${p.evs[0].farbe}" class="punkt-kreis"/>
+          ${p.evs.length > 1 ? `<text x="${p.x}" y="${p.y + 3.8}" class="punkt-zahl">${p.evs.length}</text>` : ""}
+          <text x="${p.x}" y="${p.y - 14}" class="stadt-label">${esc(p.stadt.split(" ")[0].split(" (")[0])}</text>
+          <title>${esc(p.stadt)}: ${p.evs.map(e => esc(e.kurz || e.name)).join(", ")}</title>
+        </g>`).join("")}
+      </svg>
+      <p class="hinweis">Kreisgröße = Anzahl Veranstaltungen am Ort · Klick auf einen Punkt zeigt die Veranstaltungen · Suche und Filter oben wirken direkt auf die Karte.</p>
+    </div>
+    <div class="karte">
+      <h2>Orte (${punkte.length}) · ${liste.length} Veranstaltungen</h2>
+      ${punkte.sort((a, b) => b.evs.length - a.evs.length).map(p => `
+      <div class="event-zeile" onclick="A.kartePopup('${esc(p.stadt)}')">
+        <span class="punkt" style="background:${p.evs[0].farbe}"></span>
+        <div class="ez-mitte">
+          <div class="ez-name">${esc(p.stadt)}</div>
+          <div class="ez-sub">${p.evs.map(e => esc(e.kurz || e.name)).join(" · ")}</div>
+        </div>
+        <span class="tag">${p.evs.length}</span>
+      </div>`).join("") || '<p class="leer">Keine Treffer für Suche/Filter.</p>'}
+      ${ohneKoords.length ? `<p class="hinweis">Ohne Kartenposition: ${ohneKoords.map(e => esc(e.ort)).join(", ")} – Stadt in STADT_KOORDS (js/karte.js) ergänzen.</p>` : ""}
+    </div>
+  </div>`;
+}
+
+A.kartePopup = function (stadt) {
+  const evs = S.events.filter(e => e.ort === stadt).sort((a, b) => a.start.localeCompare(b.start));
+  openModal("Veranstaltungen in " + stadt, evs.map(e => `
+    <div class="event-zeile" onclick="closeModal();A.openEvent('${e.id}')">
+      <span class="punkt" style="background:${e.farbe}"></span>
+      <div class="ez-mitte">
+        <div class="ez-name">${esc(e.name)}</div>
+        <div class="ez-sub">${eventZeitraum(e)}${e.venue ? " · " + esc(e.venue) : ""}</div>
+      </div>
+      <span class="status ${STATUS_KLASSE[statusVon(e.id)]}">${statusVon(e.id)}</span>
+    </div>`).join(""));
+};
+
+/* ---- Bereiche: Zeitleiste, Merkliste, Archiv ---- */
+
+function eBereichZeitleiste() {
+  const liste = gefilterteEvents();
+  const monate = {};
+  liste.forEach(e => { const m = e.start.slice(0, 7); (monate[m] = monate[m] || []).push(e); });
+  return `
+  ${eventWerkzeuge()}
+  ${Object.keys(monate).sort().map(m => `
+  <div class="karte">
+    <h2>${new Date(m + "-01T12:00:00Z").toLocaleDateString("de-DE", { month: "long", year: "numeric" })}</h2>
+    ${monate[m].map(e => zeileEvent(e)).join("")}
+  </div>`).join("") || '<div class="karte"><p class="leer">Keine Treffer für Suche/Filter.</p></div>'}`;
+}
+
+function eBereichMerkliste() {
+  const liste = [...S.events].filter(e => S.merker[e.id] || S.bewertungen[e.id]).sort((a, b) => a.start.localeCompare(b.start));
+  return `
+  <div class="karte">
+    <div class="karte-kopf"><h2>Gemerkte &amp; bewertete Veranstaltungen (${liste.length})</h2></div>
+    ${liste.map(e => zeileEvent(e)).join("") || '<p class="leer">Noch nichts gemerkt – im Details-Popup einer Veranstaltung 🔖 „vormerken" oder Sterne vergeben.</p>'}
+  </div>`;
+}
+
+function eBereichArchiv() {
+  const liste = [...S.events].filter(e => e.end < heute()).sort((a, b) => b.start.localeCompare(a.start));
+  return `
+  <div class="karte">
+    <div class="karte-kopf"><h2>Vergangene Veranstaltungen (${liste.length})</h2></div>
+    ${liste.map(e => zeileEvent(e)).join("") || '<p class="leer">Noch keine vergangenen Veranstaltungen.</p>'}
+    <p class="hinweis">Tipp: Nachbetrachtung im Details-Popup bewerten (★) und Erkenntnisse als Notizen im Materialien-Tab festhalten.</p>
+  </div>`;
+}
+
+/* ---- Bereich: Übersicht (Kartenraster) ---- */
+
+function eBereichUebersicht() {
+  const liste = gefilterteEvents();
+  const q = eventSuche.trim().toLowerCase();
+  const kandidatenTreffer = q ? AUSWAHL_KANDIDATEN.filter(k => passtZurSuche(k, q) && !(S.auswahl[k.id]?.eventId && ev(S.auswahl[k.id].eventId))) : [];
+  return `
+  ${eventWerkzeuge()}
   ${kandidatenTreffer.length ? `
   <div class="karte banner">
     <span>🔎 <b>${kandidatenTreffer.length} Treffer</b> in der Auswahlliste: ${kandidatenTreffer.slice(0, 3).map(k => esc(k.name)).join(", ")}${kandidatenTreffer.length > 3 ? "…" : ""}</span>

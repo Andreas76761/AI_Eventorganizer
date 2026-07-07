@@ -74,6 +74,18 @@ a:hover { text-decoration: underline; }
 }
 .kosten-vorschau b { color: var(--text); }
 
+/* ---------- Deutschlandkarte ---------- */
+.karten-layout { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 4fr); gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .karten-layout { grid-template-columns: 1fr; } }
+.de-karte { width: 100%; height: auto; display: block; }
+.bl-pfad { fill: var(--karte2); stroke: var(--rand); stroke-width: 1; }
+.bl-pfad:hover { fill: rgba(129, 140, 248, .12); }
+.stadt-punkt { cursor: pointer; }
+.punkt-kreis { stroke: rgba(255, 255, 255, .75); stroke-width: 1.5; opacity: .9; }
+.stadt-punkt:hover .punkt-kreis { stroke: var(--akzent2); stroke-width: 2.5; opacity: 1; }
+.stadt-label { font-size: 12px; fill: var(--text); text-anchor: middle; font-weight: 600; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.punkt-zahl { font-size: 10px; fill: #fff; text-anchor: middle; font-weight: 700; pointer-events: none; }
+
 /* ---------- Community: Burger-Menü & Matching ---------- */
 .community-kopf { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
 .burger-wrap { position: relative; flex-shrink: 0; }

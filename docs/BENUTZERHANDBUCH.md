@@ -44,6 +44,13 @@ Monatsansicht mit farbigen Veranstaltungs-Chips (mehrtägige Termine erscheinen 
 
 ## 4. Veranstaltungen
 
+Auch diese Ansicht hat oben rechts ein **☰-Menü** mit fünf Bereichen:
+- **🎪 Übersicht** — das Kartenraster (Standard)
+- **🗺 Deutschlandkarte** — alle Veranstaltungsorte auf der Karte (16 Bundesländer); Kreisgröße und Zahl zeigen die Anzahl der Events pro Stadt, Klick auf einen Punkt oder die Ortsliste rechts öffnet die Veranstaltungen der Stadt. Suche und Filter wirken direkt auf die Karte.
+- **📆 Zeitleiste** — chronologisch nach Monaten gruppiert
+- **🔖 Merkliste** — alles, was du im Details-Popup vorgemerkt oder bewertet hast
+- **🗄 Archiv** — vergangene Veranstaltungen für die Nachbetrachtung
+
 ### 4.1 Suchen und filtern
 Das Suchfeld filtert live nach Name, Ort, Venue, Kategorie und Beschreibung. Treffer, die nur in der Auswahlliste existieren, werden als Hinweis-Banner angezeigt. Filter-Chips: Alle / Anstehend / Angemeldet / Bezahlt / Besucht.
 
