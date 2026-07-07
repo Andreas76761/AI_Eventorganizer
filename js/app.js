@@ -2439,7 +2439,7 @@ function tMaterialien(e) {
         </div>
         <input id="suchfeld" class="suchfeld" style="max-width:none;margin-bottom:12px" placeholder="🔍 Bilder & erkannten Folientext durchsuchen …" value="${esc(bildSuche)}" oninput="A.bildSucheSetzen(this.value)">
         <div id="bildergalerie" class="galerie"><p class="leer">Lade…</p></div>
-        <p class="hinweis">🔎 auf einem Bild startet die Texterkennung (OCR) – erkannter Folientext wird gespeichert und ist hier durchsuchbar.</p>
+        <p class="hinweis">🔎 auf einem Bild startet die Texterkennung (OCR) – erkannter Folientext wird gespeichert und ist hier durchsuchbar. Fotos werden beim Hochladen automatisch auf max. 1920 px verkleinert (spart Browserspeicher).</p>
       </div>
     </div>
   </div>`;
@@ -2491,12 +2491,37 @@ async function nachladenMaterialien() {
   }
 }
 
+// Fotos beim Upload verkleinern (wie Festival-App): spart IndexedDB-Speicher.
+// Fällt bei nicht dekodierbaren Formaten (z. B. HEIC) still aufs Original zurück.
+async function bildVerkleinern(file, maxKante = 1920, qualitaet = 0.85) {
+  if (!file.type.startsWith("image/") || file.type === "image/gif" || file.type === "image/svg+xml") return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const laengste = Math.max(bmp.width, bmp.height);
+    if (laengste <= maxKante && file.size < 800 * 1024) { bmp.close && bmp.close(); return file; }
+    const faktor = Math.min(1, maxKante / laengste);
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(bmp.width * faktor);
+    cv.height = Math.round(bmp.height * faktor);
+    cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+    bmp.close && bmp.close();
+    const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", qualitaet));
+    if (!blob || blob.size >= file.size) return file; // nur übernehmen, wenn wirklich kleiner
+    blob.name = file.name;
+    return blob;
+  } catch (e) {
+    return file;
+  }
+}
+
 A.dateiHochladen = async function (evId, typ, input) {
   if (typ === "praesentation" && loginNoetig()) { input.value = ""; return; }
   for (const file of input.files) {
+    const inhalt = typ === "bild" ? await bildVerkleinern(file) : file;
     await dbPutFile({
-      id: uid(), eventId: evId, typ, name: file.name, mime: file.type, blob: file,
+      id: uid(), eventId: evId, typ, name: file.name, mime: inhalt.type || file.type, blob: inhalt,
       datum: new Date().toLocaleString("de-DE"),
+      originalGroesse: inhalt !== file ? file.size : undefined,
       ownerId: typ === "praesentation" ? S.session : undefined,
       geteilt: typ === "praesentation" ? true : undefined
     });
