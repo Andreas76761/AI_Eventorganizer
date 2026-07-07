@@ -918,10 +918,17 @@ function vEvents() {
   ${inhalt}`;
 }
 
-/* ---- Bereich: Deutschlandkarte ---- */
+/* ---- Bereich: Deutschlandkarte (Muster: 1E9-Festival-App Standorte-Tab) ---- */
+
+let karteKategorie = "alle";
+let karteStadt = null;
+
+A.karteKategorie = function (kat) { karteKategorie = kat; karteStadt = null; render(); };
+A.karteStadtWahl = function (stadt) { karteStadt = (karteStadt === stadt) ? null : stadt; render(); };
 
 function eBereichKarte() {
-  const liste = gefilterteEvents();
+  let liste = gefilterteEvents();
+  if (karteKategorie !== "alle") liste = liste.filter(e => e.kategorie === karteKategorie);
   const proStadt = {};
   liste.forEach(e => { (proStadt[e.ort] = proStadt[e.ort] || []).push(e); });
   const punkte = [], ohneKoords = [];
@@ -931,50 +938,54 @@ function eBereichKarte() {
     const [x, y] = kartePx(k[0], k[1]);
     punkte.push({ stadt, evs, x, y });
   });
+  punkte.sort((a, b) => b.evs.length - a.evs.length);
+  if (karteStadt && !proStadt[karteStadt]) karteStadt = null; // Auswahl weggefiltert
+  const kategorien = ["alle", ...new Set(S.events.map(e => e.kategorie).filter(Boolean))];
+  const detail = karteStadt ? proStadt[karteStadt] : null;
   return `
   ${eventWerkzeuge()}
+  <div class="werkzeuge" style="margin-top:-8px">
+    <div class="filter-gruppe">
+      ${kategorien.map(k => `<button class="filter ${karteKategorie === k ? 'aktiv' : ''}" onclick="A.karteKategorie('${k}')">${k === "alle" ? "Alle Kategorien" : esc(k)}</button>`).join("")}
+    </div>
+  </div>
   <div class="karten-layout">
     <div class="karte">
       <svg viewBox="0 0 ${KARTE_W} ${KARTE_H}" class="de-karte" role="img" aria-label="Deutschlandkarte mit Veranstaltungsorten">
         ${DE_BUNDESLAENDER.map(b => `<path d="${b.d}" class="bl-pfad"><title>${esc(b.name)}</title></path>`).join("")}
         ${punkte.map(p => `
-        <g class="stadt-punkt" onclick="A.kartePopup('${esc(p.stadt)}')">
-          <circle cx="${p.x}" cy="${p.y}" r="${8 + Math.min(5, p.evs.length * 1.5)}" fill="${p.evs[0].farbe}" class="punkt-kreis"/>
+        <g class="stadt-punkt ${karteStadt === p.stadt ? "gewaehlt" : ""}" onclick="A.karteStadtWahl('${esc(p.stadt)}')">
+          <circle cx="${p.x}" cy="${p.y}" r="${(8 + Math.min(5, p.evs.length * 1.5)) * (karteStadt === p.stadt ? 1.25 : 1)}" fill="${karteStadt === p.stadt ? "#fbbf24" : p.evs[0].farbe}" class="punkt-kreis"/>
           ${p.evs.length > 1 ? `<text x="${p.x}" y="${p.y + 3.8}" class="punkt-zahl">${p.evs.length}</text>` : ""}
-          <text x="${p.x}" y="${p.y - 14}" class="stadt-label">${esc(p.stadt.split(" ")[0].split(" (")[0])}</text>
+          <text x="${p.x}" y="${p.y - 14}" class="stadt-label">${esc(p.stadt.split(" (")[0])}</text>
           <title>${esc(p.stadt)}: ${p.evs.map(e => esc(e.kurz || e.name)).join(", ")}</title>
         </g>`).join("")}
       </svg>
-      <p class="hinweis">Kreisgröße = Anzahl Veranstaltungen am Ort · Klick auf einen Punkt zeigt die Veranstaltungen · Suche und Filter oben wirken direkt auf die Karte.</p>
     </div>
     <div class="karte">
-      <h2>Orte (${punkte.length}) · ${liste.length} Veranstaltungen</h2>
-      ${punkte.sort((a, b) => b.evs.length - a.evs.length).map(p => `
-      <div class="event-zeile" onclick="A.kartePopup('${esc(p.stadt)}')">
-        <span class="punkt" style="background:${p.evs[0].farbe}"></span>
-        <div class="ez-mitte">
-          <div class="ez-name">${esc(p.stadt)}</div>
-          <div class="ez-sub">${p.evs.map(e => esc(e.kurz || e.name)).join(" · ")}</div>
-        </div>
-        <span class="tag">${p.evs.length}</span>
-      </div>`).join("") || '<p class="leer">Keine Treffer für Suche/Filter.</p>'}
-      ${ohneKoords.length ? `<p class="hinweis">Ohne Kartenposition: ${ohneKoords.map(e => esc(e.ort)).join(", ")} – Stadt in STADT_KOORDS (js/karte.js) ergänzen.</p>` : ""}
+      <h2>🇩🇪 Veranstaltungsorte</h2>
+      <p class="hinweis" style="margin:0 0 10px">Kreisgröße = Anzahl Veranstaltungen. Auf Marker oder Stadt klicken für Details.</p>
+      <div class="stadt-chips">
+        ${punkte.map(p => `<button class="stadt-chip ${karteStadt === p.stadt ? "aktiv" : ""}" onclick="A.karteStadtWahl('${esc(p.stadt)}')">${esc(p.stadt)} <b>${p.evs.length}</b></button>`).join("") || '<span class="leer">Keine Treffer für Suche/Filter.</span>'}
+      </div>
+      ${detail ? `
+      <div class="stadt-detail">
+        <h2>📍 ${esc(karteStadt)} · ${detail.length} Veranstaltung${detail.length === 1 ? "" : "en"}</h2>
+        ${detail.sort((a, b) => a.start.localeCompare(b.start)).map(e => `
+        <div class="event-zeile" onclick="A.openEvent('${e.id}')">
+          <span class="punkt" style="background:${e.farbe}"></span>
+          <div class="ez-mitte">
+            <div class="ez-name">${esc(e.name)}</div>
+            <div class="ez-sub">${eventZeitraum(e)}${e.venue ? " · " + esc(e.venue) : ""} · <span class="tag">${esc(e.kategorie)}</span></div>
+          </div>
+          <span class="status ${STATUS_KLASSE[statusVon(e.id)]}">${statusVon(e.id)}</span>
+          <button class="btn klein" onclick="event.stopPropagation();A.eventDetails('${e.id}')">Details</button>
+        </div>`).join("")}
+      </div>` : '<div class="stadt-detail leer-detail"><em>Stadt auswählen …</em></div>'}
+      ${ohneKoords.length ? `<p class="hinweis">Ohne Kartenposition: ${[...new Set(ohneKoords.map(e => e.ort))].map(esc).join(", ")} – Stadt in STADT_KOORDS (js/karte.js) ergänzen.</p>` : ""}
     </div>
   </div>`;
 }
-
-A.kartePopup = function (stadt) {
-  const evs = S.events.filter(e => e.ort === stadt).sort((a, b) => a.start.localeCompare(b.start));
-  openModal("Veranstaltungen in " + stadt, evs.map(e => `
-    <div class="event-zeile" onclick="closeModal();A.openEvent('${e.id}')">
-      <span class="punkt" style="background:${e.farbe}"></span>
-      <div class="ez-mitte">
-        <div class="ez-name">${esc(e.name)}</div>
-        <div class="ez-sub">${eventZeitraum(e)}${e.venue ? " · " + esc(e.venue) : ""}</div>
-      </div>
-      <span class="status ${STATUS_KLASSE[statusVon(e.id)]}">${statusVon(e.id)}</span>
-    </div>`).join(""));
-};
 
 /* ---- Bereiche: Zeitleiste, Merkliste, Archiv ---- */
 

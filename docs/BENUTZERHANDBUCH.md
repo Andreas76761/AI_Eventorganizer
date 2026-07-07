@@ -46,7 +46,7 @@ Monatsansicht mit farbigen Veranstaltungs-Chips (mehrtägige Termine erscheinen 
 
 Auch diese Ansicht hat oben rechts ein **☰-Menü** mit fünf Bereichen:
 - **🎪 Übersicht** — das Kartenraster (Standard)
-- **🗺 Deutschlandkarte** — alle Veranstaltungsorte auf der Karte (16 Bundesländer); Kreisgröße und Zahl zeigen die Anzahl der Events pro Stadt, Klick auf einen Punkt oder die Ortsliste rechts öffnet die Veranstaltungen der Stadt. Suche und Filter wirken direkt auf die Karte.
+- **🗺 Deutschlandkarte** — alle Veranstaltungsorte auf der Karte (16 Bundesländer), nach dem Muster des Standorte-Tabs der 1E9-Festival-App: Kreisgröße und Zahl zeigen die Anzahl der Events pro Stadt; rechts die **Stadt-Chips** mit Zählern; Klick auf Marker oder Chip wählt die Stadt aus (goldene Hervorhebung) und zeigt ihre Veranstaltungen **direkt im Panel** darunter (nochmal klicken hebt die Auswahl auf). Zusätzlich zu Suche und Statusfilter gibt es eine **Kategorie-Filterzeile** (Konferenz, Summit, Festival, Kongress, Messe), die live auf Karte und Chips wirkt.
 - **📆 Zeitleiste** — chronologisch nach Monaten gruppiert
 - **🔖 Merkliste** — alles, was du im Details-Popup vorgemerkt oder bewertet hast
 - **🗄 Archiv** — vergangene Veranstaltungen für die Nachbetrachtung

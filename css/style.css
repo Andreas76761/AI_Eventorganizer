@@ -85,6 +85,19 @@ a:hover { text-decoration: underline; }
 .stadt-punkt:hover .punkt-kreis { stroke: var(--akzent2); stroke-width: 2.5; opacity: 1; }
 .stadt-label { font-size: 12px; fill: var(--text); text-anchor: middle; font-weight: 600; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
 .punkt-zahl { font-size: 10px; fill: #fff; text-anchor: middle; font-weight: 700; pointer-events: none; }
+.stadt-punkt.gewaehlt .punkt-kreis { stroke: #fbbf24; stroke-width: 3; opacity: 1; }
+.stadt-punkt.gewaehlt .punkt-zahl { fill: #1c2340; }
+.stadt-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.stadt-chip {
+  background: var(--karte2); border: 1px solid var(--rand); color: var(--text);
+  border-radius: 20px; padding: 6px 14px; font-size: 13px; cursor: pointer; font-family: inherit;
+}
+.stadt-chip b { color: var(--ok); margin-left: 3px; }
+.stadt-chip:hover { border-color: var(--akzent); }
+.stadt-chip.aktiv { background: linear-gradient(135deg, rgba(129, 140, 248, .35), rgba(34, 211, 238, .18)); border-color: var(--akzent); }
+.stadt-chip.aktiv b { color: var(--akzent2); }
+.stadt-detail { border-top: 1px solid var(--rand); padding-top: 12px; }
+.stadt-detail.leer-detail { color: var(--text2); font-size: 13.5px; }
 
 /* ---------- Community: Burger-Menü & Matching ---------- */
 .community-kopf { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
