@@ -998,29 +998,168 @@ A.csvExport = function () {
 
 /* ---------------- Ansicht: Community ---------------- */
 
+const COMMUNITY_BEREICHE = [
+  ["profile", "👤 Profile & Mitglieder"],
+  ["matching", "🤝 Matching (Suche ↔ Biete)"],
+  ["meine", "📅 Meine nächsten Events"],
+  ["mitfahrten", "🚘 Mitfahrgelegenheiten"],
+  ["treffen", "🍽 Treffen"],
+  ["nachrichten", "💬 Nachrichten"]
+];
+let communitySub = "profile";
+let burgerOffen = false;
+
+A.burger = function () {
+  burgerOffen = !burgerOffen;
+  const m = document.getElementById("burger-menue");
+  if (m) m.style.display = burgerOffen ? "block" : "none";
+};
+
+A.communityBereich = function (sub) {
+  burgerOffen = false;
+  if (sub === "nachrichten") { A.nav("nachrichten"); return; }
+  communitySub = sub;
+  render();
+};
+
 function vCommunity() {
-  const alleMitfahrten = [];
-  Object.entries(S.mitfahrten).forEach(([evId, arr]) => arr.forEach(m => alleMitfahrten.push({ ...m, evId })));
-  const alleTreffen = [];
-  Object.entries(S.treffen).forEach(([evId, arr]) => arr.forEach(t => alleTreffen.push({ ...t, evId })));
+  const bereichName = Object.fromEntries(COMMUNITY_BEREICHE)[communitySub] || "Bereich";
+  let inhalt = "";
+  switch (communitySub) {
+    case "matching": inhalt = cBereichMatching(); break;
+    case "meine": inhalt = cBereichMeineEvents(); break;
+    case "mitfahrten": inhalt = cBereichMitfahrten(); break;
+    case "treffen": inhalt = cBereichTreffen(); break;
+    default: inhalt = cBereichProfile();
+  }
   return `
-  <div class="kopf"><h1>Community</h1><p class="unter">Profile, Mitfahrgelegenheiten und gemeinsame Treffen</p></div>
+  <div class="kopf community-kopf">
+    <div><h1>Community</h1><p class="unter">Profile, Matching, Mitfahrten und Treffen – Bereich über das ☰-Menü wählen</p></div>
+    <div class="burger-wrap">
+      <button class="btn burger-btn" onclick="A.burger()">☰ ${bereichName}</button>
+      <div class="burger-menue" id="burger-menue" style="display:${burgerOffen ? "block" : "none"}">
+        ${COMMUNITY_BEREICHE.map(([id, label]) => `<div class="burger-punkt ${communitySub === id ? "aktiv" : ""}" onclick="A.communityBereich('${id}')">${label}</div>`).join("")}
+      </div>
+    </div>
+  </div>
+  ${inhalt}`;
+}
+
+/* ---- Community-Bereich: Profile ---- */
+
+function cBereichProfile() {
+  return `
   <div class="karte">
     <div class="karte-kopf"><h2>Mitglieder &amp; Kurzprofile (${S.users.length})</h2><button class="btn primaer klein" onclick="A.userFormular()">+ Mitglied</button></div>
     <div class="profil-gitter">
       ${S.users.map(u => profilKarte(u)).join("")}
     </div>
-    <p class="hinweis">Profil per ✎ pflegen: Interessen, Fähigkeiten, aktuelles Projekt sowie „Suche/Biete" für gezieltes Netzwerken auf der Messe. Beiträge, Treffen, Mitfahrten und Nachrichten laufen über den per E-Mail angemeldeten Nutzer.</p>
+    <p class="hinweis">Profil per ✎ pflegen: Interessen, Fähigkeiten, aktuelles Projekt, LinkedIn sowie „Suche/Biete" für gezieltes Netzwerken auf der Messe. Beiträge, Treffen, Mitfahrten und Nachrichten laufen über den per E-Mail angemeldeten Nutzer.</p>
+  </div>`;
+}
+
+/* ---- Community-Bereich: Matching (Suche ↔ Biete) ---- */
+
+function suchTokens(text) {
+  return [...new Set(String(text || "").toLowerCase().split(/[^a-zäöüß0-9\-]+/).filter(t => t.length >= 4))];
+}
+
+function suchBieteMatches() {
+  const res = [];
+  S.users.forEach(a => {
+    if (!a.suche) return;
+    S.users.forEach(b => {
+      if (a.id === b.id || !b.biete) return;
+      const ta = suchTokens(a.suche), tb = suchTokens(b.biete);
+      const treffer = ta.filter(x => tb.some(y => x.startsWith(y.slice(0, 5)) || y.startsWith(x.slice(0, 5))));
+      if (treffer.length) res.push({ a, b, treffer });
+    });
+  });
+  return res.sort((x, y) => y.treffer.length - x.treffer.length);
+}
+
+function gemeinsameInteressen() {
+  const norm = u => String(u.interessen || "").split(",").map(x => x.trim().toLowerCase()).filter(Boolean);
+  const res = [];
+  for (let i = 0; i < S.users.length; i++) {
+    for (let j = i + 1; j < S.users.length; j++) {
+      const a = S.users[i], b = S.users[j];
+      const schnitt = norm(a).filter(x => norm(b).includes(x));
+      if (schnitt.length) res.push({ a, b, schnitt });
+    }
+  }
+  return res.sort((x, y) => y.schnitt.length - x.schnitt.length);
+}
+
+function cBereichMatching() {
+  const matches = suchBieteMatches();
+  const interessen = gemeinsameInteressen();
+  return `
+  <div class="karte">
+    <div class="karte-kopf"><h2>Suche ↔ Biete: ${matches.length} Treffer</h2></div>
+    ${matches.map(m => `
+    <div class="match-zeile">
+      <div class="ez-mitte">
+        <div class="ez-name">🔎 ${esc(m.a.name)} sucht &nbsp;→&nbsp; 🤝 ${esc(m.b.name)} bietet</div>
+        <div class="ez-sub">„${esc(m.a.suche)}" ↔ „${esc(m.b.biete)}"</div>
+        <div class="chip-reihe klein-chips">${m.treffer.map(t => `<span class="chip interesse">${esc(t)}</span>`).join("")}</div>
+      </div>
+      ${S.session ? `<button class="btn klein primaer" onclick="A.dmOeffnen('${S.session === m.a.id ? m.b.id : m.a.id}')">✉ Kontakt</button>` : ""}
+    </div>`).join("") || '<p class="leer">Keine Treffer – je konkreter die „Suche"- und „Biete"-Felder in den Profilen, desto besser das Matching.</p>'}
   </div>
-  <div class="spalten">
-    <div class="karte">
-      <div class="karte-kopf"><h2>Mitfahrgelegenheiten</h2></div>
-      ${alleMitfahrten.map(m => mitfahrtZeile(m, m.evId, true)).join("") || '<p class="leer">Keine Mitfahrgelegenheiten. Biete eine im Community-Tab einer Veranstaltung an.</p>'}
-    </div>
-    <div class="karte">
-      <div class="karte-kopf"><h2>Geplante Treffen</h2></div>
-      ${alleTreffen.sort((a, b) => (a.zeit || "").localeCompare(b.zeit || "")).map(t => treffenZeile(t, t.evId, true)).join("") || '<p class="leer">Keine Treffen geplant.</p>'}
-    </div>
+  <div class="karte">
+    <div class="karte-kopf"><h2>Gemeinsame Interessen</h2></div>
+    ${interessen.map(m => `
+    <div class="match-zeile">
+      <div class="ez-mitte">
+        <div class="ez-name">${esc(m.a.name)} &amp; ${esc(m.b.name)}</div>
+        <div class="chip-reihe klein-chips">${m.schnitt.map(t => `<span class="chip faehigkeit">${esc(t)}</span>`).join("")}</div>
+      </div>
+    </div>`).join("") || '<p class="leer">Noch keine überschneidenden Interessen in den Profilen.</p>'}
+  </div>`;
+}
+
+/* ---- Community-Bereich: Meine nächsten Events ---- */
+
+function naechsteEventsVon(userId, eigene) {
+  const jetzt = heute();
+  return S.events
+    .filter(e => e.end >= jetzt)
+    .filter(e => (S.teilnehmer[e.id] || []).includes(userId) || (eigene && ["Interessiert", "Angemeldet", "Bezahlt"].includes(statusVon(e.id))))
+    .sort((a, b) => a.start.localeCompare(b.start));
+}
+
+function cBereichMeineEvents() {
+  const ich = angemeldeter() || S.users.find(u => u.istIch);
+  if (!ich) return '<div class="karte"><p class="leer">Kein Nutzer angemeldet.</p></div>';
+  const liste = naechsteEventsVon(ich.id, true);
+  return `
+  <div class="karte">
+    <div class="karte-kopf"><h2>Nächste geplante Events von ${esc(ich.name)} (${liste.length})</h2><button class="btn klein" onclick="A.nav('auswahl')">Mehr entdecken →</button></div>
+    ${liste.map(e => zeileEvent(e)).join("") || '<p class="leer">Keine anstehenden Events – trage dich bei einer Veranstaltung als Teilnehmer ein oder wähle in der Auswahlliste „Ja".</p>'}
+    <p class="hinweis">Angezeigt werden anstehende Veranstaltungen, bei denen du als Teilnehmer eingetragen bist oder deren Anmeldestatus Interessiert/Angemeldet/Bezahlt ist. Diese Liste erscheint auch im Profil.</p>
+  </div>`;
+}
+
+/* ---- Community-Bereiche: Mitfahrten & Treffen ---- */
+
+function cBereichMitfahrten() {
+  const alle = [];
+  Object.entries(S.mitfahrten).forEach(([evId, arr]) => arr.forEach(m => alle.push({ ...m, evId })));
+  return `
+  <div class="karte">
+    <div class="karte-kopf"><h2>Mitfahrgelegenheiten (${alle.length})</h2></div>
+    ${alle.map(m => mitfahrtZeile(m, m.evId, true)).join("") || '<p class="leer">Keine Mitfahrgelegenheiten. Biete eine im Community-Tab einer Veranstaltung an.</p>'}
+  </div>`;
+}
+
+function cBereichTreffen() {
+  const alle = [];
+  Object.entries(S.treffen).forEach(([evId, arr]) => arr.forEach(t => alle.push({ ...t, evId })));
+  return `
+  <div class="karte">
+    <div class="karte-kopf"><h2>Geplante Treffen (${alle.length})</h2></div>
+    ${alle.sort((a, b) => (a.zeit || "").localeCompare(b.zeit || "")).map(t => treffenZeile(t, t.evId, true)).join("") || '<p class="leer">Keine Treffen geplant.</p>'}
   </div>`;
 }
 
@@ -1039,6 +1178,7 @@ function profilKarte(u) {
         <div class="ez-name">${esc(u.name)} ${u.istIch ? '<span class="tag">Ich</span>' : ""} ${S.session === u.id ? '<span class="tag aktiv-tag">angemeldet</span>' : ""}</div>
         <div class="ez-sub">${esc([u.firma, meta].filter(Boolean).join(" · ")) || "Profil noch leer – ✎ ausfüllen"}</div>
       </div>
+      ${u.linkedin ? `<a class="btn klein" href="${esc(u.linkedin)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="LinkedIn-Profil">in</a>` : ""}
       ${S.session && S.session !== u.id ? `<button class="btn klein" onclick="event.stopPropagation();A.dmOeffnen('${u.id}')" title="Nachricht senden">✉</button>` : ""}
       <button class="btn klein" onclick="event.stopPropagation();A.userFormular('${u.id}')" title="Profil bearbeiten">✎</button>
     </div>
@@ -1072,8 +1212,10 @@ A.profil = function (userId) {
       <tr><td>Interessen</td><td><span class="chip-reihe klein-chips">${chipListe(u.interessen, "interesse") || "–"}</span></td></tr>
       <tr><td>Fähigkeiten</td><td><span class="chip-reihe klein-chips">${chipListe(u.faehigkeiten, "faehigkeit") || "–"}</span></td></tr>
       <tr><td>Projekt</td><td>${esc(u.projekt) || "–"}</td></tr>
+      <tr><td>LinkedIn</td><td>${u.linkedin ? `<a href="${esc(u.linkedin)}" target="_blank" rel="noopener">${esc(u.linkedin)}</a>` : "–"}</td></tr>
       <tr><td>🔎 Sucht</td><td>${esc(u.suche) || "–"}</td></tr>
       <tr><td>🤝 Bietet</td><td>${esc(u.biete) || "–"}</td></tr>
+      <tr><td>Nächste Events</td><td>${naechsteEventsVon(u.id, u.istIch || u.id === S.session).map(e => `<a href="#" onclick="closeModal();A.openEvent('${e.id}');return false">${esc(e.kurz || e.name)}</a> <span class="ez-sub">(${fmtDatumKurz(e.start)})</span>`).join(" · ") || "–"}</td></tr>
     </table>
     <div class="modal-aktionen">
       ${S.session && S.session !== u.id ? `<button class="btn" onclick="closeModal();A.dmOeffnen('${u.id}')">✉ Nachricht senden</button>` : ""}
@@ -1101,6 +1243,7 @@ A.userFormular = function (userId) {
       <label>Interessen <input name="interessen" placeholder="kommagetrennt, z. B. GenAI, Robotik, AI Act" value="${esc(u?.interessen || "")}"></label>
       <label>Fähigkeiten <input name="faehigkeiten" placeholder="kommagetrennt, z. B. Python, Prompt Engineering, Vertrieb" value="${esc(u?.faehigkeiten || "")}"></label>
       <label>Aktuelles Projekt <input name="projekt" placeholder="woran arbeitest du gerade?" value="${esc(u?.projekt || "")}"></label>
+      <label>LinkedIn-Profil <input name="linkedin" placeholder="https://www.linkedin.com/in/dein-name" value="${esc(u?.linkedin || "")}"></label>
       <div class="form-reihe">
         <label>🔎 Suche <input name="suche" placeholder="z. B. Mitgründer, GPU-Sponsor, Beta-Tester" value="${esc(u?.suche || "")}"></label>
         <label>🤝 Biete <input name="biete" placeholder="z. B. Mentoring, API-Zugang, Kontakte" value="${esc(u?.biete || "")}"></label>
@@ -1120,7 +1263,7 @@ A.userSpeichern = function (evt, userId) {
     name: f.get("name"), email: f.get("email"), stadt: f.get("stadt"), farbe: f.get("farbe"),
     firma: f.get("firma"), alter: f.get("alter") ? Number(f.get("alter")) : "", geschlecht: f.get("geschlecht"),
     interessen: f.get("interessen"), faehigkeiten: f.get("faehigkeiten"), projekt: f.get("projekt"),
-    suche: f.get("suche"), biete: f.get("biete")
+    linkedin: f.get("linkedin"), suche: f.get("suche"), biete: f.get("biete")
   };
   if (userId) Object.assign(user(userId), daten);
   else S.users.push({ id: uid(), ...daten, istIch: false });

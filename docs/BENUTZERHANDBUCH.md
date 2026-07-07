@@ -85,6 +85,10 @@ Globale Auswertung über alle Veranstaltungen: Gesamt-KPIs, Verteilung nach Kate
 
 ## 7. Community & Nachrichten
 
+Die Community-Ansicht hat oben rechts ein **☰-Menü** mit sechs Bereichen: 👤 Profile & Mitglieder, 🤝 Matching (Suche ↔ Biete), 📅 Meine nächsten Events, 🚘 Mitfahrgelegenheiten, 🍽 Treffen, 💬 Nachrichten.
+
+- **🤝 Matching:** vergleicht automatisch die „Suche“-Felder aller Profile mit den „Biete“-Feldern der anderen und listet Treffer mit den passenden Stichworten und einem ✉-Kontakt-Knopf. Darunter: Mitglieder mit gemeinsamen Interessen. Je konkreter die Profilfelder, desto besser die Treffer.
+- **📅 Meine nächsten Events:** anstehende Veranstaltungen, bei denen du Teilnehmer bist oder dein Anmeldestatus Interessiert/Angemeldet/Bezahlt ist — dieselbe Liste erscheint in jeder Profil-Detailansicht.
 - **Mitglieder & Kurzprofile:** unter „Community“ anlegen/bearbeiten; zusätzlich registriert jede neue Login-E-Mail automatisch ein Mitglied. Jedes Profil kann enthalten: Wohnort, Firma, Alter, Geschlecht, **Interessen** und **Fähigkeiten** (als Chips), **aktuelles Projekt** sowie **🔎 Suche / 🤝 Biete** für gezieltes Netzwerken auf der Messe. Klick auf eine Profilkarte öffnet die Detailansicht mit „Nachricht senden“.
 - **Treffen:** je Veranstaltung planbar (Mittagessen, vor/während der Konferenz, Nachbetrachtung …) mit Zeit, Ort, Teilnehmern – **„Teilnehmen/Absagen“** per Klick.
 - **Mitfahrgelegenheiten:** als Fahrer anbieten (Abfahrtsort, Zeit, Plätze); andere steigen mit **„Mitfahren“** ein – die Platzverwaltung zählt mit.
