@@ -21,7 +21,7 @@ Verwaltungs-App für AI-Messen, -Konferenzen und -Veranstaltungen in Deutschland
 
 ## DSGVO & EU AI Act
 
-- „Konto & Daten“ (⚙ in der Seitenleiste): **JSON-Export** aller Daten (Art. 20), **Konto-Löschung** inkl. aller Inhalte (Art. 17), Löschung aller lokalen Browserdaten.
+- „Konto & Daten“ (⚙ in der Seitenleiste): **JSON-Export** aller Daten (Art. 20), **JSON-Import** (Backup zurückspielen / Umzug auf anderen Rechner), **Konto-Löschung** inkl. aller Inhalte (Art. 17), Löschung aller lokalen Browserdaten.
 - `datenschutz.html` (lokale Datenhaltung, Cloud-Modus, Rechte) und `rechtliches.html` (Impressum-Platzhalter, EU-AI-Act-Transparenz: die App enthält kein KI-System; Seed-Daten sind als KI-unterstützt recherchiert gekennzeichnet).
 - Keine Tracking-Cookies, keine Analytics, Security-Header via `vercel.json`.
 

@@ -358,6 +358,7 @@ A.kontoDialog = function () {
     ${u ? `<p class="hinweis" style="margin-bottom:12px">Angemeldet als <b>${esc(u.name)}</b> ${u.email ? "&lt;" + esc(u.email) + "&gt;" : ""} · Modus: ${cloud ? "Cloud (Supabase)" : "lokal (nur dieser Browser)"}</p>` : `<p class="hinweis" style="margin-bottom:12px">Nicht angemeldet · Modus: ${cloud ? "Cloud (Supabase)" : "lokal (nur dieser Browser)"}</p>`}
     <div class="knopf-reihe" style="flex-direction:column;align-items:stretch">
       <button class="btn" onclick="A.datenExport()">📤 Alle Daten als JSON exportieren (Art. 20 DSGVO)</button>
+      <label class="btn datei-btn" style="text-align:center">📥 Daten aus JSON-Export importieren<input type="file" accept=".json,application/json" onchange="A.datenImport(this)"></label>
       ${cloud && u ? `<button class="btn" onclick="A.mfaEinrichtenDialog()">🛡 Zwei-Faktor-Authentifizierung (MFA) einrichten</button>` : ""}
       ${u ? `<button class="btn gefahr" onclick="A.kontoLoeschen()">🗑 Mein Konto und meine Inhalte löschen (Art. 17 DSGVO)</button>` : ""}
       <button class="btn gefahr" onclick="A.allesLoeschen()">⚠️ Alle lokalen App-Daten dieses Browsers löschen</button>
@@ -372,6 +373,29 @@ A.datenExport = function () {
   a.download = "ai-messe-guide-datenexport.json";
   a.click();
   URL.revokeObjectURL(a.href);
+};
+
+A.datenImport = function (input) {
+  const datei = input.files[0];
+  if (!datei) return;
+  const leser = new FileReader();
+  leser.onload = () => {
+    input.value = "";
+    try {
+      const daten = JSON.parse(leser.result);
+      if (!Array.isArray(daten.events) || !Array.isArray(daten.users)) {
+        throw new Error("Das ist keine Exportdatei des AI Messe Guide.");
+      }
+      if (!confirm(`Import ersetzt die aktuellen Daten (${S.events.length} Veranstaltungen, ${S.users.length} Mitglieder) durch den Dateiinhalt (${daten.events.length} Veranstaltungen, ${daten.users.length} Mitglieder). Vorher exportieren? Abbrechen = nichts passiert.`)) return;
+      localStorage.setItem(NS, JSON.stringify(daten));
+      S = loadState(); // inkl. Seed-Migration, falls der Export von einer älteren Version stammt
+      closeModal(); render();
+      alert("Import abgeschlossen. Hinweis: Dateien/Bilder (IndexedDB) sind nicht Teil des JSON-Exports.");
+    } catch (e) {
+      alert("Import fehlgeschlagen: " + e.message);
+    }
+  };
+  leser.readAsText(datei);
 };
 
 A.kontoLoeschen = async function () {
