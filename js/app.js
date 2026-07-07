@@ -2433,7 +2433,9 @@ function tMaterialien(e) {
         <div class="karte-kopf"><h2>Bilder</h2>
           <label class="btn primaer klein datei-btn">+ Bilder<input type="file" multiple accept="image/*" onchange="A.dateiHochladen('${e.id}','bild',this)"></label>
         </div>
+        <input id="suchfeld" class="suchfeld" style="max-width:none;margin-bottom:12px" placeholder="🔍 Bilder & erkannten Folientext durchsuchen …" value="${esc(bildSuche)}" oninput="A.bildSucheSetzen(this.value)">
         <div id="bildergalerie" class="galerie"><p class="leer">Lade…</p></div>
+        <p class="hinweis">🔎 auf einem Bild startet die Texterkennung (OCR) – erkannter Folientext wird gespeichert und ist hier durchsuchbar.</p>
       </div>
     </div>
   </div>`;
@@ -2469,10 +2471,16 @@ async function nachladenMaterialien() {
     }).join("") || '<p class="leer">Keine Dateien – Vorträge, Handouts oder eigene Präsentationen hochladen.</p>')
       + (verborgen > 0 ? `<p class="hinweis">🔒 ${verborgen} geteilte Datei${verborgen === 1 ? "" : "en"} verborgen – ${ich ? "melde dich oben zur Sharing-Runde an." : "bitte erst per E-Mail anmelden."}</p>` : "");
     const bg = document.getElementById("bildergalerie");
-    if (bg) bg.innerHTML = bilder.map(b => {
+    const q = bildSuche.trim().toLowerCase();
+    const bilderGefiltert = q ? bilder.filter(b => (b.name + " " + (b.ocrText || "")).toLowerCase().includes(q)) : bilder;
+    if (bg) bg.innerHTML = bilderGefiltert.map(b => {
       const url = URL.createObjectURL(b.blob);
-      return `<div class="galerie-bild"><img src="${url}" alt="${esc(b.name)}" onclick="A.bildAnzeigen('${b.id}')"><button class="galerie-x" onclick="A.dateiLoeschen('${b.id}')">✕</button></div>`;
-    }).join("") || '<p class="leer">Keine Bilder – Fotos von Ständen, Slides und Treffen hier sammeln.</p>';
+      return `<div class="galerie-bild" title="${esc(b.name)}${b.ocrText ? "\n" + esc(b.ocrText.slice(0, 200)) : ""}">
+        <img src="${url}" alt="${esc(b.name)}" onclick="A.bildAnzeigen('${b.id}')">
+        <button class="galerie-x" onclick="A.dateiLoeschen('${b.id}')">✕</button>
+        <button class="galerie-x galerie-ocr ${b.ocrText ? "hat-text" : ""}" onclick="A.bildOcr('${b.id}')" title="${b.ocrText ? "Text erneut erkennen (bereits erkannt)" : "Text erkennen (OCR)"}">🔎</button>
+      </div>`;
+    }).join("") || `<p class="leer">${q ? "Keine Bilder passen zur Suche „" + esc(bildSuche) + "“." : "Keine Bilder – Fotos von Ständen, Slides und Treffen hier sammeln."}</p>`;
   } catch (err) {
     console.error("Materialien laden fehlgeschlagen:", err);
   }
@@ -2535,7 +2543,10 @@ A.notizFormular = function (evId, notizId) {
   openModal(n ? "Notiz bearbeiten" : "Neue Notiz", `
     <form onsubmit="return A.notizSpeichern(event,'${evId}','${notizId || ""}')">
       <label>Titel <input name="titel" placeholder="z. B. Keynote-Takeaways" value="${esc(n?.titel || "")}"></label>
-      <label>Text <textarea name="text" rows="8" required>${esc(n?.text || "")}</textarea></label>
+      <label style="display:flex;justify-content:space-between;align-items:center">Text
+        <button type="button" class="btn klein" id="diktat-btn" onclick="A.diktat()">🎤 Diktieren</button>
+      </label>
+      <textarea name="text" rows="8" required style="margin-top:0">${esc(n?.text || "")}</textarea>
       <div class="modal-aktionen">
         ${n ? `<button type="button" class="btn gefahr" onclick="A.notizLoeschen('${evId}','${n.id}')">Löschen</button>` : ""}
         <button type="submit" class="btn primaer">Speichern</button>
@@ -2559,6 +2570,103 @@ A.notizLoeschen = function (evId, notizId) {
   save(); closeModal(); render();
 };
 
+/* ---------------- Diktierfunktion (Web Speech API, wie Festival-App) ---------------- */
+
+let erkennung = null;
+
+A.diktat = function () {
+  const ta = document.querySelector(".modal textarea[name=text]");
+  const btn = document.getElementById("diktat-btn");
+  if (!ta) return;
+  if (erkennung) { try { erkennung.stop(); } catch (e) { } return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert("Spracheingabe wird von diesem Browser nicht unterstützt – bitte Chrome oder Edge verwenden."); return; }
+  erkennung = new SR();
+  erkennung.lang = "de-DE";
+  erkennung.continuous = true;
+  erkennung.interimResults = false;
+  erkennung.onresult = ev => {
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      if (ev.results[i].isFinal) {
+        const satz = ev.results[i][0].transcript.trim();
+        if (satz) ta.value = (ta.value ? ta.value.replace(/\s+$/, "") + " " : "") + satz;
+      }
+    }
+  };
+  erkennung.onend = () => {
+    erkennung = null;
+    const b = document.getElementById("diktat-btn");
+    if (b) { b.textContent = "🎤 Diktieren"; b.classList.remove("aufnahme"); }
+  };
+  erkennung.onerror = e => {
+    if (e.error === "not-allowed") alert("Mikrofon-Zugriff wurde blockiert – bitte in den Browser-Einstellungen erlauben.");
+  };
+  try {
+    erkennung.start();
+    btn.textContent = "⏹ Stopp";
+    btn.classList.add("aufnahme");
+  } catch (e) { erkennung = null; }
+};
+
+/* ---------------- OCR für Fotos (Tesseract.js, wie Festival-App) ---------------- */
+
+let bildSuche = "";
+let letzteOcr = null; // {evId, name}
+
+A.bildSucheSetzen = function (wert) { bildSuche = wert; sucheFokus = true; render(); };
+
+async function ocrLaden() {
+  if (window.Tesseract) return;
+  await new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+    s.onload = res;
+    s.onerror = () => rej(new Error("Tesseract.js konnte nicht geladen werden (offline?)"));
+    document.head.appendChild(s);
+  });
+}
+
+A.bildOcr = async function (id) {
+  try {
+    const d = await dbGetFile(id);
+    if (!d) return;
+    letzteOcr = { evId: d.eventId, name: d.name };
+    openModal("Texterkennung: " + d.name, '<p class="hinweis" id="ocr-status">Lade Texterkennung …</p>');
+    await ocrLaden();
+    const statusEl = () => document.getElementById("ocr-status");
+    if (statusEl()) statusEl().textContent = "Erkenne Text … (der erste Lauf lädt Sprachdaten und kann 1–2 Minuten dauern)";
+    const url = URL.createObjectURL(d.blob);
+    const res = await Tesseract.recognize(url, "deu+eng", {
+      logger: m => { const el = statusEl(); if (el && m.status) el.textContent = `${m.status} … ${Math.round((m.progress || 0) * 100)} %`; }
+    });
+    URL.revokeObjectURL(url);
+    const text = (res.data.text || "").trim();
+    d.ocrText = text;
+    await dbPutFile(d);
+    openModal("Erkannter Text: " + d.name, `
+      <textarea id="ocr-text" rows="12">${esc(text || "(kein Text erkannt)")}</textarea>
+      <p class="hinweis">Der Text ist jetzt am Bild gespeichert – die Bildersuche im Materialien-Tab findet ihn.</p>
+      <div class="modal-aktionen">
+        <button class="btn" onclick="closeModal()">Schließen</button>
+        <button class="btn primaer" onclick="A.ocrAlsNotiz()">Als Notiz speichern</button>
+      </div>`);
+    nachladenMaterialien();
+  } catch (e) {
+    alert("OCR fehlgeschlagen: " + e.message);
+    closeModal();
+  }
+};
+
+A.ocrAlsNotiz = function () {
+  const text = document.getElementById("ocr-text")?.value?.trim();
+  if (!text || !letzteOcr) return;
+  listOf(S.notizen, letzteOcr.evId).push({
+    id: uid(), titel: "OCR: " + letzteOcr.name, text,
+    geaendert: new Date().toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+  });
+  save(); closeModal(); render();
+};
+
 /* ---------------- Modal ---------------- */
 
 function openModal(titel, html) {
@@ -2575,6 +2683,7 @@ function openModal(titel, html) {
   if (feld) feld.focus();
 }
 function closeModal() {
+  if (erkennung) { try { erkennung.stop(); } catch (e) { } } // laufendes Diktat beenden
   const wrap = document.getElementById("modal-wrap");
   wrap.style.display = "none";
   wrap.innerHTML = "";

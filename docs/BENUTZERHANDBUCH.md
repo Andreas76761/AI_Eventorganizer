@@ -110,9 +110,9 @@ Die Community-Ansicht hat oben rechts ein **☰-Menü** mit sechs Bereichen: �
 
 ## 8. Materialien & Sharing
 
-- **Notizen:** je Veranstaltung, mit Titel und Änderungszeit.
+- **Notizen:** je Veranstaltung, mit Titel und Änderungszeit — und **🎤 Diktierfunktion**: Im Notiz-Formular auf „Diktieren“ klicken und sprechen (deutsch); der Text erscheint satzweise im Feld (Chrome/Edge, Mikrofon-Freigabe nötig).
 - **Präsentationen & Dokumente:** Upload (PDF, PPTX, DOCX …). Jede Datei gehört ihrem Uploader; über 🔗/🔒 schaltest du sie geteilt/privat. Geteilte Dateien sehen nur Mitglieder der **Sharing-Runde** der Veranstaltung („Zum Sharing anmelden“).
-- **Bilder:** Galerie mit Vollbild-Ansicht.
+- **Bilder:** Galerie mit Vollbild-Ansicht und **🔎 Texterkennung (OCR)**: Der 🔎-Knopf auf einem Bild erkennt den Folientext (deutsch+englisch; der erste Lauf lädt einmalig Sprachdaten, online nötig). Erkannter Text wird am Bild gespeichert (grüne Markierung), ist über das Suchfeld der Galerie **durchsuchbar** und lässt sich per Klick **als Notiz übernehmen** — so werden abfotografierte Folien wiederauffindbar.
 
 Dateien liegen in der IndexedDB deines Browsers (kein automatischer Cloud-Upload).
 

@@ -105,6 +105,13 @@ a:hover { text-decoration: underline; }
 .stern-btn { font-size: 16px; line-height: 1; }
 .stern-btn.voll { color: #fbbf24; border-color: rgba(251, 191, 36, .5); }
 
+/* ---------- Diktat & OCR ---------- */
+#diktat-btn.aufnahme { background: rgba(248, 113, 113, .2); border-color: var(--gefahr); color: var(--gefahr); animation: pulsieren 1.2s infinite; }
+@keyframes pulsieren { 50% { opacity: .55; } }
+.galerie-ocr { right: auto; left: 5px; }
+.galerie-ocr.hat-text { background: rgba(52, 211, 153, .8); }
+#ocr-text { width: 100%; font-size: 13px; }
+
 /* ---------- Community: Burger-Menü & Matching ---------- */
 .community-kopf { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
 .burger-wrap { position: relative; flex-shrink: 0; }
