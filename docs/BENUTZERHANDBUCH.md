@@ -50,6 +50,7 @@ Auch diese Ansicht hat oben rechts ein **☰-Menü** mit fünf Bereichen:
 - **📆 Zeitleiste** — chronologisch nach Monaten gruppiert
 - **🔖 Merkliste** — alles, was du im Details-Popup vorgemerkt oder bewertet hast
 - **🗄 Archiv** — vergangene Veranstaltungen für die Nachbetrachtung
+- **📈 Statistik** — Auswertungen über alles: Veranstaltungen nach Kategorie/Stadt/Status, Session- und Speaker-Themen, Top-Firmen nach Speakern
 
 ### 4.1 Suchen und filtern
 Das Suchfeld filtert live nach Name, Ort, Venue, Kategorie und Beschreibung. Treffer, die nur in der Auswahlliste existieren, werden als Hinweis-Banner angezeigt. Filter-Chips: Alle / Anstehend / Angemeldet / Bezahlt / Besucht.
@@ -61,6 +62,8 @@ Das Suchfeld filtert live nach Name, Ort, Venue, Kategorie und Beschreibung. Tre
 | Tab | Inhalt |
 |---|---|
 | **Übersicht** | Beschreibung, Eckdaten, Google-Kalender-/.ics-Export, Teilnehmer, Schnellstatistik |
+| **Programm** | Sessions mit Tag, Zeit, Bühne, Thema und Speaker-Verknüpfung; Filter nach Tag/Bühne; ★ markiert Favoriten — mit „Nur Favoriten“ wird daraus dein persönlicher Tagesplan |
+| **Speaker** | Referenten-Verzeichnis mit Rolle, Firma, Thema, Bio und **Promi-Rating** (1–5 ★); Themenfilter; Detailansicht zeigt die Sessions des Speakers; darunter das automatisch aggregierte **🏢 Firmenverzeichnis** |
 | **Anmeldung & Bezahlung** | Status (Interessiert → Angemeldet → Bezahlt → Besucht), Tickettyp, Preis, Zahlungsart, Bestell-Nr., „Als bezahlt markieren“. Die App verwaltet den Status – gebucht wird beim Veranstalter |
 | **Reise** | Reiseabschnitte (Pkw, Bahn, Flug, ÖPNV, Fernbus …) mit Zeiten und Kosten; Unterkünfte mit Check-in/-out |
 | **Kosten** | alle Posten der Veranstaltung; Eintritt/Fahrt/Hotel entstehen automatisch, Verpflegung & Sonstiges manuell |

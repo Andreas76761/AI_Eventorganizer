@@ -27,7 +27,9 @@ function defaultState() {
     teilnehmer: {},    // evId -> [userId]
     auswahl: {},       // kandidatId -> {teilnahme: "ja"|"nein", kosten, eventId}
     bewertungen: {},   // evId -> 1..5 Sterne
-    merker: {}         // evId -> true (vorgemerkt)
+    merker: {},        // evId -> true (vorgemerkt)
+    sessions: {},      // evId -> [{id, titel, tag, start, ende, buehne, thema, speakerIds:[], beschreibung, favorit}]
+    speaker: {}        // evId -> [{id, name, firma, rolle, thema, bio, linkedin, rating}]
   };
 }
 
@@ -859,7 +861,8 @@ const EVENT_BEREICHE = [
   ["karte", "🗺 Deutschlandkarte"],
   ["zeitleiste", "📆 Zeitleiste"],
   ["merkliste", "🔖 Merkliste"],
-  ["archiv", "🗄 Archiv"]
+  ["archiv", "🗄 Archiv"],
+  ["statistik", "📈 Statistik"]
 ];
 let eventsSub = "uebersicht";
 let eventsBurgerOffen = false;
@@ -903,6 +906,7 @@ function vEvents() {
     case "zeitleiste": inhalt = eBereichZeitleiste(); break;
     case "merkliste": inhalt = eBereichMerkliste(); break;
     case "archiv": inhalt = eBereichArchiv(); break;
+    case "statistik": inhalt = eBereichStatistik(); break;
     default: inhalt = eBereichUebersicht();
   }
   return `
@@ -1018,6 +1022,48 @@ function eBereichArchiv() {
     <div class="karte-kopf"><h2>Vergangene Veranstaltungen (${liste.length})</h2></div>
     ${liste.map(e => zeileEvent(e)).join("") || '<p class="leer">Noch keine vergangenen Veranstaltungen.</p>'}
     <p class="hinweis">Tipp: Nachbetrachtung im Details-Popup bewerten (★) und Erkenntnisse als Notizen im Materialien-Tab festhalten.</p>
+  </div>`;
+}
+
+/* ---- Bereich: Statistik ---- */
+
+function zaehle(werte) {
+  const z = {};
+  werte.filter(Boolean).forEach(w => z[w] = (z[w] || 0) + 1);
+  return Object.entries(z).sort((a, b) => b[1] - a[1]);
+}
+
+function balkenListe(paare, einheit) {
+  const max = Math.max(...paare.map(p => p[1]), 1);
+  return paare.slice(0, 10).map(([label, n]) => `
+    <div class="balken-zeile">
+      <span class="balken-label" title="${esc(label)}">${esc(String(label).slice(0, 18))}</span>
+      <div class="balken-spur"><div class="balken" style="width:${Math.round(n / max * 100)}%"></div></div>
+      <span class="balken-wert">${n}${einheit || ""}</span>
+    </div>`).join("") || '<p class="leer">Noch keine Daten.</p>';
+}
+
+function eBereichStatistik() {
+  const alleSessions = Object.values(S.sessions).flat();
+  const alleSpeaker = Object.values(S.speaker).flat();
+  return `
+  <div class="kpi-reihe">
+    <div class="kpi"><div class="kpi-wert">${S.events.length}</div><div class="kpi-label">Veranstaltungen</div></div>
+    <div class="kpi"><div class="kpi-wert">${alleSessions.length}</div><div class="kpi-label">Sessions</div></div>
+    <div class="kpi"><div class="kpi-wert">${alleSpeaker.length}</div><div class="kpi-label">Speaker</div></div>
+    <div class="kpi akzent"><div class="kpi-wert">${new Set(S.events.map(e => e.ort)).size}</div><div class="kpi-label">Städte</div></div>
+  </div>
+  <div class="spalten">
+    <div class="karte"><h2>Veranstaltungen nach Kategorie</h2>${balkenListe(zaehle(S.events.map(e => e.kategorie)))}</div>
+    <div class="karte"><h2>Veranstaltungen nach Stadt</h2>${balkenListe(zaehle(S.events.map(e => e.ort)))}</div>
+  </div>
+  <div class="spalten">
+    <div class="karte"><h2>Anmeldestatus</h2>${balkenListe(zaehle(S.events.map(e => statusVon(e.id))))}</div>
+    <div class="karte"><h2>Session-Themen (alle Veranstaltungen)</h2>${balkenListe(zaehle(alleSessions.map(s => s.thema)))}</div>
+  </div>
+  <div class="spalten">
+    <div class="karte"><h2>Top-Firmen nach Speakern</h2>${balkenListe(zaehle(alleSpeaker.map(s => s.firma)), " Speaker")}</div>
+    <div class="karte"><h2>Speaker-Themen</h2>${balkenListe(zaehle(alleSpeaker.map(s => s.thema)))}</div>
   </div>`;
 }
 
@@ -1548,7 +1594,8 @@ A.dmSenden = function (evt, partnerId) {
 /* ---------------- Ansicht: Event-Detail ---------------- */
 
 const TABS = [
-  ["uebersicht", "Übersicht"], ["anmeldung", "Anmeldung & Bezahlung"], ["reise", "Reise"],
+  ["uebersicht", "Übersicht"], ["programm", "Programm"], ["speaker", "Speaker"],
+  ["anmeldung", "Anmeldung & Bezahlung"], ["reise", "Reise"],
   ["kosten", "Kosten"], ["community", "Community"], ["materialien", "Materialien"]
 ];
 
@@ -1572,6 +1619,8 @@ function vEventDetail() {
 function tabInhalt(e) {
   switch (route.tab) {
     case "uebersicht": return tUebersicht(e);
+    case "programm": return tProgramm(e);
+    case "speaker": return tSpeaker(e);
     case "anmeldung": return tAnmeldung(e);
     case "reise": return tReise(e);
     case "kosten": return tKostenEvent(e);
@@ -1621,6 +1670,231 @@ function tUebersicht(e) {
     </div>
   </div>`;
 }
+
+/* ---- Tab: Programm (Sessions je Veranstaltung) ---- */
+
+let progTag = "alle", progBuehne = "alle", progNurFavs = false;
+
+A.progFilter = function (feld, wert) {
+  if (feld === "tag") progTag = wert;
+  if (feld === "buehne") progBuehne = wert;
+  if (feld === "favs") progNurFavs = !progNurFavs;
+  render();
+};
+
+function eventTage(e) {
+  const tage = [];
+  const d = new Date(e.start + "T12:00:00Z"), ende = new Date(e.end + "T12:00:00Z");
+  while (d <= ende && tage.length < 21) { tage.push(d.toISOString().slice(0, 10)); d.setUTCDate(d.getUTCDate() + 1); }
+  return tage;
+}
+
+function tProgramm(e) {
+  const alle = (S.sessions[e.id] || []);
+  const buehnen = ["alle", ...new Set(alle.map(s => s.buehne).filter(Boolean))];
+  let liste = [...alle].sort((a, b) => (a.tag + a.start).localeCompare(b.tag + b.start));
+  if (progTag !== "alle") liste = liste.filter(s => s.tag === progTag);
+  if (progBuehne !== "alle") liste = liste.filter(s => s.buehne === progBuehne);
+  if (progNurFavs) liste = liste.filter(s => s.favorit);
+  const tage = eventTage(e);
+  let letzterTag = null;
+  return `
+  <div class="karte">
+    <div class="karte-kopf">
+      <h2>Programm – ${alle.length} Session${alle.length === 1 ? "" : "s"}${alle.filter(s => s.favorit).length ? ` · ★ ${alle.filter(s => s.favorit).length} Favoriten` : ""}</h2>
+      <button class="btn primaer klein" onclick="A.sessionFormular('${e.id}')">+ Session</button>
+    </div>
+    <div class="filter-gruppe" style="margin-bottom:6px">
+      <button class="filter ${progTag === "alle" ? "aktiv" : ""}" onclick="A.progFilter('tag','alle')">Alle Tage</button>
+      ${tage.map(t => `<button class="filter ${progTag === t ? "aktiv" : ""}" onclick="A.progFilter('tag','${t}')">${new Date(t + "T12:00:00Z").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })}</button>`).join("")}
+    </div>
+    <div class="filter-gruppe" style="margin-bottom:12px">
+      ${buehnen.map(b => `<button class="filter ${progBuehne === b ? "aktiv" : ""}" onclick="A.progFilter('buehne','${esc(b)}')">${b === "alle" ? "Alle Bühnen" : esc(b)}</button>`).join("")}
+      <button class="filter ${progNurFavs ? "aktiv" : ""}" onclick="A.progFilter('favs')">★ Nur Favoriten (Tagesplan)</button>
+    </div>
+    ${liste.map(s => {
+      const tagKopf = s.tag !== letzterTag ? `<div class="prog-tag">${new Date(s.tag + "T12:00:00Z").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}</div>` : "";
+      letzterTag = s.tag;
+      const sprecher = (s.speakerIds || []).map(id => (S.speaker[e.id] || []).find(x => x.id === id)).filter(Boolean);
+      return tagKopf + `
+      <div class="reise-zeile">
+        <span class="prog-zeit">${esc(s.start || "–")}${s.ende ? "–" + esc(s.ende) : ""}</span>
+        <div class="ez-mitte">
+          <div class="ez-name">${esc(s.titel)} ${s.buehne ? `<span class="tag">${esc(s.buehne)}</span>` : ""} ${s.thema ? `<span class="tag aktiv-tag">${esc(s.thema)}</span>` : ""}</div>
+          <div class="ez-sub">${sprecher.map(sp => esc(sp.name)).join(", ")}${s.beschreibung ? (sprecher.length ? " · " : "") + esc(s.beschreibung) : ""}</div>
+        </div>
+        <button class="btn klein stern-btn ${s.favorit ? "voll" : ""}" onclick="A.sessionFav('${e.id}','${s.id}')" title="Als Favorit für den Tagesplan">${s.favorit ? "★" : "☆"}</button>
+        <button class="btn klein" onclick="A.sessionFormular('${e.id}','${s.id}')">✎</button>
+      </div>`;
+    }).join("") || `<p class="leer">${progNurFavs ? "Noch keine Favoriten markiert – ☆ an einer Session anklicken." : "Noch keine Sessions – Programmpunkte mit Tag, Zeit und Bühne anlegen und mit ★ den persönlichen Tagesplan bauen."}</p>`}
+  </div>`;
+}
+
+A.sessionFav = function (evId, sessionId) {
+  const s = listOf(S.sessions, evId).find(x => x.id === sessionId);
+  if (s) { s.favorit = !s.favorit; save(); render(); }
+};
+
+A.sessionFormular = function (evId, sessionId) {
+  const e = ev(evId);
+  const s = sessionId ? listOf(S.sessions, evId).find(x => x.id === sessionId) : null;
+  const sp = S.speaker[evId] || [];
+  openModal(s ? "Session bearbeiten" : "Session hinzufügen", `
+    <form onsubmit="return A.sessionSpeichern(event,'${evId}','${sessionId || ""}')">
+      <label>Titel <input name="titel" required value="${esc(s?.titel || "")}"></label>
+      <div class="form-reihe">
+        <label>Tag <input type="date" name="tag" required min="${e.start}" max="${e.end}" value="${s?.tag || e.start}"></label>
+        <label>Bühne / Raum <input name="buehne" placeholder="z. B. Main Stage, Halle 2" value="${esc(s?.buehne || "")}"></label>
+      </div>
+      <div class="form-reihe">
+        <label>Beginn <input type="time" name="start" value="${s?.start || ""}"></label>
+        <label>Ende <input type="time" name="ende" value="${s?.ende || ""}"></label>
+      </div>
+      <label>Thema <input name="thema" placeholder="z. B. GenAI, Robotik, AI Act" value="${esc(s?.thema || "")}"></label>
+      <label>Beschreibung <input name="beschreibung" value="${esc(s?.beschreibung || "")}"></label>
+      <label>Speaker</label>
+      <div class="chip-reihe">
+        ${sp.map(x => `<label class="chip waehlbar ${(s?.speakerIds || []).includes(x.id) ? "gewaehlt" : ""}"><input type="checkbox" name="sp" value="${x.id}" ${(s?.speakerIds || []).includes(x.id) ? "checked" : ""} onchange="this.parentElement.classList.toggle('gewaehlt',this.checked)">${esc(x.name)}</label>`).join("") || '<span class="leer">Noch keine Speaker angelegt (Tab „Speaker").</span>'}
+      </div>
+      <div class="modal-aktionen">
+        ${s ? `<button type="button" class="btn gefahr" onclick="A.sessionLoeschen('${evId}','${s.id}')">Löschen</button>` : ""}
+        <button type="submit" class="btn primaer">Speichern</button>
+      </div>
+    </form>`);
+};
+
+A.sessionSpeichern = function (evt, evId, sessionId) {
+  evt.preventDefault();
+  const f = new FormData(evt.target);
+  const daten = {
+    titel: f.get("titel"), tag: f.get("tag"), start: f.get("start"), ende: f.get("ende"),
+    buehne: f.get("buehne"), thema: f.get("thema"), beschreibung: f.get("beschreibung"), speakerIds: f.getAll("sp")
+  };
+  const arr = listOf(S.sessions, evId);
+  if (sessionId) Object.assign(arr.find(x => x.id === sessionId), daten);
+  else arr.push({ id: uid(), ...daten, favorit: false });
+  save(); closeModal(); render();
+  return false;
+};
+
+A.sessionLoeschen = function (evId, sessionId) {
+  S.sessions[evId] = (S.sessions[evId] || []).filter(x => x.id !== sessionId);
+  save(); closeModal(); render();
+};
+
+/* ---- Tab: Speaker (Verzeichnis, Bio, Promi-Rating, Firmen) ---- */
+
+let spThemaFilter = "alle";
+A.spThema = function (t) { spThemaFilter = t; render(); };
+
+function tSpeaker(e) {
+  const alle = S.speaker[e.id] || [];
+  const themen = ["alle", ...new Set(alle.map(s => s.thema).filter(Boolean))];
+  const liste = (spThemaFilter === "alle" ? alle : alle.filter(s => s.thema === spThemaFilter))
+    .slice().sort((a, b) => (b.rating || 0) - (a.rating || 0) || a.name.localeCompare(b.name));
+  const firmen = {};
+  alle.forEach(s => { if (s.firma) (firmen[s.firma] = firmen[s.firma] || []).push(s); });
+  return `
+  <div class="karte">
+    <div class="karte-kopf">
+      <h2>Speaker (${alle.length})</h2>
+      <button class="btn primaer klein" onclick="A.speakerFormular('${e.id}')">+ Speaker</button>
+    </div>
+    <div class="filter-gruppe" style="margin-bottom:12px">
+      ${themen.map(t => `<button class="filter ${spThemaFilter === t ? "aktiv" : ""}" onclick="A.spThema('${esc(t)}')">${t === "alle" ? "Alle Themen" : esc(t)}</button>`).join("")}
+    </div>
+    <div class="profil-gitter">
+      ${liste.map(s => `
+      <div class="profil-karte" onclick="A.speakerDetail('${e.id}','${s.id}')">
+        <div class="profil-kopf">
+          <span class="avatar" style="background:#4c5686">${esc((s.name || "?")[0])}</span>
+          <div class="ez-mitte">
+            <div class="ez-name">${esc(s.name)} ${s.thema ? `<span class="tag aktiv-tag">${esc(s.thema)}</span>` : ""}</div>
+            <div class="ez-sub">${esc([s.rolle, s.firma].filter(Boolean).join(" · ")) || "–"}</div>
+          </div>
+          <button class="btn klein" onclick="event.stopPropagation();A.speakerFormular('${e.id}','${s.id}')">✎</button>
+        </div>
+        <div class="sterne" style="margin-top:8px">
+          ${[1, 2, 3, 4, 5].map(n => `<button class="stern ${n <= (s.rating || 0) ? "voll" : ""}" onclick="event.stopPropagation();A.speakerRating('${e.id}','${s.id}',${n})" title="Promi-Rating ${n}/5">★</button>`).join("")}
+        </div>
+        ${s.bio ? `<div class="profil-zeile">${esc(s.bio.slice(0, 140))}${s.bio.length > 140 ? "…" : ""}</div>` : ""}
+      </div>`).join("") || '<p class="leer">Noch keine Speaker – Referenten mit Firma, Thema und Bio anlegen; das Firmenverzeichnis unten entsteht automatisch.</p>'}
+    </div>
+  </div>
+  <div class="karte">
+    <div class="karte-kopf"><h2>🏢 Firmen (${Object.keys(firmen).length})</h2></div>
+    ${Object.entries(firmen).sort((a, b) => b[1].length - a[1].length).map(([firma, sp]) => `
+    <div class="reise-zeile">
+      <span class="reise-icon">🏢</span>
+      <div class="ez-mitte">
+        <div class="ez-name">${esc(firma)} <span class="tag">${sp.length} Speaker</span></div>
+        <div class="ez-sub">${sp.map(x => esc(x.name)).join(", ")}${[...new Set(sp.map(x => x.thema).filter(Boolean))].length ? " · Themen: " + [...new Set(sp.map(x => x.thema).filter(Boolean))].map(esc).join(", ") : ""}</div>
+      </div>
+    </div>`).join("") || '<p class="leer">Wird automatisch aus den Firmen der Speaker aufgebaut.</p>'}
+  </div>`;
+}
+
+A.speakerRating = function (evId, spId, n) {
+  const s = listOf(S.speaker, evId).find(x => x.id === spId);
+  if (s) { s.rating = s.rating === n ? 0 : n; save(); render(); }
+};
+
+A.speakerDetail = function (evId, spId) {
+  const s = (S.speaker[evId] || []).find(x => x.id === spId);
+  if (!s) return;
+  const sessions = (S.sessions[evId] || []).filter(x => (x.speakerIds || []).includes(spId));
+  openModal("Speaker: " + s.name, `
+    <table class="info-tabelle">
+      <tr><td>Rolle</td><td>${esc(s.rolle) || "–"}</td></tr>
+      <tr><td>Firma</td><td>${esc(s.firma) || "–"}</td></tr>
+      <tr><td>Thema</td><td>${s.thema ? `<span class="tag aktiv-tag">${esc(s.thema)}</span>` : "–"}</td></tr>
+      <tr><td>Rating</td><td><span class="sterne-mini">${"★".repeat(s.rating || 0)}</span>${s.rating ? ` ${s.rating}/5` : "–"}</td></tr>
+      <tr><td>LinkedIn</td><td>${s.linkedin ? `<a href="${esc(s.linkedin)}" target="_blank" rel="noopener">${esc(s.linkedin)}</a>` : "–"}</td></tr>
+      <tr><td>Bio</td><td>${esc(s.bio) || "–"}</td></tr>
+      <tr><td>Sessions</td><td>${sessions.map(x => `${esc(x.titel)} <span class="ez-sub">(${fmtDatumKurz(x.tag)} ${esc(x.start || "")})</span>`).join("<br>") || "–"}</td></tr>
+    </table>
+    <div class="modal-aktionen">
+      <button class="btn primaer" onclick="closeModal();A.speakerFormular('${evId}','${spId}')">✎ Bearbeiten</button>
+    </div>`);
+};
+
+A.speakerFormular = function (evId, spId) {
+  const s = spId ? listOf(S.speaker, evId).find(x => x.id === spId) : null;
+  openModal(s ? "Speaker bearbeiten" : "Speaker hinzufügen", `
+    <form onsubmit="return A.speakerSpeichern(event,'${evId}','${spId || ""}')">
+      <div class="form-reihe">
+        <label>Name <input name="name" required value="${esc(s?.name || "")}"></label>
+        <label>Rolle <input name="rolle" placeholder="z. B. CTO, Forscherin" value="${esc(s?.rolle || "")}"></label>
+      </div>
+      <div class="form-reihe">
+        <label>Firma / Organisation <input name="firma" value="${esc(s?.firma || "")}"></label>
+        <label>Thema <input name="thema" placeholder="z. B. GenAI, Robotik" value="${esc(s?.thema || "")}"></label>
+      </div>
+      <label>LinkedIn <input name="linkedin" placeholder="https://www.linkedin.com/in/…" value="${esc(s?.linkedin || "")}"></label>
+      <label>Bio <textarea name="bio" rows="4">${esc(s?.bio || "")}</textarea></label>
+      <div class="modal-aktionen">
+        ${s ? `<button type="button" class="btn gefahr" onclick="A.speakerLoeschen('${evId}','${s.id}')">Löschen</button>` : ""}
+        <button type="submit" class="btn primaer">Speichern</button>
+      </div>
+    </form>`);
+};
+
+A.speakerSpeichern = function (evt, evId, spId) {
+  evt.preventDefault();
+  const f = new FormData(evt.target);
+  const daten = { name: f.get("name"), rolle: f.get("rolle"), firma: f.get("firma"), thema: f.get("thema"), linkedin: f.get("linkedin"), bio: f.get("bio") };
+  const arr = listOf(S.speaker, evId);
+  if (spId) Object.assign(arr.find(x => x.id === spId), daten);
+  else arr.push({ id: uid(), ...daten, rating: 0 });
+  save(); closeModal(); render();
+  return false;
+};
+
+A.speakerLoeschen = function (evId, spId) {
+  S.speaker[evId] = (S.speaker[evId] || []).filter(x => x.id !== spId);
+  (S.sessions[evId] || []).forEach(s => { s.speakerIds = (s.speakerIds || []).filter(id => id !== spId); });
+  save(); closeModal(); render();
+};
 
 /* ---- Tab: Anmeldung & Bezahlung ---- */
 

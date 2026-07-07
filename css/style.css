@@ -99,6 +99,12 @@ a:hover { text-decoration: underline; }
 .stadt-detail { border-top: 1px solid var(--rand); padding-top: 12px; }
 .stadt-detail.leer-detail { color: var(--text2); font-size: 13.5px; }
 
+/* ---------- Programm & Speaker ---------- */
+.prog-tag { font-size: 13px; font-weight: 700; color: var(--akzent2); margin: 14px 0 4px; text-transform: capitalize; }
+.prog-zeit { font-size: 12.5px; color: var(--text2); min-width: 84px; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.stern-btn { font-size: 16px; line-height: 1; }
+.stern-btn.voll { color: #fbbf24; border-color: rgba(251, 191, 36, .5); }
+
 /* ---------- Community: Burger-Menü & Matching ---------- */
 .community-kopf { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
 .burger-wrap { position: relative; flex-shrink: 0; }
