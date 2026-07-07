@@ -105,3 +105,11 @@ const VM_ICON = { "Pkw": "🚗", "Bahn": "🚆", "Flug": "✈️", "ÖPNV": "�
 const TREFFEN_TYPEN = ["Mittagessen", "Vor der Konferenz", "Während der Konferenz", "Nachbetrachtung", "Abendessen", "Sonstiges"];
 const ZAHLUNGSARTEN = ["Kreditkarte", "PayPal", "Rechnung", "Überweisung", "Firmenkonto", "Bar"];
 const ANMELDE_STATUS = ["Interessiert", "Angemeldet", "Bezahlt", "Besucht", "Abgesagt"];
+
+// Währungen mit Richtkursen in EUR (editierbar im Formular; Live-Kurs wird,
+// falls online, von frankfurter.app nachgeladen – EZB-Referenzkurse).
+const WAEHRUNGEN = {
+  EUR: 1, USD: 0.86, GBP: 1.17, CHF: 1.06, JPY: 0.0058,
+  SEK: 0.089, DKK: 0.134, PLN: 0.235, CZK: 0.041
+};
+const UST_SAETZE = [19, 7, 0];

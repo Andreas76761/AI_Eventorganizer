@@ -79,6 +79,8 @@ Kuratierte AI-Veranstaltungen 2025/2026 aus Web-Recherche und deinem Google-Kale
 
 Globale Auswertung über alle Veranstaltungen: Gesamt-KPIs, Verteilung nach Kategorie (Eintritt, Fahrtkosten, Übernachtung, Verpflegung, Sonstiges), Einzelposten je Veranstaltung und **CSV-Export** (Semikolon-getrennt, Excel-tauglich). Posten mit „auto“ stammen aus Anmeldung/Reise/Hotel und werden dort bearbeitet.
 
+**Netto / USt / Brutto & Fremdwährung:** Manuelle Kostenposten erfasst du als Bruttobetrag mit **Währung** (EUR, USD, GBP, CHF u. a.) und **USt-Satz** (19/7/0 %). Bei Fremdwährung rechnet die App mit dem **Kurs** in EUR um — der Kurs wird als Richtwert vorbelegt, online automatisch mit dem EZB-Referenzkurs aktualisiert und ist manuell überschreibbar (Beleg-Kurs). Die Live-Vorschau im Formular zeigt Netto + USt = Brutto; die Kostentabellen führen eigene Netto-/USt-/Brutto-Spalten samt Summenzeile, der CSV-Export enthält zusätzlich USt-Satz, Währung, Originalbetrag und Kurs. Hinweis: Bei Auslandsrechnungen mit Reverse-Charge den USt-Satz 0 % wählen.
+
 ---
 
 ## 7. Community & Nachrichten

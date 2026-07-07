@@ -100,7 +100,11 @@ function kostenZeilen(evId) {
     if (u.kosten > 0) zeilen.push({ kategorie: "Übernachtung", beschreibung: u.name || "Hotel", betrag: Number(u.kosten), datum: u.checkin || "", quelle: "hotel" });
   });
   (S.kosten[evId] || []).forEach(k => {
-    zeilen.push({ kategorie: k.kategorie, beschreibung: k.beschreibung, betrag: Number(k.betrag), datum: k.datum || "", quelle: "manuell", id: k.id });
+    zeilen.push({
+      kategorie: k.kategorie, beschreibung: k.beschreibung, betrag: Number(k.betrag), datum: k.datum || "",
+      quelle: "manuell", id: k.id,
+      netto: k.netto, ust: k.ust, ustSatz: k.ustSatz, waehrung: k.waehrung, betragOriginal: k.betragOriginal, kurs: k.kurs
+    });
   });
   return zeilen;
 }
@@ -972,16 +976,17 @@ function vKosten() {
         <b>${fmtEUR(summe)}</b>
       </div>
       <table class="tabelle">
-        <thead><tr><th>Kategorie</th><th>Beschreibung</th><th>Datum</th><th class="rechts">Betrag</th></tr></thead>
-        <tbody>${zeilen.map(z => `<tr><td><span class="tag">${z.kategorie}</span></td><td>${esc(z.beschreibung)}</td><td>${fmtDatum(z.datum)}</td><td class="rechts">${fmtEUR(z.betrag)}</td></tr>`).join("")}</tbody>
+        <thead><tr><th>Kategorie</th><th>Beschreibung</th><th>Datum</th><th class="rechts">Netto</th><th class="rechts">USt</th><th class="rechts">Brutto (EUR)</th></tr></thead>
+        <tbody>${zeilen.map(z => `<tr><td><span class="tag">${z.kategorie}</span></td><td>${esc(z.beschreibung)}</td><td>${fmtDatum(z.datum)}</td><td class="rechts">${z.netto != null ? fmtEUR(z.netto) : "–"}</td><td class="rechts">${z.ust != null ? fmtEUR(z.ust) : "–"}</td><td class="rechts">${fmtEUR(z.betrag)}${z.waehrung && z.waehrung !== "EUR" ? ` <span class="ez-sub">(${(z.betragOriginal ?? 0).toLocaleString("de-DE")} ${esc(z.waehrung)})</span>` : ""}</td></tr>`).join("")}</tbody>
       </table>
     </div>`).join("") || '<div class="karte"><p class="leer">Noch keine Kosten erfasst. Öffne eine Veranstaltung und erfasse Anmeldung, Reise oder weitere Posten.</p></div>'}`;
 }
 
 A.csvExport = function () {
-  const zeilen = [["Veranstaltung", "Kategorie", "Beschreibung", "Datum", "Betrag (EUR)"]];
+  const zahl = n => n == null ? "" : String(n).replace(".", ",");
+  const zeilen = [["Veranstaltung", "Kategorie", "Beschreibung", "Datum", "Netto (EUR)", "USt (EUR)", "USt-Satz (%)", "Brutto (EUR)", "Währung", "Betrag Original", "Kurs"]];
   S.events.forEach(e => kostenZeilen(e.id).forEach(z =>
-    zeilen.push([e.name, z.kategorie, z.beschreibung, z.datum, String(z.betrag).replace(".", ",")])));
+    zeilen.push([e.name, z.kategorie, z.beschreibung, z.datum, zahl(z.netto), zahl(z.ust), zahl(z.ustSatz), zahl(z.betrag), z.waehrung || "EUR", zahl(z.betragOriginal ?? z.betrag), zahl(z.kurs ?? 1)])));
   const csv = zeilen.map(r => r.map(c => '"' + String(c ?? "").replace(/"/g, '""') + '"').join(";")).join("\r\n");
   const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
@@ -1500,21 +1505,32 @@ function tKostenEvent(e) {
       <button class="btn primaer klein" onclick="A.kostenFormular('${e.id}')">+ Kostenposten</button>
     </div>
     <table class="tabelle">
-      <thead><tr><th>Kategorie</th><th>Beschreibung</th><th>Datum</th><th class="rechts">Betrag</th><th></th></tr></thead>
+      <thead><tr><th>Kategorie</th><th>Beschreibung</th><th>Datum</th><th class="rechts">Netto</th><th class="rechts">USt</th><th class="rechts">Brutto (EUR)</th><th></th></tr></thead>
       <tbody>${zeilen.map(z => `
         <tr>
           <td><span class="tag">${z.kategorie}</span></td><td>${esc(z.beschreibung)}</td><td>${fmtDatum(z.datum)}</td>
-          <td class="rechts">${fmtEUR(z.betrag)}</td>
+          <td class="rechts">${z.netto != null ? fmtEUR(z.netto) : "–"}</td>
+          <td class="rechts">${z.ust != null ? fmtEUR(z.ust) + (z.ustSatz != null ? ` <span class="ez-sub">(${z.ustSatz} %)</span>` : "") : "–"}</td>
+          <td class="rechts">${fmtEUR(z.betrag)}${z.waehrung && z.waehrung !== "EUR" ? `<div class="ez-sub">${(z.betragOriginal ?? 0).toLocaleString("de-DE")} ${esc(z.waehrung)} @ ${z.kurs}</div>` : ""}</td>
           <td class="rechts">${z.quelle === "manuell" ? `<button class="btn klein" onclick="A.kostenFormular('${e.id}','${z.id}')">✎</button>` : `<span class="ez-sub" title="Automatisch aus ${z.quelle === 'anmeldung' ? 'Anmeldung' : z.quelle === 'reise' ? 'Reiseplanung' : 'Übernachtung'}">auto</span>`}</td>
-        </tr>`).join("") || '<tr><td colspan="5" class="leer">Noch keine Kosten. Eintritt, Fahrt und Hotel entstehen automatisch aus den Tabs „Anmeldung" und „Reise"; Verpflegung &amp; Sonstiges hier erfassen.</td></tr>'}
+        </tr>`).join("") || '<tr><td colspan="7" class="leer">Noch keine Kosten. Eintritt, Fahrt und Hotel entstehen automatisch aus den Tabs „Anmeldung" und „Reise"; Verpflegung &amp; Sonstiges hier erfassen.</td></tr>'}
+        ${zeilen.length ? `
+        <tr class="summen-zeile">
+          <td colspan="3"><b>Summe</b></td>
+          <td class="rechts"><b>${fmtEUR(zeilen.reduce((s, z) => s + (z.netto ?? z.betrag), 0))}</b></td>
+          <td class="rechts"><b>${fmtEUR(zeilen.reduce((s, z) => s + (z.ust ?? 0), 0))}</b></td>
+          <td class="rechts"><b>${fmtEUR(zeilen.reduce((s, z) => s + z.betrag, 0))}</b></td>
+          <td></td>
+        </tr>` : ""}
       </tbody>
     </table>
-    <p class="hinweis">Posten mit „auto" stammen aus Anmeldung, Reise oder Übernachtung und werden dort bearbeitet.</p>
+    <p class="hinweis">Posten mit „auto" stammen aus Anmeldung, Reise oder Übernachtung (Bruttobeträge, dort bearbeiten). Netto/USt und Fremdwährung werden bei manuellen Posten erfasst; in der Netto-Summe zählen Auto-Posten mit ihrem Bruttobetrag.</p>
   </div>`;
 }
 
 A.kostenFormular = function (evId, kostenId) {
   const k = kostenId ? listOf(S.kosten, evId).find(x => x.id === kostenId) : null;
+  const w = k?.waehrung || "EUR";
   openModal(k ? "Kostenposten bearbeiten" : "Kostenposten hinzufügen", `
     <form onsubmit="return A.kostenSpeichern(event,'${evId}','${kostenId || ""}')">
       <div class="form-reihe">
@@ -1522,18 +1538,65 @@ A.kostenFormular = function (evId, kostenId) {
         <label>Datum <input type="date" name="datum" value="${k?.datum || heute()}"></label>
       </div>
       <label>Beschreibung <input name="beschreibung" required placeholder="z. B. Mittagessen Tag 1" value="${esc(k?.beschreibung || "")}"></label>
-      <label>Betrag (€) <input type="number" step="0.01" min="0" name="betrag" required value="${k?.betrag ?? ""}"></label>
+      <div class="form-reihe">
+        <label>Betrag (Brutto) <input type="number" step="0.01" min="0" name="betrag" required value="${k?.betragOriginal ?? k?.betrag ?? ""}" oninput="A.kostenVorschau(this.form)"></label>
+        <label>Währung <select name="waehrung" onchange="A.kostenWaehrung(this.form)">${Object.keys(WAEHRUNGEN).map(x => `<option ${w === x ? "selected" : ""}>${x}</option>`).join("")}</select></label>
+      </div>
+      <div class="form-reihe">
+        <label>Kurs (1 Währung = … EUR) <input type="number" step="0.0001" min="0" name="kurs" value="${k?.kurs ?? WAEHRUNGEN[w]}" ${w === "EUR" ? "disabled" : ""} oninput="A.kostenVorschau(this.form)"></label>
+        <label>USt-Satz (%) <select name="ustSatz" onchange="A.kostenVorschau(this.form)">${UST_SAETZE.map(s => `<option value="${s}" ${(k?.ustSatz ?? 19) === s ? "selected" : ""}>${s} %</option>`).join("")}</select></label>
+      </div>
+      <div class="kosten-vorschau" id="kosten-vorschau"></div>
+      <p class="hinweis">Fremdwährung wird mit dem Kurs in EUR umgerechnet; der Kurs ist editierbar (Beleg-Kurs eintragen). Bei Auslandsrechnungen ggf. Reverse-Charge beachten – dann USt-Satz 0 % wählen.</p>
       <div class="modal-aktionen">
         ${k ? `<button type="button" class="btn gefahr" onclick="A.kostenLoeschen('${evId}','${k.id}')">Löschen</button>` : ""}
         <button type="submit" class="btn primaer">Speichern</button>
       </div>
     </form>`);
+  A.kostenVorschau(document.querySelector(".modal form"));
+};
+
+A.kostenVorschau = function (form) {
+  if (!form || !form.betrag) return;
+  const w = form.waehrung.value;
+  if (w === "EUR") { form.kurs.value = 1; form.kurs.disabled = true; } else { form.kurs.disabled = false; }
+  const kurs = Number(form.kurs.value) || 0;
+  const original = Number(form.betrag.value) || 0;
+  const brutto = original * kurs;
+  const satz = Number(form.ustSatz.value) || 0;
+  const netto = brutto / (1 + satz / 100);
+  const el = document.getElementById("kosten-vorschau");
+  if (el) el.innerHTML = `${w !== "EUR" ? esc(original.toLocaleString("de-DE")) + " " + esc(w) + " → " : ""}Netto <b>${fmtEUR(netto)}</b> + USt (${satz} %) <b>${fmtEUR(brutto - netto)}</b> = Brutto <b>${fmtEUR(brutto)}</b>`;
+};
+
+A.kostenWaehrung = async function (form) {
+  const w = form.waehrung.value;
+  form.kurs.value = WAEHRUNGEN[w] ?? 1;
+  A.kostenVorschau(form);
+  if (w === "EUR") return;
+  try { // Live-EZB-Kurs als Komfort; bei Offline-Betrieb bleibt der Richtwert stehen
+    const r = await fetch(`https://api.frankfurter.app/latest?from=${w}&to=EUR`);
+    const d = await r.json();
+    if (d?.rates?.EUR && form.waehrung.value === w) {
+      form.kurs.value = d.rates.EUR;
+      A.kostenVorschau(form);
+    }
+  } catch (e) { /* offline – Richtwert bleibt */ }
 };
 
 A.kostenSpeichern = function (evt, evId, kostenId) {
   evt.preventDefault();
   const f = new FormData(evt.target);
-  const daten = { kategorie: f.get("kategorie"), beschreibung: f.get("beschreibung"), betrag: Number(f.get("betrag")) || 0, datum: f.get("datum") };
+  const waehrung = f.get("waehrung") || "EUR";
+  const kurs = waehrung === "EUR" ? 1 : (Number(f.get("kurs")) || 1);
+  const betragOriginal = Number(f.get("betrag")) || 0;
+  const ustSatz = Number(f.get("ustSatz")) || 0;
+  const brutto = Math.round(betragOriginal * kurs * 100) / 100;
+  const netto = Math.round(brutto / (1 + ustSatz / 100) * 100) / 100;
+  const daten = {
+    kategorie: f.get("kategorie"), beschreibung: f.get("beschreibung"), datum: f.get("datum"),
+    betrag: brutto, waehrung, kurs, betragOriginal, ustSatz, netto, ust: Math.round((brutto - netto) * 100) / 100
+  };
   const arr = listOf(S.kosten, evId);
   if (kostenId) Object.assign(arr.find(x => x.id === kostenId), daten);
   else arr.push({ id: uid(), ...daten });

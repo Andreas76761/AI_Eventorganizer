@@ -67,6 +67,13 @@ a:hover { text-decoration: underline; }
 .sharing-leiste { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--karte2); border-radius: 10px; padding: 9px 12px; margin-bottom: 12px; font-size: 13px; }
 .sharing-leiste .chip-reihe { flex: 1; }
 
+.kosten-vorschau {
+  background: var(--karte2); border: 1px dashed var(--rand); border-radius: 9px;
+  padding: 9px 13px; font-size: 13px; color: var(--text2); margin-bottom: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.kosten-vorschau b { color: var(--text); }
+
 /* ---------- Kurzprofile ---------- */
 .profil-gitter { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
 .profil-karte {
