@@ -999,41 +999,106 @@ function vCommunity() {
   const alleTreffen = [];
   Object.entries(S.treffen).forEach(([evId, arr]) => arr.forEach(t => alleTreffen.push({ ...t, evId })));
   return `
-  <div class="kopf"><h1>Community</h1><p class="unter">Mitreisende, Mitfahrgelegenheiten und gemeinsame Treffen</p></div>
-  <div class="spalten">
-    <div class="karte">
-      <div class="karte-kopf"><h2>Mitglieder (${S.users.length})</h2><button class="btn primaer klein" onclick="A.userFormular()">+ Mitglied</button></div>
-      ${S.users.map(u => `
-        <div class="user-zeile">
-          <span class="avatar" style="background:${u.farbe}">${esc(u.name[0] || "?")}</span>
-          <div class="ez-mitte">
-            <div class="ez-name">${esc(u.name)} ${u.istIch ? '<span class="tag">Ich</span>' : ""} ${S.session === u.id ? '<span class="tag aktiv-tag">angemeldet</span>' : ""} ${u.verifiziert ? '<span class="tag" title="E-Mail bestätigt">✓ E-Mail</span>' : ""}</div>
-            <div class="ez-sub">${esc([u.stadt, u.email].filter(Boolean).join(" · ")) || "–"}</div>
-          </div>
-          ${S.session && S.session !== u.id ? `<button class="btn klein" onclick="A.dmOeffnen('${u.id}')" title="Nachricht senden">✉</button>` : ""}
-          <button class="btn klein" onclick="A.userFormular('${u.id}')">✎</button>
-        </div>`).join("")}
-      <p class="hinweis">Beiträge, Treffen-Anmeldungen, Mitfahrten und Nachrichten laufen über den per E-Mail angemeldeten Nutzer (Anmeldung unten links in der Seitenleiste).</p>
+  <div class="kopf"><h1>Community</h1><p class="unter">Profile, Mitfahrgelegenheiten und gemeinsame Treffen</p></div>
+  <div class="karte">
+    <div class="karte-kopf"><h2>Mitglieder &amp; Kurzprofile (${S.users.length})</h2><button class="btn primaer klein" onclick="A.userFormular()">+ Mitglied</button></div>
+    <div class="profil-gitter">
+      ${S.users.map(u => profilKarte(u)).join("")}
     </div>
+    <p class="hinweis">Profil per ✎ pflegen: Interessen, Fähigkeiten, aktuelles Projekt sowie „Suche/Biete" für gezieltes Netzwerken auf der Messe. Beiträge, Treffen, Mitfahrten und Nachrichten laufen über den per E-Mail angemeldeten Nutzer.</p>
+  </div>
+  <div class="spalten">
     <div class="karte">
       <div class="karte-kopf"><h2>Mitfahrgelegenheiten</h2></div>
       ${alleMitfahrten.map(m => mitfahrtZeile(m, m.evId, true)).join("") || '<p class="leer">Keine Mitfahrgelegenheiten. Biete eine im Community-Tab einer Veranstaltung an.</p>'}
     </div>
-  </div>
-  <div class="karte">
-    <div class="karte-kopf"><h2>Geplante Treffen</h2></div>
-    ${alleTreffen.sort((a, b) => (a.zeit || "").localeCompare(b.zeit || "")).map(t => treffenZeile(t, t.evId, true)).join("") || '<p class="leer">Keine Treffen geplant – z. B. gemeinsames Mittagessen oder Nachbetrachtung im Community-Tab einer Veranstaltung anlegen.</p>'}
+    <div class="karte">
+      <div class="karte-kopf"><h2>Geplante Treffen</h2></div>
+      ${alleTreffen.sort((a, b) => (a.zeit || "").localeCompare(b.zeit || "")).map(t => treffenZeile(t, t.evId, true)).join("") || '<p class="leer">Keine Treffen geplant.</p>'}
+    </div>
   </div>`;
 }
 
+function chipListe(text, klasse) {
+  return String(text || "").split(",").map(x => x.trim()).filter(Boolean)
+    .map(x => `<span class="chip ${klasse}">${esc(x)}</span>`).join("");
+}
+
+function profilKarte(u) {
+  const meta = [u.stadt, u.alter ? u.alter + " Jahre" : "", u.geschlecht].filter(Boolean).join(" · ");
+  return `
+  <div class="profil-karte" onclick="A.profil('${u.id}')">
+    <div class="profil-kopf">
+      <span class="avatar" style="background:${u.farbe}">${esc((u.name || "?")[0])}</span>
+      <div class="ez-mitte">
+        <div class="ez-name">${esc(u.name)} ${u.istIch ? '<span class="tag">Ich</span>' : ""} ${S.session === u.id ? '<span class="tag aktiv-tag">angemeldet</span>' : ""}</div>
+        <div class="ez-sub">${esc([u.firma, meta].filter(Boolean).join(" · ")) || "Profil noch leer – ✎ ausfüllen"}</div>
+      </div>
+      ${S.session && S.session !== u.id ? `<button class="btn klein" onclick="event.stopPropagation();A.dmOeffnen('${u.id}')" title="Nachricht senden">✉</button>` : ""}
+      <button class="btn klein" onclick="event.stopPropagation();A.userFormular('${u.id}')" title="Profil bearbeiten">✎</button>
+    </div>
+    ${u.interessen || u.faehigkeiten ? `<div class="chip-reihe klein-chips">${chipListe(u.interessen, "interesse")}${chipListe(u.faehigkeiten, "faehigkeit")}</div>` : ""}
+    ${u.projekt ? `<div class="profil-zeile">🛠 ${esc(u.projekt)}</div>` : ""}
+    ${u.suche || u.biete ? `
+    <div class="such-biete">
+      ${u.suche ? `<div class="sb-box sucht">🔎 <b>Sucht:</b> ${esc(u.suche)}</div>` : ""}
+      ${u.biete ? `<div class="sb-box bietet">🤝 <b>Bietet:</b> ${esc(u.biete)}</div>` : ""}
+    </div>` : ""}
+  </div>`;
+}
+
+A.profil = function (userId) {
+  const u = user(userId);
+  if (!u) return;
+  openModal("Profil: " + u.name, `
+    <div class="profil-kopf" style="margin-bottom:14px">
+      <span class="avatar" style="background:${u.farbe};width:48px;height:48px;font-size:20px">${esc((u.name || "?")[0])}</span>
+      <div class="ez-mitte">
+        <div class="ez-name" style="font-size:17px">${esc(u.name)} ${u.verifiziert ? '<span class="tag" title="E-Mail bestätigt">✓ E-Mail</span>' : ""}</div>
+        <div class="ez-sub">${esc([u.firma, u.stadt].filter(Boolean).join(" · ")) || "–"}</div>
+      </div>
+    </div>
+    <table class="info-tabelle">
+      <tr><td>Wohnort</td><td>${esc(u.stadt) || "–"}</td></tr>
+      <tr><td>Firma</td><td>${esc(u.firma) || "–"}</td></tr>
+      <tr><td>Alter</td><td>${u.alter || "–"}</td></tr>
+      <tr><td>Geschlecht</td><td>${esc(u.geschlecht) || "–"}</td></tr>
+      <tr><td>E-Mail</td><td>${esc(u.email) || "–"}</td></tr>
+      <tr><td>Interessen</td><td><span class="chip-reihe klein-chips">${chipListe(u.interessen, "interesse") || "–"}</span></td></tr>
+      <tr><td>Fähigkeiten</td><td><span class="chip-reihe klein-chips">${chipListe(u.faehigkeiten, "faehigkeit") || "–"}</span></td></tr>
+      <tr><td>Projekt</td><td>${esc(u.projekt) || "–"}</td></tr>
+      <tr><td>🔎 Sucht</td><td>${esc(u.suche) || "–"}</td></tr>
+      <tr><td>🤝 Bietet</td><td>${esc(u.biete) || "–"}</td></tr>
+    </table>
+    <div class="modal-aktionen">
+      ${S.session && S.session !== u.id ? `<button class="btn" onclick="closeModal();A.dmOeffnen('${u.id}')">✉ Nachricht senden</button>` : ""}
+      <button class="btn primaer" onclick="closeModal();A.userFormular('${u.id}')">✎ Bearbeiten</button>
+    </div>`);
+};
+
+
 A.userFormular = function (userId) {
   const u = userId ? user(userId) : null;
-  openModal(u ? "Mitglied bearbeiten" : "Neues Mitglied", `
+  openModal(u ? "Profil bearbeiten" : "Neues Mitglied", `
     <form onsubmit="return A.userSpeichern(event,'${userId || ""}')">
-      <label>Name <input name="name" required value="${esc(u?.name || "")}"></label>
       <div class="form-reihe">
+        <label>Name <input name="name" required value="${esc(u?.name || "")}"></label>
         <label>E-Mail <input type="email" name="email" value="${esc(u?.email || "")}"></label>
-        <label>Stadt <input name="stadt" value="${esc(u?.stadt || "")}"></label>
+      </div>
+      <div class="form-reihe">
+        <label>Wohnort <input name="stadt" value="${esc(u?.stadt || "")}"></label>
+        <label>Firma / Organisation <input name="firma" value="${esc(u?.firma || "")}"></label>
+      </div>
+      <div class="form-reihe">
+        <label>Alter <input type="number" name="alter" min="14" max="99" value="${u?.alter ?? ""}"></label>
+        <label>Geschlecht <select name="geschlecht">${["", "weiblich", "männlich", "divers"].map(g => `<option value="${g}" ${(u?.geschlecht || "") === g ? "selected" : ""}>${g || "keine Angabe"}</option>`).join("")}</select></label>
+      </div>
+      <label>Interessen <input name="interessen" placeholder="kommagetrennt, z. B. GenAI, Robotik, AI Act" value="${esc(u?.interessen || "")}"></label>
+      <label>Fähigkeiten <input name="faehigkeiten" placeholder="kommagetrennt, z. B. Python, Prompt Engineering, Vertrieb" value="${esc(u?.faehigkeiten || "")}"></label>
+      <label>Aktuelles Projekt <input name="projekt" placeholder="woran arbeitest du gerade?" value="${esc(u?.projekt || "")}"></label>
+      <div class="form-reihe">
+        <label>🔎 Suche <input name="suche" placeholder="z. B. Mitgründer, GPU-Sponsor, Beta-Tester" value="${esc(u?.suche || "")}"></label>
+        <label>🤝 Biete <input name="biete" placeholder="z. B. Mentoring, API-Zugang, Kontakte" value="${esc(u?.biete || "")}"></label>
       </div>
       <label>Farbe <input type="color" name="farbe" value="${u?.farbe || "#38bdf8"}"></label>
       <div class="modal-aktionen">
@@ -1046,7 +1111,12 @@ A.userFormular = function (userId) {
 A.userSpeichern = function (evt, userId) {
   evt.preventDefault();
   const f = new FormData(evt.target);
-  const daten = { name: f.get("name"), email: f.get("email"), stadt: f.get("stadt"), farbe: f.get("farbe") };
+  const daten = {
+    name: f.get("name"), email: f.get("email"), stadt: f.get("stadt"), farbe: f.get("farbe"),
+    firma: f.get("firma"), alter: f.get("alter") ? Number(f.get("alter")) : "", geschlecht: f.get("geschlecht"),
+    interessen: f.get("interessen"), faehigkeiten: f.get("faehigkeiten"), projekt: f.get("projekt"),
+    suche: f.get("suche"), biete: f.get("biete")
+  };
   if (userId) Object.assign(user(userId), daten);
   else S.users.push({ id: uid(), ...daten, istIch: false });
   save(); closeModal(); render();

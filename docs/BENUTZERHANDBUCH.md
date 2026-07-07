@@ -83,7 +83,7 @@ Globale Auswertung über alle Veranstaltungen: Gesamt-KPIs, Verteilung nach Kate
 
 ## 7. Community & Nachrichten
 
-- **Mitglieder:** unter „Community“ anlegen/bearbeiten; zusätzlich registriert jede neue Login-E-Mail automatisch ein Mitglied.
+- **Mitglieder & Kurzprofile:** unter „Community“ anlegen/bearbeiten; zusätzlich registriert jede neue Login-E-Mail automatisch ein Mitglied. Jedes Profil kann enthalten: Wohnort, Firma, Alter, Geschlecht, **Interessen** und **Fähigkeiten** (als Chips), **aktuelles Projekt** sowie **🔎 Suche / 🤝 Biete** für gezieltes Netzwerken auf der Messe. Klick auf eine Profilkarte öffnet die Detailansicht mit „Nachricht senden“.
 - **Treffen:** je Veranstaltung planbar (Mittagessen, vor/während der Konferenz, Nachbetrachtung …) mit Zeit, Ort, Teilnehmern – **„Teilnehmen/Absagen“** per Klick.
 - **Mitfahrgelegenheiten:** als Fahrer anbieten (Abfahrtsort, Zeit, Plätze); andere steigen mit **„Mitfahren“** ein – die Platzverwaltung zählt mit.
 - **Austausch:** Kommentar-Feed je Veranstaltung.
