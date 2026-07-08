@@ -32,7 +32,8 @@ function defaultState() {
     speaker: {},       // evId -> [{id, name, firma, rolle, thema, bio, linkedin, rating}]
     trends: {},        // evId -> [{id, titel, relevanz(1-5), beschreibung}]
     nuggets: {},       // evId -> [{id, text, quelle}]
-    aufgaben: {}       // evId -> [{id, text, wer(userId), erledigt}]
+    aufgaben: {},      // evId -> [{id, text, wer(userId), erledigt}]
+    posts: {}          // evId -> {vor, waehrend, nach} – manuell angepasste LinkedIn-Texte
   };
 }
 
@@ -487,6 +488,7 @@ function render() {
     case "kosten": main.innerHTML = vKosten(); break;
     case "community": main.innerHTML = vCommunity(); break;
     case "nachrichten": main.innerHTML = vNachrichten(); break;
+    case "posts": main.innerHTML = vPosts(); nachladenPostBilder(); break;
     case "event": main.innerHTML = vEventDetail(); nachladenMaterialien(); break;
     default: main.innerHTML = vDashboard();
   }
@@ -1596,6 +1598,204 @@ A.dmSenden = function (evt, partnerId) {
     if (v) v.scrollTop = v.scrollHeight;
   }
   return false;
+};
+
+/* ---------------- Ansicht: Posts (LinkedIn: vorher / live / Recap) ---------------- */
+
+let postsEvId = null;
+const POST_PHASEN = [
+  ["vor", "📅 Vor dem Termin", "SAVE THE DATE"],
+  ["waehrend", "🔴 Während des Termins", "LIVE VOR ORT"],
+  ["nach", "✅ Nach dem Termin", "MEIN RECAP"]
+];
+
+A.postsEvent = function (evId) { postsEvId = evId; render(); };
+
+function hashtags(e) {
+  const basis = ["#AI", "#KI", "#" + (e.kurz || e.name).replace(/[^\wäöüÄÖÜß]/g, ""), "#" + e.ort.replace(/[^\wäöüÄÖÜß]/g, ""), "#" + (e.kategorie || "Konferenz"), "#Networking"];
+  return [...new Set(basis)].join(" ");
+}
+
+function postText(e, phase) {
+  const gespeichert = S.posts[e.id]?.[phase];
+  if (gespeichert != null) return gespeichert;
+  const sessions = (S.sessions[e.id] || []);
+  const highlights = [...sessions].sort((a, b) => (b.favorit ? 1 : 0) - (a.favorit ? 1 : 0)).slice(0, 3);
+  const topSpeaker = [...(S.speaker[e.id] || [])].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 2);
+  const trends = [...(S.trends[e.id] || [])].sort((a, b) => (b.relevanz || 0) - (a.relevanz || 0)).slice(0, 3);
+  const nugget = (S.nuggets[e.id] || [])[0];
+  const treffen = (S.treffen[e.id] || []).length;
+  const z = [];
+  if (phase === "vor") {
+    z.push(`📅 ${eventZeitraum(e)} – ich bin beim ${e.name} in ${e.ort}${e.venue ? " (" + e.venue + ")" : ""}!`);
+    z.push("");
+    if (highlights.length) {
+      z.push("Worauf ich mich besonders freue:");
+      highlights.forEach(s => z.push(`▪️ ${s.titel}${s.buehne ? " (" + s.buehne + ")" : ""}`));
+      z.push("");
+    } else if (e.beschreibung) {
+      z.push(e.beschreibung);
+      z.push("");
+    }
+    if (topSpeaker.length) { z.push(`Auf meiner Liste: ${topSpeaker.map(s => s.name + (s.firma ? " (" + s.firma + ")" : "")).join(" und ")}.`); z.push(""); }
+    if (treffen) { z.push(`Wir organisieren schon ${treffen} Treffen vor Ort – Mittagessen, Austausch, Nachbetrachtung.`); z.push(""); }
+    z.push("Wer von euch ist auch dort? Kommentiert kurz – ich freue mich über jedes Wiedersehen und neue Gesichter! 👋");
+  } else if (phase === "waehrend") {
+    z.push(`🔴 Live vom ${e.name} in ${e.ort}!`);
+    z.push("");
+    if (highlights.length) {
+      z.push("Auf meinem Plan heute:");
+      highlights.forEach(s => z.push(`▪️ ${s.start ? s.start + " Uhr · " : ""}${s.titel}`));
+      z.push("");
+    }
+    if (nugget) { z.push(`Erste Erkenntnis des Tages: „${nugget.text}“${nugget.quelle ? " (" + nugget.quelle + ")" : ""}`); z.push(""); }
+    else { z.push("Die ersten Gespräche laufen – die Energie hier ist großartig."); z.push(""); }
+    z.push("Ihr seid auch hier? Schreibt mir eine Nachricht – Zeit für einen Kaffee findet sich immer. ☕");
+  } else {
+    z.push(`Das war der ${e.name} ${e.start.slice(0, 4)} in ${e.ort} – mein Recap. 🧵`);
+    z.push("");
+    const stats = [];
+    if (sessions.length) stats.push(`${sessions.length} Sessions`);
+    if ((S.speaker[e.id] || []).length) stats.push(`${(S.speaker[e.id] || []).length} Speaker`);
+    if ((S.nuggets[e.id] || []).length) stats.push(`${(S.nuggets[e.id] || []).length} Kernerkenntnisse`);
+    if (stats.length) { z.push(`In Zahlen: ${stats.join(" · ")}.`); z.push(""); }
+    if (trends.length) {
+      z.push("Meine Top-Trends:");
+      trends.forEach((t, i) => z.push(`${i + 1}️⃣ ${t.titel}${t.beschreibung ? " – " + t.beschreibung : ""}`));
+      z.push("");
+    }
+    if (nugget) { z.push(`Der Satz, der hängen bleibt: „${nugget.text}“${nugget.quelle ? " (" + nugget.quelle + ")" : ""}`); z.push(""); }
+    z.push("Danke an alle für die Gespräche und Begegnungen – bis zum nächsten Mal! 🙌");
+    z.push("Was war euer Highlight? Ab in die Kommentare.");
+  }
+  z.push("");
+  z.push(hashtags(e));
+  return z.join("\n");
+}
+
+/* ---- Post-Bild (1200×627, LinkedIn-Format) ---- */
+
+function zeichnePostBild(cv, e, phase) {
+  const [, , badge] = POST_PHASEN.find(p => p[0] === phase);
+  const ctx = cv.getContext("2d");
+  const W = cv.width = 1200, H = cv.height = 627;
+  // Hintergrund
+  ctx.fillStyle = "#0b0e17"; ctx.fillRect(0, 0, W, H);
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0, "rgba(129,140,248,0.16)"); grad.addColorStop(1, e.farbe + "33");
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+  // Deko-Kreise rechts
+  ctx.globalAlpha = 0.22; ctx.fillStyle = e.farbe;
+  ctx.beginPath(); ctx.arc(1080, 140, 180, 0, 7); ctx.fill();
+  ctx.globalAlpha = 0.12; ctx.beginPath(); ctx.arc(1010, 520, 240, 0, 7); ctx.fill();
+  ctx.globalAlpha = 1;
+  // Badge
+  ctx.fillStyle = e.farbe; ctx.beginPath(); ctx.roundRect(70, 70, 34 + badge.length * 17, 54, 27); ctx.fill();
+  ctx.fillStyle = "#0b0e17"; ctx.font = "bold 28px Arial"; ctx.textBaseline = "middle";
+  ctx.fillText(badge, 92, 99);
+  // Titel (umbrechen)
+  ctx.fillStyle = "#e7eaf6"; ctx.font = "bold 62px Arial"; ctx.textBaseline = "alphabetic";
+  const worte = e.name.split(" ");
+  let zeile = "", y = 240;
+  worte.forEach(w => {
+    if (ctx.measureText(zeile + " " + w).width > 900 && zeile) { ctx.fillText(zeile, 70, y); y += 74; zeile = w; }
+    else zeile = zeile ? zeile + " " + w : w;
+  });
+  ctx.fillText(zeile, 70, y);
+  // Datum & Ort
+  ctx.fillStyle = "#9aa3c7"; ctx.font = "38px Arial";
+  ctx.fillText(`${eventZeitraum(e)}  ·  ${e.ort}${e.venue ? " – " + e.venue : ""}`.slice(0, 60), 70, y + 66);
+  // Phasen-Zeile
+  const sessions = (S.sessions[e.id] || []).length;
+  const speaker = (S.speaker[e.id] || []).length;
+  const trends = (S.trends[e.id] || []).length;
+  let unten = "";
+  if (phase === "vor") unten = "Wer ist auch dort? 👋";
+  else if (phase === "waehrend") unten = "Jetzt vor Ort – meldet euch für einen Kaffee ☕";
+  else unten = [sessions ? sessions + " Sessions" : "", speaker ? speaker + " Speaker" : "", trends ? trends + " Trends" : ""].filter(Boolean).join("  ·  ") || "Danke für die Begegnungen 🙌";
+  ctx.fillStyle = "#22d3ee"; ctx.font = "bold 36px Arial";
+  ctx.fillText(unten, 70, 520);
+  // Fußzeile
+  ctx.fillStyle = "#9aa3c7"; ctx.font = "26px Arial";
+  ctx.fillText("🤖 AI Messe Guide", 70, 575);
+}
+
+function nachladenPostBilder() {
+  if (route.view !== "posts" || !postsEvId) return;
+  const e = ev(postsEvId);
+  if (!e) return;
+  POST_PHASEN.forEach(([phase]) => {
+    const cv = document.getElementById("post-cv-" + phase);
+    if (cv) zeichnePostBild(cv, e, phase);
+  });
+}
+
+function vPosts() {
+  const events = [...S.events].sort((a, b) => a.start.localeCompare(b.start));
+  if (!postsEvId || !ev(postsEvId)) {
+    const kommend = events.filter(e => e.end >= heute());
+    postsEvId = (kommend[0] || events[0])?.id || null;
+  }
+  const e = ev(postsEvId);
+  if (!e) return '<div class="kopf"><h1>Posts</h1></div><div class="karte"><p class="leer">Keine Veranstaltungen vorhanden.</p></div>';
+  return `
+  <div class="kopf"><h1>LinkedIn-Posts</h1><p class="unter">Drei fertige Posts je Veranstaltung – aus Messedaten, Agenda und Erkenntnissen generiert. Texte sind editierbar; Änderungen werden gespeichert.</p></div>
+  <div class="werkzeuge">
+    <select onchange="A.postsEvent(this.value)" style="max-width:420px;margin-top:0">
+      ${events.map(x => `<option value="${x.id}" ${x.id === postsEvId ? "selected" : ""}>${esc(x.name)} (${fmtDatumKurz(x.start)})</option>`).join("")}
+    </select>
+    <span class="ez-sub">Datenbasis: ${(S.sessions[e.id] || []).length} Sessions · ${(S.speaker[e.id] || []).length} Speaker · ${(S.trends[e.id] || []).length} Trends · ${(S.nuggets[e.id] || []).length} Nuggets</span>
+  </div>
+  <div class="post-gitter">
+    ${POST_PHASEN.map(([phase, label]) => `
+    <div class="karte post-karte">
+      <h2>${label}</h2>
+      <canvas id="post-cv-${phase}" class="post-bild" title="Share-Bild 1200×627 (LinkedIn)"></canvas>
+      <textarea class="post-text" id="post-text-${phase}" rows="14" onchange="A.postSpeichern('${e.id}','${phase}',this.value)">${esc(postText(e, phase))}</textarea>
+      <div class="knopf-reihe" style="margin-top:10px">
+        <button class="btn klein primaer" onclick="A.postKopieren('${phase}')">📋 Text kopieren</button>
+        <button class="btn klein" onclick="A.postBildDownload('${e.id}','${phase}')">⬇ Bild (PNG)</button>
+        <button class="btn klein" onclick="A.postReset('${e.id}','${phase}')" title="Auf generierten Text zurücksetzen">↺</button>
+      </div>
+    </div>`).join("")}
+  </div>
+  <p class="hinweis">Tipp: Je mehr Agenda (Programm-Tab), Speaker und Erkenntnisse (Trends &amp; Nuggets) gepflegt sind, desto konkreter werden die Posts. Bild herunterladen und bei LinkedIn zusammen mit dem Text hochladen.</p>`;
+}
+
+A.postSpeichern = function (evId, phase, text) {
+  S.posts[evId] = S.posts[evId] || {};
+  S.posts[evId][phase] = text;
+  save();
+};
+
+A.postReset = function (evId, phase) {
+  if (S.posts[evId]) delete S.posts[evId][phase];
+  save(); render();
+};
+
+A.postKopieren = async function (phase) {
+  const ta = document.getElementById("post-text-" + phase);
+  if (!ta) return;
+  try {
+    await navigator.clipboard.writeText(ta.value);
+    alert("Post-Text kopiert – bereit zum Einfügen bei LinkedIn.");
+  } catch (e2) {
+    ta.select();
+    alert("Zwischenablage blockiert – Text ist markiert, bitte Strg+C drücken.");
+  }
+};
+
+A.postBildDownload = function (evId, phase) {
+  const cv = document.getElementById("post-cv-" + phase);
+  const e = ev(evId);
+  if (!cv || !e) return;
+  cv.toBlob(blob => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `linkedin-${phase}-${(e.kurz || e.name).replace(/[^\wäöüÄÖÜß-]+/g, "_")}.png`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }, "image/png");
 };
 
 /* ---------------- Ansicht: Event-Detail ---------------- */

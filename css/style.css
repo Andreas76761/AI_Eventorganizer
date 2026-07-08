@@ -125,6 +125,12 @@ a:hover { text-decoration: underline; }
 .folien-galerie { display: flex; flex-direction: column; gap: 12px; }
 .folie { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--rand); background: #fff; }
 
+/* ---------- LinkedIn-Posts ---------- */
+.post-gitter { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; }
+.post-karte h2 { margin-bottom: 10px; }
+.post-bild { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--rand); display: block; margin-bottom: 10px; }
+.post-text { width: 100%; font-size: 13px; line-height: 1.55; resize: vertical; }
+
 /* ---------- Community: Burger-Menü & Matching ---------- */
 .community-kopf { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
 .burger-wrap { position: relative; flex-shrink: 0; }

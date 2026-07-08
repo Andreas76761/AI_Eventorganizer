@@ -6,6 +6,8 @@
 
 Seit 1.0 sind dazugekommen:
 
+- **📣 Posts-Register:** je Veranstaltung drei generierte LinkedIn-Posts (Save-the-Date / Live / Recap) aus Messedaten, Agenda und Erkenntnissen – mit Share-Bild (1200×627), editierbar, kopierbar, als PNG herunterladbar
+
 - **Festival-App-Parität:** Programm-Tab (Sessions mit Tag/Zeit/Bühne, ★-Tagesplan), Speaker-Verzeichnis mit Bio & Promi-Rating, automatisches Firmenverzeichnis, Statistik-Bereich, interaktive Deutschlandkarte mit Stadt-Chips & Kategorie-Filter, Trends & Nuggets, In-App-Foliengalerie (PDF), 🎤 Diktierfunktion für Notizen, 🔎 OCR für Vortragsfotos (durchsuchbar, als Notiz übernehmbar), automatische Foto-Verkleinerung beim Upload
 - **Team-Kollaboration ohne Server:** Event-Paket exportieren/importieren mit Zusammenführen statt Ersetzen, „Wer kommt mit?“-Steckbrief, Treffen-Kalendereinladung (.ics + Mail-Entwurf), Terminabstimmung (Doodle-light), Session-Abdeckung im Team (Laufzettel, Unbesetzt-Filter), Aufgabenliste mit Zuständigen
 - **Community-Ausbau:** ☰-Bereiche, Kurzprofile (Firma, Alter, Wohnort, Interessen, Fähigkeiten, Projekt, LinkedIn, Suche/Biete), automatisches Matching, Direktnachrichten mit Lesestatus

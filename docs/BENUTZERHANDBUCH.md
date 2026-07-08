@@ -128,6 +128,15 @@ Dateien liegen in der IndexedDB deines Browsers (kein automatischer Cloud-Upload
 
 ---
 
+## 8b. LinkedIn-Posts (📣 Posts)
+
+Das Register **📣 Posts** erzeugt je Veranstaltung drei fertige LinkedIn-Beiträge:
+- **📅 Vor dem Termin** („Save the Date“): Datum/Ort, deine Programm-Highlights (★-Favoriten zuerst), Top-Speaker, Anzahl geplanter Treffen, „Wer ist auch dort?“-CTA
+- **🔴 Während des Termins** („Live vor Ort“): Tagesplan, erste Erkenntnis (aus den Nuggets), Kaffee-CTA
+- **✅ Nach dem Termin** („Recap“): Zahlen (Sessions/Speaker/Erkenntnisse), deine Top-Trends nummeriert, das Zitat des Events, Dank + Frage an die Community
+
+Zu jedem Post wird ein **Share-Bild im LinkedIn-Format (1200×627)** im Design der Veranstaltung generiert (Phase-Badge, Titel, Datum, Ort). Die Texte sind **direkt editierbar** (Änderungen werden gespeichert, ↺ setzt auf den generierten Text zurück), „📋 Text kopieren“ legt sie in die Zwischenablage, „⬇ Bild (PNG)“ lädt die Grafik herunter. Faustregel: Je besser Programm, Speaker und Trends & Nuggets gepflegt sind, desto konkreter die Posts.
+
 ## 9. Konto, Datenschutz & Sicherheit
 
 Über **⚙ Konto & Daten** (Seitenleiste):
