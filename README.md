@@ -1,18 +1,14 @@
 # AI Messe Guide 2026
 
-Verwaltungs-App für AI-Messen, -Konferenzen und -Veranstaltungen in Deutschland. Läuft als statisches Frontend (Vercel-tauglich) mit optionalem Supabase-Backend (Auth mit MFA, Cloud-Sync, DSGVO-Löschung) – ohne Konfiguration komplett lokal im Browser.
+Verwaltungs-App für AI-Messen, -Konferenzen und -Veranstaltungen in Deutschland. Läuft als statisches Frontend mit optionalem Supabase-Backend (Auth mit MFA, Cloud-Sync, DSGVO-Löschung) – ohne Konfiguration komplett lokal im Browser.
 
-## Veröffentlichung (GitHub → Vercel → Supabase)
+**🌐 Live:** https://ai-messe-guide.vercel.app · **Doku:** [Benutzerhandbuch](docs/BENUTZERHANDBUCH.md) · [Release-Notes](docs/RELEASE.md) · [Präsentation (PDF)](docs/AI_Messe_Guide_Praesentation.pdf)
 
-1. **GitHub:** Repository erstellen und pushen (`git init` ist bereits erledigt):
-   ```
-   git remote add origin https://github.com/DEIN-NAME/ai-messe-guide.git
-   git push -u origin main
-   ```
-2. **Supabase:** Projekt anlegen (Region EU, z. B. Frankfurt) → SQL-Editor → Inhalt von `supabase/schema.sql` ausführen → unter *Authentication* E-Mail-Anmeldung + MFA (TOTP) aktivieren → *Project Settings → API*: URL und anon-Key kopieren.
-3. **Konfiguration:** `js/config.example.js` nach `js/config.js` kopieren und Werte eintragen (steht in `.gitignore`). Für Vercel: Datei im Dashboard als Teil des Deployments pflegen oder per Build-Step aus Umgebungsvariablen erzeugen.
-4. **Vercel:** `vercel` im Projektordner ausführen (CLI ist installiert) oder das GitHub-Repo im Vercel-Dashboard importieren – keine Build-Einstellungen nötig (statische Site, `vercel.json` liegt bei).
-5. **Rechtliches vor dem Livegang:** Platzhalter in `rechtliches.html` (Impressum) und `datenschutz.html` (Verantwortlicher) ausfüllen – ohne diese Angaben nicht öffentlich betreiben.
+## Deployment-Status
+
+- **GitHub → Vercel ist gekoppelt:** Jeder Push auf `main` deployt automatisch nach https://ai-messe-guide.vercel.app (Projekt `ai-messe-guide`, statische Site, `vercel.json` mit Security-Headern).
+- **Supabase (optional, für Cloud-Login/MFA/Sync):** Projekt anlegen (EU-Region) → `supabase/schema.sql` im SQL-Editor ausführen → MFA (TOTP) aktivieren → URL + anon-Key in `js/config.js` (Vorlage `js/config.example.js`; Datei ist gitignored).
+- **⚠️ Rechtliches:** Impressum (`rechtliches.html`) und Verantwortlicher (`datenschutz.html`) enthalten aktuell **Mustermann-Beispieldaten** – vor ernsthaftem öffentlichen Betrieb durch echte Angaben ersetzen (gelbe Hinweiskästen markieren die Stellen).
 
 ## Betriebsmodi
 
@@ -31,14 +27,19 @@ Verwaltungs-App für AI-Messen, -Konferenzen und -Veranstaltungen in Deutschland
 
 ## Funktionen
 
-- **Dashboard** – KPIs, nächste Veranstaltung mit Countdown, Kostenverteilung, letzte Community-Beiträge
+- **Dashboard** – KPIs, nächste Veranstaltung mit Countdown, Kostenaufteilung (Eintritt/Fahrt/Hotel/Verpflegung) je Kategorie und je Veranstaltung, letzte Community-Beiträge
 - **Veranstaltungskalender** – Monatsansicht + Jahresliste, eigene Veranstaltungen anlegen/bearbeiten
+- **Veranstaltungen mit ☰-Bereichen** – Übersicht, **interaktive Deutschlandkarte** (Stadt-Chips, Kategorie-Filter, Inline-Detailpanel), Zeitleiste, Merkliste, Archiv, **Statistik** (Kategorien, Städte, Themen, Top-Firmen)
+- **Programm je Veranstaltung** – Sessions mit Tag/Zeit/Bühne/Thema, Tages- und Bühnen-Filter, ★-Favoriten als persönlicher Tagesplan, **Team-Abdeckung** (wer geht rein, Laufzettel je Person, Unbesetzt-Filter)
+- **Speaker & Firmen** – Referenten mit Bio, Themenfilter und Promi-Rating (1–5 ★); Firmenverzeichnis automatisch aggregiert
+- **Trends & Nuggets** – Nachbetrachtung je Veranstaltung: Trends mit Relevanz, Kernaussagen mit Quelle
 - **Anmeldung & Bezahlung** – Status (Interessiert → Angemeldet → Bezahlt → Besucht), Tickettyp, Zahlungsart, Bestellnummer. Die App *verwaltet* den Zahlungsstatus; gebucht wird beim Veranstalter.
 - **Reise** – Reiseabschnitte mit Pkw, Bahn, Flug, ÖPNV, Fernbus u. a. inkl. Zeiten und Kosten; Übernachtungen
-- **Kosten** – Eintritt, Fahrtkosten, Übernachtung entstehen automatisch aus Anmeldung/Reise; Verpflegung & Sonstiges manuell; Auswertung nach Kategorie und Veranstaltung; CSV-Export
-- **Community** – weitere Nutzer anlegen, Teilnehmer je Veranstaltung, Mitfahrgelegenheiten (anbieten/mitfahren), Treffen (Mittagessen, vor/während der Konferenz, Nachbetrachtung), Austausch-Feed je Veranstaltung
-- **Materialien** – Notizen, Präsentationen/Dokumente und Bilder je Veranstaltung (Upload, Download, Galerie)
-- **Auswahlliste** – 28 kuratierte AI-Veranstaltungen 2025/2026 (Quellen: Web-Recherche + eigener Google-Kalender inkl. Abos „KI-Café“/„AI xpress“); Teilnahme Ja/Nein, Kosten editierbar; „Ja“ übernimmt das Event in die App
+- **Kosten** – Eintritt, Fahrtkosten, Übernachtung entstehen automatisch aus Anmeldung/Reise; Verpflegung & Sonstiges manuell mit **Netto/USt/Brutto und Fremdwährungen** (EZB-Live-Kurs, editierbar); Auswertung nach Kategorie und Veranstaltung; erweiterter CSV-Export
+- **Community mit ☰-Bereichen** – Kurzprofile (Firma, Alter, Wohnort, Interessen, Fähigkeiten, Projekt, LinkedIn, **Suche/Biete**), **Matching** (Suche↔Biete + gemeinsame Interessen), Meine Events, Mitfahrgelegenheiten mit Platzverwaltung, Treffen mit **Terminabstimmung (Doodle-light)** und **Kalender-Einladung (.ics + Mail)**, **Aufgabenliste** mit Zuständigen
+- **Team-Kollaboration ohne Server** – **Event-Paket** exportieren/importieren mit Zusammenführen statt Ersetzen (ohne persönliche Kosten/Reisen), „Wer kommt mit?“-Steckbrief für Messenger
+- **Materialien** – Notizen mit **🎤 Diktierfunktion**, Präsentationen mit Sharing-Runde und **📖 In-App-Foliengalerie** (PDF), Bilder mit **🔎 OCR-Texterkennung**, Volltextsuche und automatischer Verkleinerung beim Upload
+- **Auswahlliste** – 29 kuratierte AI-Veranstaltungen 2025/2026 (Quellen: Web-Recherche + eigener Google-Kalender); Teilnahme **Ja / Vielleicht / Nein**, Kosten editierbar, 👥-Anzeige der Community-Teilnehmer; „Ja“ übernimmt das Event in die App
 - **Google-Kalender-Anbindung** – pro Veranstaltung/Kandidat „In Google Kalender eintragen“ (Direktlink) sowie .ics-Export (einzeln oder alle Zusagen gesammelt) zum Import in beliebige Kalender
 - **Nachrichten** – Direktnachrichten zwischen Mitgliedern (💬 in der Navigation, ✉ bei jedem Mitglied): Unterhaltungen mit Chat-Blasen, Ungelesen-Zähler in der Seitenleiste, Gelesen-Bestätigung (✓/✓✓); nur für angemeldete Nutzer
 - **E-Mail-Anmeldung & Sharing** – Login per E-Mail + Bestätigungscode (lokaler Demo-Modus: Code wird angezeigt, kein Mailserver); neue E-Mail-Adressen registrieren sich als Mitglied. Angemeldete Nutzer können: Beiträge schreiben, sich zu Treffen an-/abmelden, bei Mitfahrgelegenheiten ein-/aussteigen, Präsentationen hochladen und die **Sharing-Runde** je Veranstaltung abonnieren (geteilte Dateien sehen nur Sharing-Mitglieder; 🔒/🔗 pro Datei umschaltbar). Messe-Suche über Name/Ort/Thema inkl. Treffern in der Auswahlliste.
@@ -49,7 +50,8 @@ Verwaltungs-App für AI-Messen, -Konferenzen und -Veranstaltungen in Deutschland
 index.html        – Shell mit Sidebar-Navigation
 css/style.css     – dunkles, modernes UI (Indigo/Cyan)
 js/data.js        – Seed-Daten (10 AI-Events 2026, editierbar) + Konstanten
-js/auswahl.js     – Auswahlliste: 28 Kandidaten 2025/2026 (Recherche + Google-Kalender)
+js/karte.js       – Deutschlandkarte (16 Bundesländer als SVG-Pfade) + 36 Städte-Koordinaten
+js/auswahl.js     – Auswahlliste: 29 Kandidaten 2025/2026 (Recherche + Google-Kalender)
 js/db.js          – IndexedDB-Helfer für Dateien & Bilder
 js/cloud.js       – Supabase: Auth (MFA), Zustands-Sync, Konto-Löschung
 js/config.example.js – Vorlage für Supabase-Zugangsdaten (echte config.js in .gitignore)

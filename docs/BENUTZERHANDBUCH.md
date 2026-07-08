@@ -1,6 +1,6 @@
 # AI Messe Guide – Benutzerhandbuch
 
-Version 1.0 · Stand: Juli 2026
+Version 1.1 · Stand: 8. Juli 2026 · Live: https://ai-messe-guide.vercel.app
 
 Der AI Messe Guide verwaltet deine AI-Messen, -Konferenzen und -Veranstaltungen: vom Entdecken über Anmeldung, Reise- und Kostenplanung bis zu Community, Nachrichten und Materialien. Dieses Handbuch führt durch alle Funktionen.
 
