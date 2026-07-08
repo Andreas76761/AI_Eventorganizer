@@ -109,6 +109,15 @@ Die Community-Ansicht hat oben rechts ein **☰-Menü** mit sechs Bereichen: �
 
 ---
 
+## 7b. Team-Zusammenarbeit ohne Server
+
+- **📦 Event-Paket** (Übersicht-Tab): exportiert die gemeinsame Planung einer Veranstaltung (Sessions, Speaker, Treffen, Mitfahrten, Beiträge, Notizen, Trends/Nuggets — **ohne** persönliche Kosten/Reisen) als Datei. Kollegen importieren sie über „📦 Paket-Import“ (Veranstaltungen-Übersicht): **Zusammenführen statt Ersetzen** — Vorhandenes bleibt, nur Neues kommt dazu; mehrfacher Import schadet nicht. So plant ihr asynchron per E-Mail/Messenger gemeinsam.
+- **📋 Steckbrief** (Übersicht-Tab): kopiert einen fertigen „Wer kommt mit?“-Text (Datum, Ort, Preis, Treffen, freie Mitfahrplätze) für WhatsApp/Teams/E-Mail.
+- **📆 Treffen-Einladung** (an jedem Treffen): lädt eine .ics mit Uhrzeit herunter und öffnet einen fertigen E-Mail-Entwurf an alle Teilnehmer mit E-Mail-Adresse — der Termin landet auch bei Leuten ohne App im Kalender.
+- **🗳 Terminabstimmung** (an jedem Treffen): mehrere Zeitvorschläge sammeln, Team stimmt ab, „Fixieren“ übernimmt den Gewinner als Treffen-Zeit (Doodle-light).
+- **👥 Session-Abdeckung** (Programm-Tab): pro Session festlegen, wer aus dem Team reingeht. Die Kopfzeile zeigt „X/Y abgedeckt“, die Team-Filterzeile liefert den **Laufzettel je Person** und „❌ Unbesetzt“ zeigt Sessions ohne Abdeckung — Divide & Conquer bei parallelen Tracks.
+- **✅ Aufgaben** (Community-Tab der Veranstaltung): Checkliste mit Zuständigen („Tisch reservieren“, „Visitenkarten mitbringen“ …).
+
 ## 8. Materialien & Sharing
 
 - **Notizen:** je Veranstaltung, mit Titel und Änderungszeit — und **🎤 Diktierfunktion**: Im Notiz-Formular auf „Diktieren“ klicken und sprechen (deutsch); der Text erscheint satzweise im Feld (Chrome/Edge, Mikrofon-Freigabe nötig).

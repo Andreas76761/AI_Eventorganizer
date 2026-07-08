@@ -31,7 +31,8 @@ function defaultState() {
     sessions: {},      // evId -> [{id, titel, tag, start, ende, buehne, thema, speakerIds:[], beschreibung, favorit}]
     speaker: {},       // evId -> [{id, name, firma, rolle, thema, bio, linkedin, rating}]
     trends: {},        // evId -> [{id, titel, relevanz(1-5), beschreibung}]
-    nuggets: {}        // evId -> [{id, text, quelle}]
+    nuggets: {},       // evId -> [{id, text, quelle}]
+    aufgaben: {}       // evId -> [{id, text, wer(userId), erledigt}]
   };
 }
 
@@ -422,6 +423,9 @@ A.kontoLoeschen = async function () {
   Object.keys(S.treffen).forEach(k => S.treffen[k].forEach(t => { const i = (t.teilnehmer || []).indexOf(uid_); if (i >= 0) t.teilnehmer.splice(i, 1); }));
   Object.keys(S.teilnehmer).forEach(k => { const i = S.teilnehmer[k].indexOf(uid_); if (i >= 0) S.teilnehmer[k].splice(i, 1); });
   Object.keys(S.sharing).forEach(k => { const i = S.sharing[k].indexOf(uid_); if (i >= 0) S.sharing[k].splice(i, 1); });
+  Object.keys(S.sessions).forEach(k => S.sessions[k].forEach(x => { const i = (x.besucher || []).indexOf(uid_); if (i >= 0) x.besucher.splice(i, 1); }));
+  Object.keys(S.aufgaben).forEach(k => S.aufgaben[k].forEach(x => { if (x.wer === uid_) x.wer = ""; }));
+  Object.keys(S.treffen).forEach(k => S.treffen[k].forEach(t => (t.vorschlaege || []).forEach(v => { const i = (v.stimmen || []).indexOf(uid_); if (i >= 0) v.stimmen.splice(i, 1); })));
   try { // eigene Dateien aus IndexedDB
     const db = await dbOpen();
     const alle = await new Promise((res, rej) => { const r = db.transaction(DB_STORE).objectStore(DB_STORE).getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error); });
@@ -897,6 +901,7 @@ function eventWerkzeuge() {
     <input id="suchfeld" class="suchfeld" placeholder="🔍 Messe suchen – Name, Ort, Thema…" value="${esc(eventSuche)}" oninput="A.suche(this.value)">
     <div class="filter-gruppe">${filter.map(f => `<button class="filter ${eventFilter === f ? 'aktiv' : ''}" onclick="A.setEventFilter('${f}')">${f === "alle" ? "Alle" : f === "kommend" ? "Anstehend" : f}</button>`).join("")}</div>
     <button class="btn primaer" onclick="A.eventFormular()">+ Neue Veranstaltung</button>
+    <label class="btn datei-btn" title="Event-Paket eines Kollegen zusammenführen">📦 Paket-Import<input type="file" accept=".json,application/json" onchange="A.paketImport(this)"></label>
   </div>`;
 }
 
@@ -1653,6 +1658,8 @@ function tUebersicht(e) {
       <div class="knopf-reihe">
         <a class="btn" href="${gcalUrl(e)}" target="_blank" rel="noopener">📆 In Google Kalender eintragen</a>
         <button class="btn" onclick="A.icsEvent('${e.id}')">⬇ .ics-Datei</button>
+        <button class="btn" onclick="A.steckbrief('${e.id}')">📋 „Wer kommt mit?“-Steckbrief kopieren</button>
+        <button class="btn" onclick="A.paketExport('${e.id}')">📦 Event-Paket exportieren (fürs Team)</button>
       </div>
       ${e.seed ? '<p class="hinweis">Startdatensatz – Termin und Preis bitte auf der Website prüfen und ggf. anpassen.</p>' : ""}
     </div>
@@ -1677,12 +1684,13 @@ function tUebersicht(e) {
 
 /* ---- Tab: Programm (Sessions je Veranstaltung) ---- */
 
-let progTag = "alle", progBuehne = "alle", progNurFavs = false;
+let progTag = "alle", progBuehne = "alle", progNurFavs = false, progWer = "alle";
 
 A.progFilter = function (feld, wert) {
   if (feld === "tag") progTag = wert;
   if (feld === "buehne") progBuehne = wert;
   if (feld === "favs") progNurFavs = !progNurFavs;
+  if (feld === "wer") progWer = wert;
   render();
 };
 
@@ -1700,12 +1708,15 @@ function tProgramm(e) {
   if (progTag !== "alle") liste = liste.filter(s => s.tag === progTag);
   if (progBuehne !== "alle") liste = liste.filter(s => s.buehne === progBuehne);
   if (progNurFavs) liste = liste.filter(s => s.favorit);
+  if (progWer === "unbesetzt") liste = liste.filter(s => !(s.besucher || []).length);
+  else if (progWer !== "alle") liste = liste.filter(s => (s.besucher || []).includes(progWer));
   const tage = eventTage(e);
+  const abgedeckt = alle.filter(s => (s.besucher || []).length).length;
   let letzterTag = null;
   return `
   <div class="karte">
     <div class="karte-kopf">
-      <h2>Programm – ${alle.length} Session${alle.length === 1 ? "" : "s"}${alle.filter(s => s.favorit).length ? ` · ★ ${alle.filter(s => s.favorit).length} Favoriten` : ""}</h2>
+      <h2>Programm – ${alle.length} Session${alle.length === 1 ? "" : "s"}${alle.filter(s => s.favorit).length ? ` · ★ ${alle.filter(s => s.favorit).length} Favoriten` : ""}${alle.length ? ` · 👥 ${abgedeckt}/${alle.length} abgedeckt` : ""}</h2>
       <button class="btn primaer klein" onclick="A.sessionFormular('${e.id}')">+ Session</button>
     </div>
     <div class="filter-gruppe" style="margin-bottom:6px">
@@ -1716,17 +1727,26 @@ function tProgramm(e) {
       ${buehnen.map(b => `<button class="filter ${progBuehne === b ? "aktiv" : ""}" onclick="A.progFilter('buehne','${esc(b)}')">${b === "alle" ? "Alle Bühnen" : esc(b)}</button>`).join("")}
       <button class="filter ${progNurFavs ? "aktiv" : ""}" onclick="A.progFilter('favs')">★ Nur Favoriten (Tagesplan)</button>
     </div>
+    <div class="filter-gruppe" style="margin-bottom:12px">
+      <span class="ez-sub" style="align-self:center">Team-Abdeckung:</span>
+      <button class="filter ${progWer === "alle" ? "aktiv" : ""}" onclick="A.progFilter('wer','alle')">Alle</button>
+      ${S.users.map(u => `<button class="filter ${progWer === u.id ? "aktiv" : ""}" onclick="A.progFilter('wer','${u.id}')" title="Laufzettel von ${esc(u.name)}">${esc(u.name)}</button>`).join("")}
+      <button class="filter ${progWer === "unbesetzt" ? "aktiv" : ""}" onclick="A.progFilter('wer','unbesetzt')">❌ Unbesetzt</button>
+    </div>
     ${liste.map(s => {
       const tagKopf = s.tag !== letzterTag ? `<div class="prog-tag">${new Date(s.tag + "T12:00:00Z").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}</div>` : "";
       letzterTag = s.tag;
       const sprecher = (s.speakerIds || []).map(id => (S.speaker[e.id] || []).find(x => x.id === id)).filter(Boolean);
+      const besucher = (s.besucher || []).map(user).filter(Boolean);
       return tagKopf + `
       <div class="reise-zeile">
         <span class="prog-zeit">${esc(s.start || "–")}${s.ende ? "–" + esc(s.ende) : ""}</span>
         <div class="ez-mitte">
           <div class="ez-name">${esc(s.titel)} ${s.buehne ? `<span class="tag">${esc(s.buehne)}</span>` : ""} ${s.thema ? `<span class="tag aktiv-tag">${esc(s.thema)}</span>` : ""}</div>
           <div class="ez-sub">${sprecher.map(sp => esc(sp.name)).join(", ")}${s.beschreibung ? (sprecher.length ? " · " : "") + esc(s.beschreibung) : ""}</div>
+          ${besucher.length ? `<div class="chip-reihe klein-chips">${besucher.map(u => `<span class="chip"><span class="avatar mini" style="background:${u.farbe}">${esc(u.name[0])}</span>${esc(u.name)}</span>`).join("")}</div>` : ""}
         </div>
+        <button class="btn klein ${besucher.length ? "" : "nein-btn"}" onclick="A.sessionBesucher('${e.id}','${s.id}')" title="Wer aus dem Team geht rein?">👥${besucher.length ? " " + besucher.length : ""}</button>
         <button class="btn klein stern-btn ${s.favorit ? "voll" : ""}" onclick="A.sessionFav('${e.id}','${s.id}')" title="Als Favorit für den Tagesplan">${s.favorit ? "★" : "☆"}</button>
         <button class="btn klein" onclick="A.sessionFormular('${e.id}','${s.id}')">✎</button>
       </div>`;
@@ -1737,6 +1757,32 @@ function tProgramm(e) {
 A.sessionFav = function (evId, sessionId) {
   const s = listOf(S.sessions, evId).find(x => x.id === sessionId);
   if (s) { s.favorit = !s.favorit; save(); render(); }
+};
+
+A.sessionBesucher = function (evId, sessionId) {
+  const s = listOf(S.sessions, evId).find(x => x.id === sessionId);
+  if (!s) return;
+  s.besucher = s.besucher || [];
+  openModal("Wer geht rein? – " + s.titel, `
+    <p class="hinweis" style="margin-bottom:10px">Team-Abdeckung: Wer besucht diese Session und liefert danach Notizen/Fotos?</p>
+    <div class="chip-reihe">
+      ${S.users.map(u => `
+      <label class="chip waehlbar ${s.besucher.includes(u.id) ? "gewaehlt" : ""}">
+        <input type="checkbox" ${s.besucher.includes(u.id) ? "checked" : ""} onchange="A.sessionBesucherToggle('${evId}','${sessionId}','${u.id}',this)">
+        <span class="avatar mini" style="background:${u.farbe}">${esc(u.name[0])}</span>${esc(u.name)}
+      </label>`).join("")}
+    </div>
+    <div class="modal-aktionen"><button class="btn primaer" onclick="closeModal()">Fertig</button></div>`);
+};
+
+A.sessionBesucherToggle = function (evId, sessionId, userId, box) {
+  const s = listOf(S.sessions, evId).find(x => x.id === sessionId);
+  if (!s) return;
+  s.besucher = s.besucher || [];
+  const i = s.besucher.indexOf(userId);
+  if (i >= 0) s.besucher.splice(i, 1); else s.besucher.push(userId);
+  box.parentElement.classList.toggle("gewaehlt", i < 0);
+  save();
 };
 
 A.sessionFormular = function (evId, sessionId) {
@@ -1898,6 +1944,114 @@ A.speakerLoeschen = function (evId, spId) {
   S.speaker[evId] = (S.speaker[evId] || []).filter(x => x.id !== spId);
   (S.sessions[evId] || []).forEach(s => { s.speakerIds = (s.speakerIds || []).filter(id => id !== spId); });
   save(); closeModal(); render();
+};
+
+/* ---- Zusammenarbeit ohne Server: Steckbrief & Event-Paket ---- */
+
+A.steckbrief = async function (evId) {
+  const e = ev(evId);
+  if (!e) return;
+  const treffen = (S.treffen[evId] || []).map(t => `• ${t.titel || t.typ}${t.zeit ? " (" + t.zeit.replace("T", " ") + ")" : ""}`).join("\n");
+  const mitfahrten = (S.mitfahrten[evId] || []).map(m => `• ab ${m.von}${m.abfahrt ? ", " + m.abfahrt.replace("T", " ") : ""} (${Math.max(0, m.plaetze - (m.mitfahrer || []).length)} Plätze frei)`).join("\n");
+  const text = [
+    `🤖 ${e.name}`,
+    `📅 ${eventZeitraum(e)}`,
+    `📍 ${e.ort}${e.venue ? " – " + e.venue : ""}`,
+    e.preis > 0 ? `🎟 Ticket ab ${fmtEUR(e.preis)}` : "🎟 Eintritt frei",
+    e.url ? `🔗 ${e.url}` : "",
+    e.beschreibung ? `\n${e.beschreibung}` : "",
+    treffen ? `\n🍽 Geplante Treffen:\n${treffen}` : "",
+    mitfahrten ? `\n🚘 Mitfahrgelegenheiten:\n${mitfahrten}` : "",
+    `\nWer kommt mit? Sag kurz Bescheid!`
+  ].filter(Boolean).join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Steckbrief in die Zwischenablage kopiert – einfach in WhatsApp, Teams oder E-Mail einfügen.");
+  } catch (err) {
+    openModal("Steckbrief kopieren", `<textarea rows="12" style="width:100%">${esc(text)}</textarea><p class="hinweis">Text markieren und mit Strg+C kopieren.</p>`);
+  }
+};
+
+// Event-Paket: teilt Planungsdaten, NICHT die persönlichen (Kosten, Reisen, Anmeldung).
+const PAKET_LISTEN = ["sessions", "speaker", "treffen", "mitfahrten", "beitraege", "notizen", "trends", "nuggets"];
+
+A.paketExport = function (evId) {
+  const e = ev(evId);
+  if (!e) return;
+  // referenzierte Nutzer einsammeln (nur unkritische Profilfelder)
+  const ids = new Set(S.teilnehmer[evId] || []);
+  (S.treffen[evId] || []).forEach(t => (t.teilnehmer || []).forEach(id => ids.add(id)));
+  (S.mitfahrten[evId] || []).forEach(m => { ids.add(m.fahrerId); (m.mitfahrer || []).forEach(id => ids.add(id)); });
+  (S.beitraege[evId] || []).forEach(b => ids.add(b.userId));
+  (S.sessions[evId] || []).forEach(s => (s.besucher || []).forEach(id => ids.add(id)));
+  const paket = {
+    format: "aimg-event-paket", version: 1,
+    exportiertAm: new Date().toISOString(),
+    exportiertVon: angemeldeter()?.name || "",
+    event: e,
+    teilnehmer: S.teilnehmer[evId] || [],
+    nutzer: [...ids].map(user).filter(Boolean).map(u => ({ id: u.id, name: u.name, farbe: u.farbe, stadt: u.stadt, firma: u.firma }))
+  };
+  PAKET_LISTEN.forEach(k => paket[k] = S[k][evId] || []);
+  const blob = new Blob([JSON.stringify(paket, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "event-paket-" + (e.kurz || e.name).replace(/[^\wäöüÄÖÜß-]+/g, "_") + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  alert("Event-Paket exportiert. Persönliche Daten (Kosten, Reisen, Anmeldung) und Dateien sind NICHT enthalten – nur die gemeinsame Planung.");
+};
+
+function mergeListe(ziel, quelle) {
+  let neu = 0;
+  (quelle || []).forEach(item => {
+    if (!item || !item.id) return;
+    if (!ziel.some(x => x.id === item.id)) { ziel.push(item); neu++; }
+  });
+  return neu;
+}
+
+A.paketImport = function (input) {
+  const datei = input.files[0];
+  if (!datei) return;
+  const leser = new FileReader();
+  leser.onload = () => {
+    input.value = "";
+    try {
+      const p = JSON.parse(leser.result);
+      if (p.format !== "aimg-event-paket" || !p.event?.id) throw new Error("Das ist kein Event-Paket des AI Messe Guide.");
+      const evId = p.event.id;
+      const bericht = [];
+      if (!ev(evId)) {
+        S.events.push(p.event);
+        bericht.push("Veranstaltung „" + p.event.name + "“ neu angelegt");
+      } else {
+        bericht.push("Veranstaltung „" + ev(evId).name + "“ gefunden – bestehende Daten bleiben erhalten");
+      }
+      let neueNutzer = 0;
+      (p.nutzer || []).forEach(n => {
+        if (n?.id && !user(n.id)) { S.users.push({ ...n, istIch: false }); neueNutzer++; }
+      });
+      if (neueNutzer) bericht.push(neueNutzer + " Mitglied(er) übernommen");
+      PAKET_LISTEN.forEach(k => {
+        const n = mergeListe(listOf(S[k], evId), p[k]);
+        if (n) bericht.push(n + " × " + k);
+      });
+      const teiln = listOf(S.teilnehmer, evId);
+      let neueTeiln = 0;
+      (p.teilnehmer || []).forEach(id => { if (user(id) && !teiln.includes(id)) { teiln.push(id); neueTeiln++; } });
+      if (neueTeiln) bericht.push(neueTeiln + " Teilnehmer ergänzt");
+      save(); render();
+      openModal("Event-Paket zusammengeführt", `
+        <p class="hinweis" style="margin-bottom:10px">${p.exportiertVon ? "Von: " + esc(p.exportiertVon) + " · " : ""}${p.exportiertAm ? "Stand: " + esc(p.exportiertAm.slice(0, 10)) : ""}</p>
+        <ul style="padding-left:20px;font-size:14px;line-height:1.8">${bericht.map(z => `<li>${esc(z)}</li>`).join("")}</ul>
+        <p class="hinweis">Zusammenführen statt Ersetzen: Vorhandenes wurde nicht überschrieben, nur Neues ergänzt (idempotent – mehrfacher Import schadet nicht).</p>
+        <div class="modal-aktionen"><button class="btn primaer" onclick="closeModal();A.openEvent('${evId}')">Zur Veranstaltung →</button></div>`);
+    } catch (e2) {
+      alert("Import fehlgeschlagen: " + e2.message);
+    }
+  };
+  leser.readAsText(datei);
 };
 
 /* ---- Tab: Anmeldung & Bezahlung ---- */
@@ -2225,6 +2379,18 @@ function tCommunity(e) {
         <div class="karte-kopf"><h2>Mitfahrgelegenheiten</h2><button class="btn primaer klein" onclick="A.mitfahrtFormular('${e.id}')">+ Anbieten</button></div>
         ${mitfahrten.map(m => mitfahrtZeile(m, e.id, false)).join("") || '<p class="leer">Keine Mitfahrgelegenheit angeboten.</p>'}
       </div>
+      <div class="karte">
+        <div class="karte-kopf"><h2>✅ Aufgaben (${(S.aufgaben[e.id] || []).filter(a => !a.erledigt).length} offen)</h2><button class="btn primaer klein" onclick="A.aufgabeFormular('${e.id}')">+ Aufgabe</button></div>
+        ${(S.aufgaben[e.id] || []).map(a => `
+        <div class="reise-zeile">
+          <input type="checkbox" ${a.erledigt ? "checked" : ""} onchange="A.aufgabeErledigt('${e.id}','${a.id}')" style="width:18px;height:18px;margin:0;flex-shrink:0">
+          <div class="ez-mitte">
+            <div class="ez-name" style="${a.erledigt ? "text-decoration:line-through;opacity:.55" : ""}">${esc(a.text)}</div>
+            ${a.wer && user(a.wer) ? `<div class="ez-sub">→ ${esc(user(a.wer).name)}</div>` : ""}
+          </div>
+          <button class="btn klein" onclick="A.aufgabeFormular('${e.id}','${a.id}')">✎</button>
+        </div>`).join("") || '<p class="leer">Keine Aufgaben – z. B. „Tisch reservieren", „Visitenkarten mitbringen", „Nachbetrachtung schreiben".</p>'}
+      </div>
     </div>
     <div class="karte">
       <h2>Austausch</h2>
@@ -2263,8 +2429,123 @@ function treffenZeile(t, evId, mitEvent) {
       <div class="chip-reihe klein-chips">${teiln.map(u => `<span class="chip"><span class="avatar mini" style="background:${u.farbe}">${esc(u.name[0])}</span>${esc(u.name)}</span>`).join("")}</div>
     </div>
     <button class="btn klein ${dabei ? "" : "primaer"}" onclick="A.treffenToggle('${evId}','${t.id}')">${dabei ? "Absagen" : "Teilnehmen"}</button>
+    <button class="btn klein ${t.vorschlaege?.length ? "vlt-btn gewaehlt-vlt" : ""}" onclick="A.abstimmung('${evId}','${t.id}')" title="Terminabstimmung (Doodle-light)">🗳${t.vorschlaege?.length ? " " + t.vorschlaege.length : ""}</button>
+    <button class="btn klein" onclick="A.treffenEinladung('${evId}','${t.id}')" title="Kalender-Einladung verschicken">📆</button>
     <button class="btn klein" onclick="A.treffenFormular('${evId}','${t.id}')">✎</button>
   </div>`;
+}
+
+/* ---- Treffen: Kalender-Einladung (.ics + Mail-Entwurf) ---- */
+
+function icsTreffenDatei(t, e) {
+  const beginn = new Date(t.zeit || e.start + "T12:00");
+  const ende = new Date(beginn.getTime() + 90 * 60000);
+  const p = n => String(n).padStart(2, "0");
+  const fmt = d => `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}00`;
+  const zeilen = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//AI Messe Guide 2026//DE", "METHOD:PUBLISH",
+    "BEGIN:VEVENT", "UID:" + t.id + "@aimg2026",
+    "DTSTART:" + fmt(beginn), "DTEND:" + fmt(ende),
+    "SUMMARY:" + icsEsc((t.titel || t.typ) + " – " + (e.kurz || e.name)),
+    "LOCATION:" + icsEsc(t.ort || e.venue || e.ort),
+    "DESCRIPTION:" + icsEsc("Treffen im Rahmen von " + e.name + (t.notiz ? " – " + t.notiz : "")),
+    "END:VEVENT", "END:VCALENDAR"];
+  const blob = new Blob([zeilen.join("\r\n")], { type: "text/calendar;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "treffen-" + (t.titel || t.typ).replace(/[^\wäöüÄÖÜß-]+/g, "_") + ".ics";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+A.treffenEinladung = function (evId, treffenId) {
+  const t = (S.treffen[evId] || []).find(x => x.id === treffenId);
+  const e = ev(evId);
+  if (!t || !e) return;
+  const teiln = (t.teilnehmer || []).map(user).filter(Boolean);
+  const mails = teiln.map(u => u.email).filter(Boolean);
+  const betreff = encodeURIComponent(`Einladung: ${t.titel || t.typ} – ${e.kurz || e.name}`);
+  const body = encodeURIComponent(
+    `Hallo zusammen,\n\nEinladung zu unserem Treffen bei ${e.name}:\n\n` +
+    `Was: ${t.titel || t.typ}\nWann: ${t.zeit ? t.zeit.replace("T", " ") + " Uhr" : "wird noch abgestimmt"}\nWo: ${t.ort || e.venue || e.ort}\n` +
+    (t.notiz ? `Hinweis: ${t.notiz}\n` : "") +
+    `\nDie angehängte/heruntergeladene .ics-Datei legt den Termin direkt in euren Kalender.\n\nBis dann!`);
+  openModal("Treffen einladen: " + (t.titel || t.typ), `
+    <table class="info-tabelle">
+      <tr><td>Wann</td><td>${t.zeit ? esc(t.zeit.replace("T", " ")) + " Uhr" : "noch offen – erst abstimmen 🗳"}</td></tr>
+      <tr><td>Wo</td><td>${esc(t.ort || e.venue || e.ort)}</td></tr>
+      <tr><td>Teilnehmer</td><td>${teiln.map(u => esc(u.name)).join(", ") || "–"}${mails.length ? ` <span class="ez-sub">(${mails.length} mit E-Mail)</span>` : ""}</td></tr>
+    </table>
+    <div class="modal-aktionen">
+      <button class="btn" id="ics-treffen-btn" type="button">⬇ .ics für den Kalender</button>
+      <a class="btn primaer" href="mailto:${mails.map(encodeURIComponent).join(",")}?subject=${betreff}&body=${body}">✉ E-Mail-Entwurf öffnen</a>
+    </div>
+    <p class="hinweis">Reihenfolge: Erst die .ics-Datei herunterladen, dann den E-Mail-Entwurf öffnen und die Datei anhängen – so landet das Treffen bei allen im Kalender, auch ohne die App.</p>`);
+  const knopf = document.getElementById("ics-treffen-btn");
+  if (knopf) knopf.onclick = () => icsTreffenDatei(t, e);
+};
+
+/* ---- Treffen: Terminabstimmung (Doodle-light) ---- */
+
+A.abstimmung = function (evId, treffenId) {
+  const t = (S.treffen[evId] || []).find(x => x.id === treffenId);
+  if (!t) return;
+  t.vorschlaege = t.vorschlaege || [];
+  openModal("Terminabstimmung: " + (t.titel || t.typ), `
+    ${t.zeit ? `<p class="hinweis" style="margin-bottom:10px">Aktuell fixiert: <b>${esc(t.zeit.replace("T", " "))} Uhr</b> – eine Abstimmung kann den Termin ändern.</p>` : ""}
+    ${t.vorschlaege.map(v => {
+      const dabei = S.session && (v.stimmen || []).includes(S.session);
+      return `
+      <div class="reise-zeile">
+        <span class="reise-icon">🕐</span>
+        <div class="ez-mitte">
+          <div class="ez-name">${esc(v.zeit.replace("T", " "))} Uhr</div>
+          <div class="ez-sub">${(v.stimmen || []).length} Stimme${(v.stimmen || []).length === 1 ? "" : "n"}: ${(v.stimmen || []).map(id => esc(user(id)?.name || "?")).join(", ") || "–"}</div>
+        </div>
+        <button class="btn klein ${dabei ? "gewaehlt-ja ja-btn" : ""}" onclick="A.stimme('${evId}','${treffenId}','${v.id}')">${dabei ? "✓ dafür" : "Dafür stimmen"}</button>
+        <button class="btn klein primaer" onclick="A.terminFixieren('${evId}','${treffenId}','${v.id}')" title="Diesen Termin übernehmen">Fixieren</button>
+      </div>`;
+    }).join("") || '<p class="leer">Noch keine Vorschläge – füge unten Zeitoptionen hinzu, das Team stimmt ab.</p>'}
+    <form onsubmit="return A.vorschlagHinzu(event,'${evId}','${treffenId}')" style="margin-top:12px">
+      <div class="form-reihe" style="align-items:end">
+        <label>Neuer Terminvorschlag <input type="datetime-local" name="zeit" required></label>
+        <button class="btn primaer" style="height:40px">+ Vorschlag</button>
+      </div>
+    </form>`);
+};
+
+A.vorschlagHinzu = function (evt, evId, treffenId) {
+  evt.preventDefault();
+  const zeit = new FormData(evt.target).get("zeit");
+  const t = (S.treffen[evId] || []).find(x => x.id === treffenId);
+  if (t && zeit) {
+    t.vorschlaege = t.vorschlaege || [];
+    if (!t.vorschlaege.some(v => v.zeit === zeit)) t.vorschlaege.push({ id: uid(), zeit, stimmen: S.session ? [S.session] : [] });
+    t.vorschlaege.sort((a, b) => a.zeit.localeCompare(b.zeit));
+    save(); render(); A.abstimmung(evId, treffenId);
+  }
+  return false;
+};
+
+A.stimme = function (evId, treffenId, vorschlagId) {
+  if (loginNoetig()) return;
+  const t = (S.treffen[evId] || []).find(x => x.id === treffenId);
+  const v = t?.vorschlaege?.find(x => x.id === vorschlagId);
+  if (!v) return;
+  v.stimmen = v.stimmen || [];
+  const i = v.stimmen.indexOf(S.session);
+  if (i >= 0) v.stimmen.splice(i, 1); else v.stimmen.push(S.session);
+  save(); render(); A.abstimmung(evId, treffenId);
+};
+
+A.terminFixieren = function (evId, treffenId, vorschlagId) {
+  const t = (S.treffen[evId] || []).find(x => x.id === treffenId);
+  const v = t?.vorschlaege?.find(x => x.id === vorschlagId);
+  if (!t || !v) return;
+  t.zeit = v.zeit;
+  // Sieger-Stimmen als Teilnehmer übernehmen, Abstimmung schließen
+  t.teilnehmer = [...new Set([...(t.teilnehmer || []), ...(v.stimmen || [])])];
+  t.vorschlaege = [];
+  save(); closeModal(); render();
 }
 
 A.treffenToggle = function (evId, treffenId) {
@@ -2383,6 +2664,40 @@ A.mitfahrtToggle = function (evId, mitfahrtId) {
   if (i >= 0) m.mitfahrer.splice(i, 1);
   else if (m.mitfahrer.length < m.plaetze) m.mitfahrer.push(S.session);
   save(); render();
+};
+
+A.aufgabeFormular = function (evId, aufgabeId) {
+  const a = aufgabeId ? listOf(S.aufgaben, evId).find(x => x.id === aufgabeId) : null;
+  openModal(a ? "Aufgabe bearbeiten" : "Aufgabe anlegen", `
+    <form onsubmit="return A.aufgabeSpeichern(event,'${evId}','${aufgabeId || ""}')">
+      <label>Aufgabe <input name="text" required placeholder="z. B. Tisch für 8 Personen reservieren" value="${esc(a?.text || "")}"></label>
+      <label>Zuständig <select name="wer"><option value="">– offen –</option>${S.users.map(u => `<option value="${u.id}" ${a?.wer === u.id ? "selected" : ""}>${esc(u.name)}</option>`).join("")}</select></label>
+      <div class="modal-aktionen">
+        ${a ? `<button type="button" class="btn gefahr" onclick="A.aufgabeLoeschen('${evId}','${a.id}')">Löschen</button>` : ""}
+        <button type="submit" class="btn primaer">Speichern</button>
+      </div>
+    </form>`);
+};
+
+A.aufgabeSpeichern = function (evt, evId, aufgabeId) {
+  evt.preventDefault();
+  const f = new FormData(evt.target);
+  const daten = { text: f.get("text"), wer: f.get("wer") };
+  const arr = listOf(S.aufgaben, evId);
+  if (aufgabeId) Object.assign(arr.find(x => x.id === aufgabeId), daten);
+  else arr.push({ id: uid(), ...daten, erledigt: false });
+  save(); closeModal(); render();
+  return false;
+};
+
+A.aufgabeErledigt = function (evId, aufgabeId) {
+  const a = listOf(S.aufgaben, evId).find(x => x.id === aufgabeId);
+  if (a) { a.erledigt = !a.erledigt; save(); render(); }
+};
+
+A.aufgabeLoeschen = function (evId, aufgabeId) {
+  S.aufgaben[evId] = (S.aufgaben[evId] || []).filter(x => x.id !== aufgabeId);
+  save(); closeModal(); render();
 };
 
 A.beitragSenden = function (evt, evId) {
