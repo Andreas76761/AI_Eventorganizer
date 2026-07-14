@@ -1,0 +1,17 @@
+{
+  "name": "AI Messe Guide 2026",
+  "short_name": "Messe Guide",
+  "description": "AI-Messen, Konferenzen und Events in Deutschland planen: Kalender, Kosten, Community, Programm.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0e17",
+  "theme_color": "#0b0e17",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

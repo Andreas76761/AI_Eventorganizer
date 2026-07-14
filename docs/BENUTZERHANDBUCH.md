@@ -21,6 +21,10 @@ Klicke unten links auf **„🔐 Mit E-Mail anmelden“**:
 
 Ohne Anmeldung kannst du alles ansehen und deine eigene Planung führen; Community-Aktionen (Beiträge, Treffen, Mitfahrten, Nachrichten, Datei-Sharing) erfordern die Anmeldung.
 
+### 1.2b Als App installieren (PWA)
+
+Der AI Messe Guide ist eine **Progressive Web App**: Im Browser (Chrome/Edge/Safari) über „App installieren“ bzw. „Zum Startbildschirm hinzufügen“ landet er als Icon auf Handy oder Desktop, startet im Vollbild und **funktioniert offline** — ideal in Messehallen mit schlechtem Empfang. Daten und Fotos bleiben wie gewohnt lokal gespeichert; nur OCR/PDF-Anzeige und Live-Kurse brauchen kurz Netz.
+
 ### 1.3 Design wählen
 Unten in der Seitenleiste stehen drei Designs: 🌌 **Neon Deep** (dunkel), 📰 **Editorial Light** (helles Magazin), 🏢 **Corporate Clean** (helles Dashboard). Die Wahl wird gespeichert.
 
@@ -62,7 +66,7 @@ Das Suchfeld filtert live nach Name, Ort, Venue, Kategorie und Beschreibung. Tre
 | Tab | Inhalt |
 |---|---|
 | **Übersicht** | Beschreibung, Eckdaten, Google-Kalender-/.ics-Export, Teilnehmer, Schnellstatistik |
-| **Programm** | Sessions mit Tag, Zeit, Bühne, Thema und Speaker-Verknüpfung; Filter nach Tag/Bühne; ★ markiert Favoriten — mit „Nur Favoriten“ wird daraus dein persönlicher Tagesplan |
+| **Programm** | Sessions mit Tag, Zeit, Bühne, Thema und Speaker-Verknüpfung; Filter nach Tag/Bühne; ★ markiert Favoriten — mit „Nur Favoriten“ wird daraus dein persönlicher Tagesplan. **⬆ Import** liest ganze Agenden aus CSV/JSON ein (Kopfzeile `titel;tag;start;ende;buehne;thema;speaker`, Duplikate werden erkannt, Speaker automatisch angelegt) — Beispieldatei mit 241 WAD-Sessions: `docs/beispiele/wad2026-sessions.csv` |
 | **Speaker** | Referenten-Verzeichnis mit Rolle, Firma, Thema, Bio und **Promi-Rating** (1–5 ★); Themenfilter; Detailansicht zeigt die Sessions des Speakers; darunter das automatisch aggregierte **🏢 Firmenverzeichnis** |
 | **Anmeldung & Bezahlung** | Status (Interessiert → Angemeldet → Bezahlt → Besucht), Tickettyp, Preis, Zahlungsart, Bestell-Nr., „Als bezahlt markieren“. Die App verwaltet den Status – gebucht wird beim Veranstalter |
 | **Reise** | Reiseabschnitte (Pkw, Bahn, Flug, ÖPNV, Fernbus …) mit Zeiten und Kosten; Unterkünfte mit Check-in/-out |
@@ -88,6 +92,8 @@ Kuratierte AI-Veranstaltungen 2025/2026 aus Web-Recherche und deinem Google-Kale
 ---
 
 ## 6. Kosten
+
+**🧾 Reisekostenabrechnung als PDF:** Im Kosten-Tab jeder Veranstaltung erzeugt „Abrechnung (PDF)“ ein druckfertiges Dokument — Reiseverlauf, Übernachtungen, Kostenaufstellung mit Netto/USt/Brutto und Beleg-Währung, Erstattungsbetrag und Unterschriftszeilen. Es öffnet sich im Browser-Druckdialog: dort „Als PDF speichern“ wählen.
 
 Globale Auswertung über alle Veranstaltungen: Gesamt-KPIs, Verteilung nach Kategorie (Eintritt, Fahrtkosten, Übernachtung, Verpflegung, Sonstiges), Einzelposten je Veranstaltung und **CSV-Export** (Semikolon-getrennt, Excel-tauglich). Posten mit „auto“ stammen aus Anmeldung/Reise/Hotel und werden dort bearbeitet.
 

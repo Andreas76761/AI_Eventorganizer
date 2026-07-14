@@ -6,6 +6,9 @@
 
 Seit 1.0 sind dazugekommen:
 
+- **📱 PWA:** installierbar auf Handy/Desktop („Zum Startbildschirm hinzufügen“), läuft offline (Service Worker), eigenes App-Icon
+- **⬆ Programm-Import:** ganze Agenden aus CSV/JSON einlesen (Duplikaterkennung, Speaker werden automatisch angelegt); Beispieldatei mit 241 WAD-Sessions liegt bei
+- **🧾 Reisekostenabrechnung als PDF:** druckfertig mit Reiseverlauf, Netto/USt/Brutto, Beleg-Währungen, Erstattungsbetrag und Unterschriftszeilen
 - **📣 Posts-Register:** je Veranstaltung drei generierte LinkedIn-Posts (Save-the-Date / Live / Recap) aus Messedaten, Agenda und Erkenntnissen – mit Share-Bild (1200×627), editierbar, kopierbar, als PNG herunterladbar
 
 - **Festival-App-Parität:** Programm-Tab (Sessions mit Tag/Zeit/Bühne, ★-Tagesplan), Speaker-Verzeichnis mit Bio & Promi-Rating, automatisches Firmenverzeichnis, Statistik-Bereich, interaktive Deutschlandkarte mit Stadt-Chips & Kategorie-Filter, Trends & Nuggets, In-App-Foliengalerie (PDF), 🎤 Diktierfunktion für Notizen, 🔎 OCR für Vortragsfotos (durchsuchbar, als Notiz übernehmbar), automatische Foto-Verkleinerung beim Upload

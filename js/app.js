@@ -1917,7 +1917,10 @@ function tProgramm(e) {
   <div class="karte">
     <div class="karte-kopf">
       <h2>Programm – ${alle.length} Session${alle.length === 1 ? "" : "s"}${alle.filter(s => s.favorit).length ? ` · ★ ${alle.filter(s => s.favorit).length} Favoriten` : ""}${alle.length ? ` · 👥 ${abgedeckt}/${alle.length} abgedeckt` : ""}</h2>
-      <button class="btn primaer klein" onclick="A.sessionFormular('${e.id}')">+ Session</button>
+      <div style="display:flex;gap:8px">
+        <label class="btn klein datei-btn" title="Sessions aus CSV oder JSON importieren">⬆ Import<input type="file" accept=".csv,.json,text/csv,application/json" onchange="A.sessionsImport('${e.id}',this)"></label>
+        <button class="btn primaer klein" onclick="A.sessionFormular('${e.id}')">+ Session</button>
+      </div>
     </div>
     <div class="filter-gruppe" style="margin-bottom:6px">
       <button class="filter ${progTag === "alle" ? "aktiv" : ""}" onclick="A.progFilter('tag','alle')">Alle Tage</button>
@@ -1953,6 +1956,117 @@ function tProgramm(e) {
     }).join("") || `<p class="leer">${progNurFavs ? "Noch keine Favoriten markiert – ☆ an einer Session anklicken." : "Noch keine Sessions – Programmpunkte mit Tag, Zeit und Bühne anlegen und mit ★ den persönlichen Tagesplan bauen."}</p>`}
   </div>`;
 }
+
+/* ---- Programm-Import (CSV/JSON) – beseitigt das Abtippen großer Agenden ---- */
+
+function parseCsv(text, trenner) {
+  const zeilen = [];
+  let feld = "", zeile = [], inQuote = false;
+  text = text.replace(/^﻿/, "");
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuote) {
+      if (c === '"') { if (text[i + 1] === '"') { feld += '"'; i++; } else inQuote = false; }
+      else feld += c;
+    } else if (c === '"') inQuote = true;
+    else if (c === trenner) { zeile.push(feld); feld = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      zeile.push(feld); feld = "";
+      if (zeile.some(x => x !== "")) zeilen.push(zeile);
+      zeile = [];
+    } else feld += c;
+  }
+  if (feld !== "" || zeile.length) { zeile.push(feld); if (zeile.some(x => x !== "")) zeilen.push(zeile); }
+  return zeilen;
+}
+
+const IMPORT_SPALTEN = {
+  titel: ["titel", "title", "session", "name", "vortrag"],
+  tag: ["tag", "datum", "date", "day"],
+  start: ["start", "beginn", "von", "zeit", "time"],
+  ende: ["ende", "end", "bis"],
+  buehne: ["buehne", "bühne", "stage", "raum", "room", "location"],
+  thema: ["thema", "track", "topic", "kategorie", "category"],
+  beschreibung: ["beschreibung", "description", "abstract", "inhalt"],
+  speaker: ["speaker", "sprecher", "referent", "referenten", "speakers"]
+};
+
+function normDatum(wert, fallback) {
+  const w = String(wert || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(w)) return w;
+  const m = w.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  return fallback;
+}
+
+A.sessionsImport = function (evId, input) {
+  const datei = input.files[0];
+  if (!datei) return;
+  const e = ev(evId);
+  const leser = new FileReader();
+  leser.onload = () => {
+    input.value = "";
+    try {
+      let datensaetze = [];
+      const text = String(leser.result);
+      if (datei.name.toLowerCase().endsWith(".json") || text.trim().startsWith("[")) {
+        const roh = JSON.parse(text);
+        if (!Array.isArray(roh)) throw new Error("JSON muss ein Array von Session-Objekten sein.");
+        datensaetze = roh;
+      } else {
+        const kopfzeile = text.split(/\r?\n/)[0];
+        const trenner = (kopfzeile.match(/;/g) || []).length >= (kopfzeile.match(/,/g) || []).length ? ";" : ",";
+        const zeilen = parseCsv(text, trenner);
+        if (zeilen.length < 2) throw new Error("CSV braucht eine Kopfzeile und mindestens eine Datenzeile.");
+        const koepfe = zeilen[0].map(k => k.trim().toLowerCase());
+        const index = {};
+        Object.entries(IMPORT_SPALTEN).forEach(([ziel, aliase]) => {
+          index[ziel] = koepfe.findIndex(k => aliase.includes(k));
+        });
+        if (index.titel < 0) throw new Error('Spalte "titel" nicht gefunden. Erwartete Kopfzeile z. B.: titel;tag;start;ende;buehne;thema;speaker');
+        datensaetze = zeilen.slice(1).map(z => {
+          const o = {};
+          Object.keys(IMPORT_SPALTEN).forEach(k => { if (index[k] >= 0) o[k] = (z[index[k]] || "").trim(); });
+          return o;
+        });
+      }
+      const arr = listOf(S.sessions, evId);
+      const sprecherArr = listOf(S.speaker, evId);
+      let neu = 0, uebersprungen = 0, neueSpeaker = 0;
+      datensaetze.forEach(d => {
+        const titel = String(d.titel || "").trim();
+        if (!titel) { uebersprungen++; return; }
+        const tag = normDatum(d.tag, e.start);
+        const start = String(d.start || "").trim();
+        if (arr.some(x => x.titel === titel && x.tag === tag && (x.start || "") === start)) { uebersprungen++; return; }
+        const speakerIds = String(d.speaker || "").split(/[+]/).map(x => x.trim()).filter(Boolean).map(name => {
+          let sp = sprecherArr.find(x => x.name === name);
+          if (!sp) { sp = { id: uid(), name, rating: 0 }; sprecherArr.push(sp); neueSpeaker++; }
+          return sp.id;
+        });
+        arr.push({
+          id: uid(), titel, tag, start, ende: String(d.ende || "").trim(),
+          buehne: String(d.buehne || "").trim(), thema: String(d.thema || "").trim(),
+          beschreibung: String(d.beschreibung || "").trim(), speakerIds, favorit: false
+        });
+        neu++;
+      });
+      save(); render();
+      openModal("Programm-Import abgeschlossen", `
+        <ul style="padding-left:20px;font-size:14px;line-height:1.9">
+          <li><b>${neu}</b> Sessions importiert</li>
+          <li><b>${uebersprungen}</b> übersprungen (Duplikat oder ohne Titel)</li>
+          <li><b>${neueSpeaker}</b> Speaker automatisch angelegt</li>
+        </ul>
+        <p class="hinweis">Duplikate werden über Titel + Tag + Startzeit erkannt – mehrfacher Import derselben Datei schadet nicht. Format: CSV mit Kopfzeile <code>titel;tag;start;ende;buehne;thema;speaker</code> (Reihenfolge egal, mehrere Speaker mit „+" trennen) oder JSON-Array gleicher Feldnamen.</p>
+        <div class="modal-aktionen"><button class="btn primaer" onclick="closeModal()">Fertig</button></div>`);
+    } catch (fehler) {
+      alert("Import fehlgeschlagen: " + fehler.message);
+    }
+  };
+  leser.readAsText(datei);
+};
 
 A.sessionFav = function (evId, sessionId) {
   const s = listOf(S.sessions, evId).find(x => x.id === sessionId);
@@ -2442,7 +2556,10 @@ function tKostenEvent(e) {
   <div class="karte">
     <div class="karte-kopf">
       <h2>Kosten für ${esc(e.kurz || e.name)} – gesamt ${fmtEUR(kostenSumme(e.id))}</h2>
-      <button class="btn primaer klein" onclick="A.kostenFormular('${e.id}')">+ Kostenposten</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn klein" onclick="A.reisekostenPdf('${e.id}')">🧾 Abrechnung (PDF)</button>
+        <button class="btn primaer klein" onclick="A.kostenFormular('${e.id}')">+ Kostenposten</button>
+      </div>
     </div>
     <table class="tabelle">
       <thead><tr><th>Kategorie</th><th>Beschreibung</th><th>Datum</th><th class="rechts">Netto</th><th class="rechts">USt</th><th class="rechts">Brutto (EUR)</th><th></th></tr></thead>
@@ -2467,6 +2584,65 @@ function tKostenEvent(e) {
     <p class="hinweis">Posten mit „auto" stammen aus Anmeldung, Reise oder Übernachtung (Bruttobeträge, dort bearbeiten). Netto/USt und Fremdwährung werden bei manuellen Posten erfasst; in der Netto-Summe zählen Auto-Posten mit ihrem Bruttobetrag.</p>
   </div>`;
 }
+
+/* ---- Reisekostenabrechnung als druckbares PDF (über den Browser-Druckdialog) ---- */
+
+function erzeugeAbrechnungHtml(evId) {
+  const e = ev(evId);
+  if (!e) return "";
+  const nutzer = angemeldeter() || S.users.find(u => u.istIch) || { name: "" };
+  const zeilen = kostenZeilen(evId);
+  const nettoSumme = zeilen.reduce((s, z) => s + (z.netto ?? z.betrag), 0);
+  const ustSumme = zeilen.reduce((s, z) => s + (z.ust ?? 0), 0);
+  const bruttoSumme = zeilen.reduce((s, z) => s + z.betrag, 0);
+  const eur = n => (Number(n) || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+  const reisen = S.reisen[evId] || [];
+  const hotels = S.uebernachtungen[evId] || [];
+  return `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Reisekostenabrechnung ${esc(e.kurz || e.name)}</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #111; margin: 40px; font-size: 12px; }
+    h1 { font-size: 20px; margin: 0 0 4px; } h2 { font-size: 14px; margin: 22px 0 6px; }
+    .kopf { color: #444; margin-bottom: 18px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    th, td { border: 1px solid #999; padding: 5px 8px; text-align: left; }
+    th { background: #eee; } .r { text-align: right; }
+    .summe td { font-weight: bold; background: #f5f5f5; }
+    .unterschrift { margin-top: 60px; display: flex; gap: 60px; }
+    .unterschrift div { border-top: 1px solid #333; padding-top: 4px; width: 240px; font-size: 11px; color: #444; }
+    .fuss { margin-top: 30px; font-size: 10px; color: #777; }
+    @media print { body { margin: 12mm; } }
+  </style></head><body>
+  <h1>Reisekostenabrechnung</h1>
+  <div class="kopf">
+    <b>${esc(nutzer.name)}</b>${nutzer.firma ? " · " + esc(nutzer.firma) : ""}<br>
+    Veranstaltung: <b>${esc(e.name)}</b> · ${eventZeitraum(e)} · ${esc(e.ort)}${e.venue ? " (" + esc(e.venue) + ")" : ""}
+  </div>
+  ${reisen.length ? `<h2>Reiseverlauf</h2><table><tr><th>Verkehrsmittel</th><th>Strecke</th><th>Abfahrt</th><th>Ankunft</th><th class="r">Kosten</th></tr>
+    ${reisen.map(r => `<tr><td>${esc(r.art)}</td><td>${esc(r.von)} → ${esc(r.nach)}</td><td>${esc((r.abfahrt || "").replace("T", " "))}</td><td>${esc((r.ankunft || "").replace("T", " "))}</td><td class="r">${eur(r.kosten)}</td></tr>`).join("")}</table>` : ""}
+  ${hotels.length ? `<h2>Übernachtungen</h2><table><tr><th>Unterkunft</th><th>Check-in</th><th>Check-out</th><th class="r">Kosten</th></tr>
+    ${hotels.map(h => `<tr><td>${esc(h.name)}</td><td>${fmtDatum(h.checkin)}</td><td>${fmtDatum(h.checkout)}</td><td class="r">${eur(h.kosten)}</td></tr>`).join("")}</table>` : ""}
+  <h2>Kostenaufstellung</h2>
+  <table>
+    <tr><th>Kategorie</th><th>Beschreibung</th><th>Datum</th><th class="r">Netto</th><th class="r">USt</th><th class="r">Brutto</th><th>Beleg-Währung</th></tr>
+    ${zeilen.map(z => `<tr><td>${esc(z.kategorie)}</td><td>${esc(z.beschreibung)}</td><td>${fmtDatum(z.datum)}</td><td class="r">${z.netto != null ? eur(z.netto) : "–"}</td><td class="r">${z.ust != null ? eur(z.ust) + (z.ustSatz != null ? " (" + z.ustSatz + " %)" : "") : "–"}</td><td class="r">${eur(z.betrag)}</td><td>${z.waehrung && z.waehrung !== "EUR" ? esc((z.betragOriginal ?? "") + " " + z.waehrung + " @ " + z.kurs) : "EUR"}</td></tr>`).join("")}
+    <tr class="summe"><td colspan="3">Summe</td><td class="r">${eur(nettoSumme)}</td><td class="r">${eur(ustSumme)}</td><td class="r">${eur(bruttoSumme)}</td><td></td></tr>
+  </table>
+  <p style="margin-top:14px">Erstattungsbetrag: <b style="font-size:14px">${eur(bruttoSumme)}</b></p>
+  <div class="unterschrift"><div>Datum, Unterschrift Antragsteller/in</div><div>Datum, Unterschrift Genehmigung</div></div>
+  <div class="fuss">Netto-Summe enthält Auto-Posten (Eintritt/Fahrt/Hotel) zum Bruttowert, sofern dort keine USt erfasst ist. Erstellt mit AI Messe Guide am ${new Date().toLocaleDateString("de-DE")}.</div>
+  <script>window.print()</${"script"}>
+  </body></html>`;
+}
+
+A.reisekostenPdf = function (evId) {
+  const html = erzeugeAbrechnungHtml(evId);
+  if (!html) return;
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const fenster = window.open(url, "_blank");
+  if (!fenster) alert("Pop-up blockiert – bitte Pop-ups für diese Seite erlauben.");
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+};
 
 A.kostenFormular = function (evId, kostenId) {
   const k = kostenId ? listOf(S.kosten, evId).find(x => x.id === kostenId) : null;
