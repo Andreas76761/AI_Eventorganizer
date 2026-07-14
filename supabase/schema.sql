@@ -47,6 +47,7 @@ end;
 $$;
 
 revoke all on function public.delete_user() from public;
+revoke execute on function public.delete_user() from anon; -- Supabase vergibt anon-Rechte per Default-Privileges
 grant execute on function public.delete_user() to authenticated;
 
 -- Empfohlene Projekt-Einstellungen (Dashboard):
