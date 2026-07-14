@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0b0e17">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="css/style.css?v=17">
+  <link rel="stylesheet" href="css/style.css?v=18">
   <link rel="stylesheet" href="css/theme-neon.css" id="theme-css">
   <script>
     // Theme vor dem ersten Rendern anwenden (kein Aufblitzen des Standard-Designs)
@@ -21,22 +21,22 @@
 <body>
   <nav class="sidebar">
     <div class="logo">
-      <div class="logo-icon">🤖</div>
+      <div class="logo-icon" data-ico="bot"></div>
       <div><b>AI Messe Guide</b><span>Deutschland 2026</span></div>
     </div>
-    <div class="navlink" data-view="dashboard">📊 Dashboard</div>
-    <div class="navlink" data-view="kalender">📅 Kalender</div>
-    <div class="navlink" data-view="auswahl">📋 Auswahlliste</div>
-    <div class="navlink" data-view="events">🎪 Veranstaltungen</div>
-    <div class="navlink" data-view="kosten">💶 Kosten</div>
-    <div class="navlink" data-view="community">👥 Community</div>
-    <div class="navlink" data-view="nachrichten">💬 Nachrichten<span id="dm-badge"></span></div>
-    <div class="navlink" data-view="posts">📣 Posts</div>
+    <div class="navlink" data-view="dashboard" data-ico="dashboard">Dashboard</div>
+    <div class="navlink" data-view="kalender" data-ico="kalender">Kalender</div>
+    <div class="navlink" data-view="auswahl" data-ico="auswahl">Auswahlliste</div>
+    <div class="navlink" data-view="events" data-ico="events">Veranstaltungen</div>
+    <div class="navlink" data-view="kosten" data-ico="kosten">Kosten</div>
+    <div class="navlink" data-view="community" data-ico="community">Community</div>
+    <div class="navlink" data-view="nachrichten" data-ico="nachrichten">Nachrichten<span id="dm-badge"></span></div>
+    <div class="navlink" data-view="posts" data-ico="posts">Posts</div>
     <div id="login-bereich" class="login-bereich"></div>
     <div class="theme-leiste">
-      <button class="theme-knopf" data-theme="neon" onclick="A.theme('neon')" title="Design: Neon Deep">🌌</button>
-      <button class="theme-knopf" data-theme="editorial" onclick="A.theme('editorial')" title="Design: Editorial Light">📰</button>
-      <button class="theme-knopf" data-theme="clean" onclick="A.theme('clean')" title="Design: Corporate Clean">🏢</button>
+      <button class="theme-knopf" data-theme="neon" data-ico="theme-neon" onclick="A.theme('neon')" title="Design: Neon Deep"></button>
+      <button class="theme-knopf" data-theme="editorial" data-ico="theme-editorial" onclick="A.theme('editorial')" title="Design: Editorial Light"></button>
+      <button class="theme-knopf" data-theme="clean" data-ico="theme-clean" onclick="A.theme('clean')" title="Design: Corporate Clean"></button>
     </div>
     <div class="sidebar-fuss">
       Daten lokal im Browser gespeichert<br>(LocalStorage + IndexedDB)<br>
@@ -48,13 +48,14 @@
   <div id="modal-wrap"></div>
 
   <!-- ?v= beim Ändern der Dateien hochzählen: erzwingt frische Skripte statt Browser-Cache -->
-  <script src="js/config.js?v=17" onerror="console.info('Kein config.js – lokaler Modus.')"></script>
-  <script src="js/data.js?v=17"></script>
-  <script src="js/karte.js?v=17"></script>
-  <script src="js/auswahl.js?v=17"></script>
-  <script src="js/db.js?v=17"></script>
-  <script src="js/cloud.js?v=17"></script>
-  <script src="js/app.js?v=17"></script>
+  <script src="js/config.js?v=18" onerror="console.info('Kein config.js – lokaler Modus.')"></script>
+  <script src="js/icons.js?v=18"></script>
+  <script src="js/data.js?v=18"></script>
+  <script src="js/karte.js?v=18"></script>
+  <script src="js/auswahl.js?v=18"></script>
+  <script src="js/db.js?v=18"></script>
+  <script src="js/cloud.js?v=18"></script>
+  <script src="js/app.js?v=18"></script>
   <script>
     // PWA: Service Worker registrieren (Offline-Betrieb, "Zum Startbildschirm hinzufügen")
     if ("serviceWorker" in navigator) {

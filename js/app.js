@@ -90,6 +90,10 @@ function statusVon(evId) {
 }
 const STATUS_KLASSE = { "Geplant": "st-geplant", "Interessiert": "st-geplant", "Angemeldet": "st-angemeldet", "Bezahlt": "st-bezahlt", "Besucht": "st-besucht", "Abgesagt": "st-abgesagt" };
 
+// Verkehrsmittel → Lucide-Icon (ersetzt die früheren Emojis in der Oberfläche)
+const VM_IKON_NAME = { "Pkw": "auto", "Bahn": "bahn", "Flug": "flug", "ÖPNV": "bus", "Fernbus": "bus", "Mitfahrgelegenheit": "auto", "Fahrrad": "rad", "Sonstiges": "kompass" };
+function vmIkon(art) { return ikon(VM_IKON_NAME[art] || "kompass", 20); }
+
 /* ---------------- Kostenberechnung ---------------- */
 
 function kostenZeilen(evId) {
@@ -100,7 +104,7 @@ function kostenZeilen(evId) {
     zeilen.push({ kategorie: "Eintritt", beschreibung: "Ticket" + (a.ticketTyp ? " (" + a.ticketTyp + ")" : ""), betrag: Number(a.preis), datum: a.zahlungsdatum || "", quelle: "anmeldung" });
   }
   (S.reisen[evId] || []).forEach(r => {
-    if (r.kosten > 0) zeilen.push({ kategorie: "Fahrtkosten", beschreibung: (VM_ICON[r.art] || "") + " " + r.art + ": " + (r.von || "?") + " → " + (r.nach || "?"), betrag: Number(r.kosten), datum: r.abfahrt ? r.abfahrt.slice(0, 10) : "", quelle: "reise" });
+    if (r.kosten > 0) zeilen.push({ kategorie: "Fahrtkosten", beschreibung: r.art + ": " + (r.von || "?") + " → " + (r.nach || "?"), betrag: Number(r.kosten), datum: r.abfahrt ? r.abfahrt.slice(0, 10) : "", quelle: "reise" });
   });
   (S.uebernachtungen[evId] || []).forEach(u => {
     if (u.kosten > 0) zeilen.push({ kategorie: "Übernachtung", beschreibung: u.name || "Hotel", betrag: Number(u.kosten), datum: u.checkin || "", quelle: "hotel" });
@@ -192,11 +196,11 @@ function renderLogin() {
     <div class="login-info">
       <span class="avatar mini" style="background:${u.farbe}">${esc(u.name[0])}</span>
       <div class="login-name">${esc(u.name)}<span>${esc(u.email || "")}</span></div>
-      <button class="btn klein" onclick="A.kontoDialog()" title="Konto & Daten">⚙</button>
-      <button class="btn klein" onclick="A.logout()" title="Abmelden">↩</button>
+      <button class="btn klein" onclick="A.kontoDialog()" title="Konto & Daten">${ikon("einstellungen",14)}</button>
+      <button class="btn klein" onclick="A.logout()" title="Abmelden">${ikon("abmelden",14)}</button>
     </div>` : `
-    <button class="btn primaer login-btn" onclick="A.loginDialog()">🔐 Mit E-Mail anmelden</button>
-    <button class="btn klein login-btn" style="margin-top:6px" onclick="A.kontoDialog()">⚙ Konto &amp; Daten</button>`);
+    <button class="btn primaer login-btn" onclick="A.loginDialog()">${ikon("schloss",14)} Mit E-Mail anmelden</button>
+    <button class="btn klein login-btn" style="margin-top:6px" onclick="A.kontoDialog()">${ikon("einstellungen",14)} Konto &amp; Daten</button>`);
 }
 
 A.loginDialog = function (hinweis) {
@@ -367,10 +371,10 @@ A.kontoDialog = function () {
   openModal("Konto & Daten", `
     ${u ? `<p class="hinweis" style="margin-bottom:12px">Angemeldet als <b>${esc(u.name)}</b> ${u.email ? "&lt;" + esc(u.email) + "&gt;" : ""} · Modus: ${cloud ? "Cloud (Supabase)" : "lokal (nur dieser Browser)"}</p>` : `<p class="hinweis" style="margin-bottom:12px">Nicht angemeldet · Modus: ${cloud ? "Cloud (Supabase)" : "lokal (nur dieser Browser)"}</p>`}
     <div class="knopf-reihe" style="flex-direction:column;align-items:stretch">
-      <button class="btn" onclick="A.datenExport()">📤 Alle Daten als JSON exportieren (Art. 20 DSGVO)</button>
-      <label class="btn datei-btn" style="text-align:center">📥 Daten aus JSON-Export importieren<input type="file" accept=".json,application/json" onchange="A.datenImport(this)"></label>
-      ${cloud && u ? `<button class="btn" onclick="A.mfaEinrichtenDialog()">🛡 Zwei-Faktor-Authentifizierung (MFA) einrichten</button>` : ""}
-      ${u ? `<button class="btn gefahr" onclick="A.kontoLoeschen()">🗑 Mein Konto und meine Inhalte löschen (Art. 17 DSGVO)</button>` : ""}
+      <button class="btn" onclick="A.datenExport()">${ikon("download",15)} Alle Daten als JSON exportieren (Art. 20 DSGVO)</button>
+      <label class="btn datei-btn" style="text-align:center">${ikon("upload",15)} Daten aus JSON-Export importieren<input type="file" accept=".json,application/json" onchange="A.datenImport(this)"></label>
+      ${cloud && u ? `<button class="btn" onclick="A.mfaEinrichtenDialog()">${ikon("schloss",15)} Zwei-Faktor-Authentifizierung (MFA) einrichten</button>` : ""}
+      ${u ? `<button class="btn gefahr" onclick="A.kontoLoeschen()">${ikon("loeschen",15)} Mein Konto und meine Inhalte löschen (Art. 17 DSGVO)</button>` : ""}
       <button class="btn gefahr" onclick="A.allesLoeschen()">⚠️ Alle lokalen App-Daten dieses Browsers löschen</button>
     </div>
     <p class="hinweis">Rechtliches: <a href="datenschutz.html" target="_blank">Datenschutz</a> · <a href="rechtliches.html" target="_blank">Impressum &amp; EU AI Act</a></p>`);
@@ -538,7 +542,7 @@ function vDashboard() {
     const offen = AUSWAHL_KANDIDATEN.filter(k => !kandidatTeilnahme(k.id) && k.end >= jetzt).length;
     return offen ? `
     <div class="karte banner">
-      <span>📋 In der Auswahlliste warten <b>${offen} Veranstaltungen</b> auf deine Teilnahme-Entscheidung.</span>
+      <span>${ikon("auswahl",15)} In der Auswahlliste warten <b>${offen} Veranstaltungen</b> auf deine Teilnahme-Entscheidung.</span>
       <button class="btn primaer klein" onclick="A.nav('auswahl')">Jetzt entscheiden →</button>
     </div>` : "";
   })()}
@@ -615,7 +619,7 @@ function zeileEvent(e) {
   <div class="event-zeile" onclick="A.openEvent('${e.id}')">
     <span class="punkt" style="background:${e.farbe}"></span>
     <div class="ez-mitte">
-      <div class="ez-name">${S.merker[e.id] ? "🔖 " : ""}${esc(e.name)}</div>
+      <div class="ez-name">${S.merker[e.id] ? ikon("merkliste",13) + " " : ""}${esc(e.name)}</div>
       <div class="ez-sub">${eventZeitraum(e)} · ${esc(e.ort)}${bw ? ' · <span class="sterne-mini">' + "★".repeat(bw) + "</span>" : ""}</div>
     </div>
     <span class="status ${STATUS_KLASSE[st]}">${st}</span>
@@ -651,11 +655,11 @@ A.eventDetails = function (evId) {
         <button class="btn klein nein-btn ${st === "Abgesagt" ? "gewaehlt-nein" : ""}" onclick="A.zusage('${evId}',false)">✕ Nein</button>
       </td></tr>
       <tr><td>Merker</td><td>
-        <button class="btn klein ${S.merker[evId] ? "gewaehlt-ja ja-btn" : ""}" onclick="A.merkerToggle('${evId}')">${S.merker[evId] ? "🔖 vorgemerkt" : "🔖 vormerken"}</button>
+        <button class="btn klein ${S.merker[evId] ? "gewaehlt-ja ja-btn" : ""}" onclick="A.merkerToggle('${evId}')">${ikon("merkliste",13)} ${S.merker[evId] ? "vorgemerkt" : "vormerken"}</button>
       </td></tr>
     </table>
     <div class="modal-aktionen">
-      <a class="btn" href="${gcalUrl(e)}" target="_blank" rel="noopener">📆 Google Kalender</a>
+      <a class="btn" href="${gcalUrl(e)}" target="_blank" rel="noopener">${ikon("kalender-plus",14)} Google Kalender</a>
       <button class="btn primaer" onclick="closeModal();A.openEvent('${evId}')">Zur Veranstaltung →</button>
     </div>`);
 };
@@ -760,7 +764,7 @@ function vAuswahl() {
     </div>
   </div>
   <div class="karte">
-    <div class="karte-kopf"><h2>Kandidaten (${AUSWAHL_KANDIDATEN.length})</h2><button class="btn klein" onclick="A.icsZusagen()">⬇ .ics aller Zusagen (Google-Kalender-Import)</button></div>
+    <div class="karte-kopf"><h2>Kandidaten (${AUSWAHL_KANDIDATEN.length})</h2><button class="btn klein" onclick="A.icsZusagen()">${ikon("download",14)} .ics aller Zusagen (Google-Kalender-Import)</button></div>
     <table class="tabelle auswahl-tabelle">
       <thead><tr><th>Termin</th><th>Veranstaltung</th><th>Ort</th><th>Quelle</th><th class="rechts">Kosten (€)</th><th>Teilnahme</th></tr></thead>
       <tbody>
@@ -777,20 +781,20 @@ function vAuswahl() {
             ${k.venue ? `<div class="ez-sub">${esc(k.venue)}</div>` : ""}
             ${verknuepft ? `<div class="ez-sub">→ <a href="#" onclick="A.openEvent('${S.auswahl[k.id].eventId}');return false">in der App geöffnet</a></div>` : ""}</td>
           <td>${esc(k.ort)}</td>
-          <td><span class="tag ${k.quelle === 'Google-Kalender' ? 'aktiv-tag' : ''}">${k.quelle === 'Google-Kalender' ? '📆 Kalender' : '🔎 Recherche'}</span></td>
+          <td><span class="tag ${k.quelle === 'Google-Kalender' ? 'aktiv-tag' : ''}">${k.quelle === 'Google-Kalender' ? `${ikon("kalender",13)} Kalender` : `${ikon("suche",13)} Recherche`}</span></td>
           <td class="rechts"><input type="number" class="kosten-feld" min="0" step="1" value="${kandidatKosten(k)}" onchange="A.auswahlKosten('${k.id}',this.value)"></td>
           <td class="nowrap">
             <button class="btn klein ja-btn ${t === 'ja' ? 'gewaehlt-ja' : ''}" onclick="A.teilnahme('${k.id}','ja')">✓ Ja</button>
             <button class="btn klein vlt-btn ${t === 'vielleicht' ? 'gewaehlt-vlt' : ''}" onclick="A.teilnahme('${k.id}','vielleicht')" title="Noch unentschieden – vormerken">? Vlt</button>
             <button class="btn klein nein-btn ${t === 'nein' ? 'gewaehlt-nein' : ''}" onclick="A.teilnahme('${k.id}','nein')">✕ Nein</button>
-            <a class="btn klein" href="${gcalUrl(k)}" target="_blank" rel="noopener" title="In Google Kalender eintragen">📆</a>
-            ${dabei.length ? `<span class="tag aktiv-tag" title="Aus der Community dabei: ${esc(dabei.map(u => u.name).join(", "))}">👥 ${dabei.length}</span>` : ""}
+            <a class="btn klein" href="${gcalUrl(k)}" target="_blank" rel="noopener" title="In Google Kalender eintragen">${ikon("kalender-plus",14)}</a>
+            ${dabei.length ? `<span class="tag aktiv-tag" title="Aus der Community dabei: ${esc(dabei.map(u => u.name).join(", "))}">${ikon("community",13)} ${dabei.length}</span>` : ""}
           </td>
         </tr>`;
       }).join("") || '<tr><td colspan="6" class="leer">Keine Kandidaten für diesen Filter.</td></tr>'}
       </tbody>
     </table>
-    <p class="hinweis">Quelle „📆 Kalender": aus deinem Google-Kalender (inkl. Abos „KI-Café" und „AI xpress"). Quelle „🔎 Recherche": Web-Recherche Juli 2026 – Termine und Preise vor Buchung auf der verlinkten Website prüfen. Bei „Ja" wird die Veranstaltung mit Status „Interessiert" und dem Kostenwert als Ticketpreis in die App übernommen; „? Vlt" merkt sie als unentschieden vor (keine Übernahme); bei „Nein" wird eine automatisch übernommene Veranstaltung wieder entfernt (bereits erfasste Daten bleiben erhalten, dann Status „Abgesagt"). 👥 zeigt, wie viele andere Community-Mitglieder bei der verknüpften Veranstaltung als Teilnehmer eingetragen sind.</p>
+    <p class="hinweis">Quelle „Kalender": aus deinem Google-Kalender (inkl. Abos „KI-Café" und „AI xpress"). Quelle „Recherche": Web-Recherche Juli 2026 – Termine und Preise vor Buchung auf der verlinkten Website prüfen. Bei „Ja" wird die Veranstaltung mit Status „Interessiert" und dem Kostenwert als Ticketpreis in die App übernommen; „? Vlt" merkt sie als unentschieden vor (keine Übernahme); bei „Nein" wird eine automatisch übernommene Veranstaltung wieder entfernt (bereits erfasste Daten bleiben erhalten, dann Status „Abgesagt"). Das Personen-Symbol zeigt, wie viele andere Community-Mitglieder bei der verknüpften Veranstaltung als Teilnehmer eingetragen sind.</p>
   </div>`;
 }
 
@@ -865,12 +869,12 @@ function passtZurSuche(e, q) {
 }
 
 const EVENT_BEREICHE = [
-  ["uebersicht", "🎪 Übersicht"],
-  ["karte", "🗺 Deutschlandkarte"],
-  ["zeitleiste", "📆 Zeitleiste"],
-  ["merkliste", "🔖 Merkliste"],
-  ["archiv", "🗄 Archiv"],
-  ["statistik", "📈 Statistik"]
+  ["uebersicht", "Übersicht", "uebersicht"],
+  ["karte", "Deutschlandkarte", "karte"],
+  ["zeitleiste", "Zeitleiste", "zeitleiste"],
+  ["merkliste", "Merkliste", "merkliste"],
+  ["archiv", "Archiv", "archiv"],
+  ["statistik", "Statistik", "statistik"]
 ];
 let eventsSub = "uebersicht";
 let eventsBurgerOffen = false;
@@ -900,10 +904,10 @@ function eventWerkzeuge() {
   const filter = ["alle", "kommend", "Angemeldet", "Bezahlt", "Besucht"];
   return `
   <div class="werkzeuge">
-    <input id="suchfeld" class="suchfeld" placeholder="🔍 Messe suchen – Name, Ort, Thema…" value="${esc(eventSuche)}" oninput="A.suche(this.value)">
+    <input id="suchfeld" class="suchfeld" placeholder="Messe suchen – Name, Ort, Thema …" value="${esc(eventSuche)}" oninput="A.suche(this.value)">
     <div class="filter-gruppe">${filter.map(f => `<button class="filter ${eventFilter === f ? 'aktiv' : ''}" onclick="A.setEventFilter('${f}')">${f === "alle" ? "Alle" : f === "kommend" ? "Anstehend" : f}</button>`).join("")}</div>
     <button class="btn primaer" onclick="A.eventFormular()">+ Neue Veranstaltung</button>
-    <label class="btn datei-btn" title="Event-Paket eines Kollegen zusammenführen">📦 Paket-Import<input type="file" accept=".json,application/json" onchange="A.paketImport(this)"></label>
+    <label class="btn datei-btn" title="Event-Paket eines Kollegen zusammenführen">${ikon("paket",14)} Paket-Import<input type="file" accept=".json,application/json" onchange="A.paketImport(this)"></label>
   </div>`;
 }
 
@@ -920,11 +924,11 @@ function vEvents() {
   }
   return `
   <div class="kopf community-kopf">
-    <div><h1>Veranstaltungen</h1><p class="unter">AI-Messen &amp; Konferenzen – Bereich über das ☰-Menü wählen</p></div>
+    <div><h1>Veranstaltungen</h1><p class="unter">AI-Messen &amp; Konferenzen – Bereich über das Menü oben rechts wählen</p></div>
     <div class="burger-wrap">
-      <button class="btn burger-btn" onclick="A.eventsBurger()">☰ ${bereichName}</button>
+      <button class="btn burger-btn" onclick="A.eventsBurger()">${ikon("menue", 16)} ${bereichName}</button>
       <div class="burger-menue" id="events-burger-menue" style="display:${eventsBurgerOffen ? "block" : "none"}">
-        ${EVENT_BEREICHE.map(([id, label]) => `<div class="burger-punkt ${eventsSub === id ? "aktiv" : ""}" onclick="A.eventsBereich('${id}')">${label}</div>`).join("")}
+        ${EVENT_BEREICHE.map(([id, label, ic]) => `<div class="burger-punkt ${eventsSub === id ? "aktiv" : ""}" onclick="A.eventsBereich('${id}')">${ikon(ic, 16)} ${label}</div>`).join("")}
       </div>
     </div>
   </div>
@@ -976,14 +980,14 @@ function eBereichKarte() {
       </svg>
     </div>
     <div class="karte">
-      <h2>🇩🇪 Veranstaltungsorte</h2>
+      <h2>Veranstaltungsorte (DE)</h2>
       <p class="hinweis" style="margin:0 0 10px">Kreisgröße = Anzahl Veranstaltungen. Auf Marker oder Stadt klicken für Details.</p>
       <div class="stadt-chips">
         ${punkte.map(p => `<button class="stadt-chip ${karteStadt === p.stadt ? "aktiv" : ""}" onclick="A.karteStadtWahl('${esc(p.stadt)}')">${esc(p.stadt)} <b>${p.evs.length}</b></button>`).join("") || '<span class="leer">Keine Treffer für Suche/Filter.</span>'}
       </div>
       ${detail ? `
       <div class="stadt-detail">
-        <h2>📍 ${esc(karteStadt)} · ${detail.length} Veranstaltung${detail.length === 1 ? "" : "en"}</h2>
+        <h2>${ikon("pin",16)} ${esc(karteStadt)} · ${detail.length} Veranstaltung${detail.length === 1 ? "" : "en"}</h2>
         ${detail.sort((a, b) => a.start.localeCompare(b.start)).map(e => `
         <div class="event-zeile" onclick="A.openEvent('${e.id}')">
           <span class="punkt" style="background:${e.farbe}"></span>
@@ -1020,7 +1024,7 @@ function eBereichMerkliste() {
   return `
   <div class="karte">
     <div class="karte-kopf"><h2>Gemerkte &amp; bewertete Veranstaltungen (${liste.length})</h2></div>
-    ${liste.map(e => zeileEvent(e)).join("") || '<p class="leer">Noch nichts gemerkt – im Details-Popup einer Veranstaltung 🔖 „vormerken" oder Sterne vergeben.</p>'}
+    ${liste.map(e => zeileEvent(e)).join("") || '<p class="leer">Noch nichts gemerkt – im Details-Popup einer Veranstaltung „vormerken" oder Sterne vergeben.</p>'}
   </div>`;
 }
 
@@ -1086,7 +1090,7 @@ function eBereichUebersicht() {
   ${eventWerkzeuge()}
   ${kandidatenTreffer.length ? `
   <div class="karte banner">
-    <span>🔎 <b>${kandidatenTreffer.length} Treffer</b> in der Auswahlliste: ${kandidatenTreffer.slice(0, 3).map(k => esc(k.name)).join(", ")}${kandidatenTreffer.length > 3 ? "…" : ""}</span>
+    <span>${ikon("suche",14)} <b>${kandidatenTreffer.length} Treffer</b> in der Auswahlliste: ${kandidatenTreffer.slice(0, 3).map(k => esc(k.name)).join(", ")}${kandidatenTreffer.length > 3 ? "…" : ""}</span>
     <button class="btn klein" onclick="A.nav('auswahl')">Zur Auswahlliste →</button>
   </div>` : ""}
   <div class="event-gitter">
@@ -1103,7 +1107,7 @@ function eBereichUebersicht() {
           <div class="ek-meta">📍 ${esc(e.ort)}${e.venue ? " · " + esc(e.venue) : ""}</div>
           <div class="ek-fuss">
             <span>${kostenSumme(e.id) > 0 ? fmtEUR(kostenSumme(e.id)) : (e.preis > 0 ? "ab " + fmtEUR(e.preis) : "kostenlos")}</span>
-            <span>${S.merker[e.id] ? "🔖 " : ""}${S.bewertungen[e.id] ? '<span class="sterne-mini">' + "★".repeat(S.bewertungen[e.id]) + "</span> " : ""}${teiln > 0 ? "👥 " + teiln : ""}</span>
+            <span>${S.merker[e.id] ? ikon("merkliste",13) + " " : ""}${S.bewertungen[e.id] ? '<span class="sterne-mini">' + "★".repeat(S.bewertungen[e.id]) + "</span> " : ""}${teiln > 0 ? ikon("community",13) + " " + teiln : ""}</span>
           </div>
         </div>
       </div>`;
@@ -1181,7 +1185,7 @@ function vKosten() {
     ${KOSTEN_KATEGORIEN.slice(0, 3).map(k => `<div class="kpi"><div class="kpi-wert">${fmtEUR(sums[k])}</div><div class="kpi-label">${k}</div></div>`).join("")}
   </div>
   <div class="karte">
-    <div class="karte-kopf"><h2>Verteilung nach Kategorie</h2><button class="btn" onclick="A.csvExport()">⬇ CSV-Export</button></div>
+    <div class="karte-kopf"><h2>Verteilung nach Kategorie</h2><button class="btn" onclick="A.csvExport()">${ikon("download",14)} CSV-Export</button></div>
     ${KOSTEN_KATEGORIEN.map(k => `
       <div class="balken-zeile">
         <span class="balken-label">${k}</span>
@@ -1219,12 +1223,12 @@ A.csvExport = function () {
 /* ---------------- Ansicht: Community ---------------- */
 
 const COMMUNITY_BEREICHE = [
-  ["profile", "👤 Profile & Mitglieder"],
-  ["matching", "🤝 Matching (Suche ↔ Biete)"],
-  ["meine", "📅 Meine nächsten Events"],
-  ["mitfahrten", "🚘 Mitfahrgelegenheiten"],
-  ["treffen", "🍽 Treffen"],
-  ["nachrichten", "💬 Nachrichten"]
+  ["profile", "Profile & Mitglieder", "profil"],
+  ["matching", "Matching (Suche ↔ Biete)", "matching"],
+  ["meine", "Meine nächsten Events", "kalender-check"],
+  ["mitfahrten", "Mitfahrgelegenheiten", "auto"],
+  ["treffen", "Treffen", "essen"],
+  ["nachrichten", "Nachrichten", "nachrichten"]
 ];
 let communitySub = "profile";
 let burgerOffen = false;
@@ -1254,11 +1258,11 @@ function vCommunity() {
   }
   return `
   <div class="kopf community-kopf">
-    <div><h1>Community</h1><p class="unter">Profile, Matching, Mitfahrten und Treffen – Bereich über das ☰-Menü wählen</p></div>
+    <div><h1>Community</h1><p class="unter">Profile, Matching, Mitfahrten und Treffen – Bereich über das Menü oben rechts wählen</p></div>
     <div class="burger-wrap">
-      <button class="btn burger-btn" onclick="A.burger()">☰ ${bereichName}</button>
+      <button class="btn burger-btn" onclick="A.burger()">${ikon("menue", 16)} ${bereichName}</button>
       <div class="burger-menue" id="burger-menue" style="display:${burgerOffen ? "block" : "none"}">
-        ${COMMUNITY_BEREICHE.map(([id, label]) => `<div class="burger-punkt ${communitySub === id ? "aktiv" : ""}" onclick="A.communityBereich('${id}')">${label}</div>`).join("")}
+        ${COMMUNITY_BEREICHE.map(([id, label, ic]) => `<div class="burger-punkt ${communitySub === id ? "aktiv" : ""}" onclick="A.communityBereich('${id}')">${ikon(ic, 16)} ${label}</div>`).join("")}
       </div>
     </div>
   </div>
@@ -1274,7 +1278,7 @@ function cBereichProfile() {
     <div class="profil-gitter">
       ${S.users.map(u => profilKarte(u)).join("")}
     </div>
-    <p class="hinweis">Profil per ✎ pflegen: Interessen, Fähigkeiten, aktuelles Projekt, LinkedIn sowie „Suche/Biete" für gezieltes Netzwerken auf der Messe. Beiträge, Treffen, Mitfahrten und Nachrichten laufen über den per E-Mail angemeldeten Nutzer.</p>
+    <p class="hinweis">Profil über den Stift-Knopf pflegen: Interessen, Fähigkeiten, aktuelles Projekt, LinkedIn sowie „Suche/Biete" für gezieltes Netzwerken auf der Messe. Beiträge, Treffen, Mitfahrten und Nachrichten laufen über den per E-Mail angemeldeten Nutzer.</p>
   </div>`;
 }
 
@@ -1320,11 +1324,11 @@ function cBereichMatching() {
     ${matches.map(m => `
     <div class="match-zeile">
       <div class="ez-mitte">
-        <div class="ez-name">🔎 ${esc(m.a.name)} sucht &nbsp;→&nbsp; 🤝 ${esc(m.b.name)} bietet</div>
+        <div class="ez-name">${ikon("suche",13)} ${esc(m.a.name)} sucht &nbsp;→&nbsp; ${ikon("matching",13)} ${esc(m.b.name)} bietet</div>
         <div class="ez-sub">„${esc(m.a.suche)}" ↔ „${esc(m.b.biete)}"</div>
         <div class="chip-reihe klein-chips">${m.treffer.map(t => `<span class="chip interesse">${esc(t)}</span>`).join("")}</div>
       </div>
-      ${S.session ? `<button class="btn klein primaer" onclick="A.dmOeffnen('${S.session === m.a.id ? m.b.id : m.a.id}')">✉ Kontakt</button>` : ""}
+      ${S.session ? `<button class="btn klein primaer" onclick="A.dmOeffnen('${S.session === m.a.id ? m.b.id : m.a.id}')">${ikon("mail",13)} Kontakt</button>` : ""}
     </div>`).join("") || '<p class="leer">Keine Treffer – je konkreter die „Suche"- und „Biete"-Felder in den Profilen, desto besser das Matching.</p>'}
   </div>
   <div class="karte">
@@ -1399,15 +1403,15 @@ function profilKarte(u) {
         <div class="ez-sub">${esc([u.firma, meta].filter(Boolean).join(" · ")) || "Profil noch leer – ✎ ausfüllen"}</div>
       </div>
       ${u.linkedin ? `<a class="btn klein" href="${esc(u.linkedin)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="LinkedIn-Profil">in</a>` : ""}
-      ${S.session && S.session !== u.id ? `<button class="btn klein" onclick="event.stopPropagation();A.dmOeffnen('${u.id}')" title="Nachricht senden">✉</button>` : ""}
-      <button class="btn klein" onclick="event.stopPropagation();A.userFormular('${u.id}')" title="Profil bearbeiten">✎</button>
+      ${S.session && S.session !== u.id ? `<button class="btn klein" onclick="event.stopPropagation();A.dmOeffnen('${u.id}')" title="Nachricht senden">${ikon("mail",14)}</button>` : ""}
+      <button class="btn klein" onclick="event.stopPropagation();A.userFormular('${u.id}')" title="Profil bearbeiten">${ikon("stift",14)}</button>
     </div>
     ${u.interessen || u.faehigkeiten ? `<div class="chip-reihe klein-chips">${chipListe(u.interessen, "interesse")}${chipListe(u.faehigkeiten, "faehigkeit")}</div>` : ""}
-    ${u.projekt ? `<div class="profil-zeile">🛠 ${esc(u.projekt)}</div>` : ""}
+    ${u.projekt ? `<div class="profil-zeile"><b>Projekt:</b> ${esc(u.projekt)}</div>` : ""}
     ${u.suche || u.biete ? `
     <div class="such-biete">
-      ${u.suche ? `<div class="sb-box sucht">🔎 <b>Sucht:</b> ${esc(u.suche)}</div>` : ""}
-      ${u.biete ? `<div class="sb-box bietet">🤝 <b>Bietet:</b> ${esc(u.biete)}</div>` : ""}
+      ${u.suche ? `<div class="sb-box sucht">${ikon("suche",12)} <b>Sucht:</b> ${esc(u.suche)}</div>` : ""}
+      ${u.biete ? `<div class="sb-box bietet">${ikon("matching",12)} <b>Bietet:</b> ${esc(u.biete)}</div>` : ""}
     </div>` : ""}
   </div>`;
 }
@@ -1433,13 +1437,13 @@ A.profil = function (userId) {
       <tr><td>Fähigkeiten</td><td><span class="chip-reihe klein-chips">${chipListe(u.faehigkeiten, "faehigkeit") || "–"}</span></td></tr>
       <tr><td>Projekt</td><td>${esc(u.projekt) || "–"}</td></tr>
       <tr><td>LinkedIn</td><td>${u.linkedin ? `<a href="${esc(u.linkedin)}" target="_blank" rel="noopener">${esc(u.linkedin)}</a>` : "–"}</td></tr>
-      <tr><td>🔎 Sucht</td><td>${esc(u.suche) || "–"}</td></tr>
-      <tr><td>🤝 Bietet</td><td>${esc(u.biete) || "–"}</td></tr>
+      <tr><td>Sucht</td><td>${esc(u.suche) || "–"}</td></tr>
+      <tr><td>Bietet</td><td>${esc(u.biete) || "–"}</td></tr>
       <tr><td>Nächste Events</td><td>${naechsteEventsVon(u.id, u.istIch || u.id === S.session).map(e => `<a href="#" onclick="closeModal();A.openEvent('${e.id}');return false">${esc(e.kurz || e.name)}</a> <span class="ez-sub">(${fmtDatumKurz(e.start)})</span>`).join(" · ") || "–"}</td></tr>
     </table>
     <div class="modal-aktionen">
-      ${S.session && S.session !== u.id ? `<button class="btn" onclick="closeModal();A.dmOeffnen('${u.id}')">✉ Nachricht senden</button>` : ""}
-      <button class="btn primaer" onclick="closeModal();A.userFormular('${u.id}')">✎ Bearbeiten</button>
+      ${S.session && S.session !== u.id ? `<button class="btn" onclick="closeModal();A.dmOeffnen('${u.id}')">${ikon("mail",14)} Nachricht senden</button>` : ""}
+      <button class="btn primaer" onclick="closeModal();A.userFormular('${u.id}')">${ikon("stift",14)} Bearbeiten</button>
     </div>`);
 };
 
@@ -1465,8 +1469,8 @@ A.userFormular = function (userId) {
       <label>Aktuelles Projekt <input name="projekt" placeholder="woran arbeitest du gerade?" value="${esc(u?.projekt || "")}"></label>
       <label>LinkedIn-Profil <input name="linkedin" placeholder="https://www.linkedin.com/in/dein-name" value="${esc(u?.linkedin || "")}"></label>
       <div class="form-reihe">
-        <label>🔎 Suche <input name="suche" placeholder="z. B. Mitgründer, GPU-Sponsor, Beta-Tester" value="${esc(u?.suche || "")}"></label>
-        <label>🤝 Biete <input name="biete" placeholder="z. B. Mentoring, API-Zugang, Kontakte" value="${esc(u?.biete || "")}"></label>
+        <label>Suche (was ich suche) <input name="suche" placeholder="z. B. Mitgründer, GPU-Sponsor, Beta-Tester" value="${esc(u?.suche || "")}"></label>
+        <label>Biete (was ich anbiete) <input name="biete" placeholder="z. B. Mentoring, API-Zugang, Kontakte" value="${esc(u?.biete || "")}"></label>
       </div>
       <label>Farbe <input type="color" name="farbe" value="${u?.farbe || "#38bdf8"}"></label>
       <div class="modal-aktionen">
@@ -1535,7 +1539,7 @@ function vNachrichten() {
   if (!ich) return `
   <div class="kopf"><h1>Nachrichten</h1><p class="unter">Direktnachrichten zwischen Mitgliedern</p></div>
   <div class="karte"><p class="leer">Bitte zuerst per E-Mail anmelden, um Nachrichten zu lesen und zu senden.</p>
-  <button class="btn primaer" onclick="A.loginDialog()">🔐 Mit E-Mail anmelden</button></div>`;
+  <button class="btn primaer" onclick="A.loginDialog()">${ikon("schloss",14)} Mit E-Mail anmelden</button></div>`;
 
   const partner = S.users.filter(u => u.id !== ich.id);
   if (dmPartner && !user(dmPartner)) dmPartner = null;
@@ -1604,9 +1608,9 @@ A.dmSenden = function (evt, partnerId) {
 
 let postsEvId = null;
 const POST_PHASEN = [
-  ["vor", "📅 Vor dem Termin", "SAVE THE DATE"],
-  ["waehrend", "🔴 Während des Termins", "LIVE VOR ORT"],
-  ["nach", "✅ Nach dem Termin", "MEIN RECAP"]
+  ["vor", "Vor dem Termin", "SAVE THE DATE", "kalender-plus"],
+  ["waehrend", "Während des Termins", "LIVE VOR ORT", "uhr"],
+  ["nach", "Nach dem Termin", "MEIN RECAP", "haken"]
 ];
 
 A.postsEvent = function (evId) { postsEvId = evId; render(); };
@@ -1717,7 +1721,7 @@ function zeichnePostBild(cv, e, phase) {
   ctx.fillText(unten, 70, 520);
   // Fußzeile
   ctx.fillStyle = "#9aa3c7"; ctx.font = "26px Arial";
-  ctx.fillText("🤖 AI Messe Guide", 70, 575);
+  ctx.fillText("AI Messe Guide", 70, 575);
 }
 
 function nachladenPostBilder() {
@@ -1747,15 +1751,15 @@ function vPosts() {
     <span class="ez-sub">Datenbasis: ${(S.sessions[e.id] || []).length} Sessions · ${(S.speaker[e.id] || []).length} Speaker · ${(S.trends[e.id] || []).length} Trends · ${(S.nuggets[e.id] || []).length} Nuggets</span>
   </div>
   <div class="post-gitter">
-    ${POST_PHASEN.map(([phase, label]) => `
+    ${POST_PHASEN.map(([phase, label, , picon]) => `
     <div class="karte post-karte">
-      <h2>${label}</h2>
+      <h2>${ikon(picon, 16)} ${label}</h2>
       <canvas id="post-cv-${phase}" class="post-bild" title="Share-Bild 1200×627 (LinkedIn)"></canvas>
       <textarea class="post-text" id="post-text-${phase}" rows="14" onchange="A.postSpeichern('${e.id}','${phase}',this.value)">${esc(postText(e, phase))}</textarea>
       <div class="knopf-reihe" style="margin-top:10px">
-        <button class="btn klein primaer" onclick="A.postKopieren('${phase}')">📋 Text kopieren</button>
-        <button class="btn klein" onclick="A.postBildDownload('${e.id}','${phase}')">⬇ Bild (PNG)</button>
-        <button class="btn klein" onclick="A.postReset('${e.id}','${phase}')" title="Auf generierten Text zurücksetzen">↺</button>
+        <button class="btn klein primaer" onclick="A.postKopieren('${phase}')">${ikon("kopieren",13)} Text kopieren</button>
+        <button class="btn klein" onclick="A.postBildDownload('${e.id}','${phase}')">${ikon("download",13)} Bild (PNG)</button>
+        <button class="btn klein" onclick="A.postReset('${e.id}','${phase}')" title="Auf generierten Text zurücksetzen">${ikon("zuruecksetzen",13)}</button>
       </div>
     </div>`).join("")}
   </div>
@@ -1818,7 +1822,7 @@ function vEventDetail() {
       <h1>${esc(e.name)}</h1>
       <div class="ez-sub">📅 ${eventZeitraum(e)} · 📍 ${esc(e.ort)}${e.venue ? " · " + esc(e.venue) : ""} · <span class="status ${STATUS_KLASSE[st]}">${st}</span></div>
     </div>
-    <button class="btn" onclick="A.eventFormular('${e.id}')">✎ Bearbeiten</button>
+    <button class="btn" onclick="A.eventFormular('${e.id}')">${ikon("stift",14)} Bearbeiten</button>
   </div>
   <div class="tabs">${TABS.map(([id, label]) => `<button class="tab ${route.tab === id ? 'aktiv' : ''}" onclick="A.tab('${id}')">${label}</button>`).join("")}</div>
   <div class="tab-inhalt">${tabInhalt(e)}</div>`;
@@ -1856,10 +1860,10 @@ function tUebersicht(e) {
         <tr><td>Website</td><td>${e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.url)}</a>` : "–"}</td></tr>
       </table>
       <div class="knopf-reihe">
-        <a class="btn" href="${gcalUrl(e)}" target="_blank" rel="noopener">📆 In Google Kalender eintragen</a>
-        <button class="btn" onclick="A.icsEvent('${e.id}')">⬇ .ics-Datei</button>
-        <button class="btn" onclick="A.steckbrief('${e.id}')">📋 „Wer kommt mit?“-Steckbrief kopieren</button>
-        <button class="btn" onclick="A.paketExport('${e.id}')">📦 Event-Paket exportieren (fürs Team)</button>
+        <a class="btn" href="${gcalUrl(e)}" target="_blank" rel="noopener">${ikon("kalender-plus",15)} In Google Kalender eintragen</a>
+        <button class="btn" onclick="A.icsEvent('${e.id}')">${ikon("download",15)} .ics-Datei</button>
+        <button class="btn" onclick="A.steckbrief('${e.id}')">${ikon("kopieren",15)} „Wer kommt mit?“-Steckbrief kopieren</button>
+        <button class="btn" onclick="A.paketExport('${e.id}')">${ikon("paket",15)} Event-Paket exportieren (fürs Team)</button>
       </div>
       ${e.seed ? '<p class="hinweis">Startdatensatz – Termin und Preis bitte auf der Website prüfen und ggf. anpassen.</p>' : ""}
     </div>
@@ -1916,9 +1920,9 @@ function tProgramm(e) {
   return `
   <div class="karte">
     <div class="karte-kopf">
-      <h2>Programm – ${alle.length} Session${alle.length === 1 ? "" : "s"}${alle.filter(s => s.favorit).length ? ` · ★ ${alle.filter(s => s.favorit).length} Favoriten` : ""}${alle.length ? ` · 👥 ${abgedeckt}/${alle.length} abgedeckt` : ""}</h2>
+      <h2>Programm – ${alle.length} Session${alle.length === 1 ? "" : "s"}${alle.filter(s => s.favorit).length ? ` · ★ ${alle.filter(s => s.favorit).length} Favoriten` : ""}${alle.length ? ` · ${ikon("community",14)} ${abgedeckt}/${alle.length} abgedeckt` : ""}</h2>
       <div style="display:flex;gap:8px">
-        <label class="btn klein datei-btn" title="Sessions aus CSV oder JSON importieren">⬆ Import<input type="file" accept=".csv,.json,text/csv,application/json" onchange="A.sessionsImport('${e.id}',this)"></label>
+        <label class="btn klein datei-btn" title="Sessions aus CSV oder JSON importieren">${ikon("upload",13)} Import<input type="file" accept=".csv,.json,text/csv,application/json" onchange="A.sessionsImport('${e.id}',this)"></label>
         <button class="btn primaer klein" onclick="A.sessionFormular('${e.id}')">+ Session</button>
       </div>
     </div>
@@ -1949,9 +1953,9 @@ function tProgramm(e) {
           <div class="ez-sub">${sprecher.map(sp => esc(sp.name)).join(", ")}${s.beschreibung ? (sprecher.length ? " · " : "") + esc(s.beschreibung) : ""}</div>
           ${besucher.length ? `<div class="chip-reihe klein-chips">${besucher.map(u => `<span class="chip"><span class="avatar mini" style="background:${u.farbe}">${esc(u.name[0])}</span>${esc(u.name)}</span>`).join("")}</div>` : ""}
         </div>
-        <button class="btn klein ${besucher.length ? "" : "nein-btn"}" onclick="A.sessionBesucher('${e.id}','${s.id}')" title="Wer aus dem Team geht rein?">👥${besucher.length ? " " + besucher.length : ""}</button>
+        <button class="btn klein ${besucher.length ? "" : "nein-btn"}" onclick="A.sessionBesucher('${e.id}','${s.id}')" title="Wer aus dem Team geht rein?">${ikon("community",13)}${besucher.length ? " " + besucher.length : ""}</button>
         <button class="btn klein stern-btn ${s.favorit ? "voll" : ""}" onclick="A.sessionFav('${e.id}','${s.id}')" title="Als Favorit für den Tagesplan">${s.favorit ? "★" : "☆"}</button>
-        <button class="btn klein" onclick="A.sessionFormular('${e.id}','${s.id}')">✎</button>
+        <button class="btn klein" onclick="A.sessionFormular('${e.id}','${s.id}')">${ikon("stift",14)}</button>
       </div>`;
     }).join("") || `<p class="leer">${progNurFavs ? "Noch keine Favoriten markiert – ☆ an einer Session anklicken." : "Noch keine Sessions – Programmpunkte mit Tag, Zeit und Bühne anlegen und mit ★ den persönlichen Tagesplan bauen."}</p>`}
   </div>`;
@@ -2176,7 +2180,7 @@ function tSpeaker(e) {
             <div class="ez-name">${esc(s.name)} ${s.thema ? `<span class="tag aktiv-tag">${esc(s.thema)}</span>` : ""}</div>
             <div class="ez-sub">${esc([s.rolle, s.firma].filter(Boolean).join(" · ")) || "–"}</div>
           </div>
-          <button class="btn klein" onclick="event.stopPropagation();A.speakerFormular('${e.id}','${s.id}')">✎</button>
+          <button class="btn klein" onclick="event.stopPropagation();A.speakerFormular('${e.id}','${s.id}')">${ikon("stift",14)}</button>
         </div>
         <div class="sterne" style="margin-top:8px">
           ${[1, 2, 3, 4, 5].map(n => `<button class="stern ${n <= (s.rating || 0) ? "voll" : ""}" onclick="event.stopPropagation();A.speakerRating('${e.id}','${s.id}',${n})" title="Promi-Rating ${n}/5">★</button>`).join("")}
@@ -2186,10 +2190,10 @@ function tSpeaker(e) {
     </div>
   </div>
   <div class="karte">
-    <div class="karte-kopf"><h2>🏢 Firmen (${Object.keys(firmen).length})</h2></div>
+    <div class="karte-kopf"><h2>${ikon("gebaeude",16)} Firmen (${Object.keys(firmen).length})</h2></div>
     ${Object.entries(firmen).sort((a, b) => b[1].length - a[1].length).map(([firma, sp]) => `
     <div class="reise-zeile">
-      <span class="reise-icon">🏢</span>
+      <span class="reise-icon">${ikon("gebaeude",20)}</span>
       <div class="ez-mitte">
         <div class="ez-name">${esc(firma)} <span class="tag">${sp.length} Speaker</span></div>
         <div class="ez-sub">${sp.map(x => esc(x.name)).join(", ")}${[...new Set(sp.map(x => x.thema).filter(Boolean))].length ? " · Themen: " + [...new Set(sp.map(x => x.thema).filter(Boolean))].map(esc).join(", ") : ""}</div>
@@ -2218,7 +2222,7 @@ A.speakerDetail = function (evId, spId) {
       <tr><td>Sessions</td><td>${sessions.map(x => `${esc(x.titel)} <span class="ez-sub">(${fmtDatumKurz(x.tag)} ${esc(x.start || "")})</span>`).join("<br>") || "–"}</td></tr>
     </table>
     <div class="modal-aktionen">
-      <button class="btn primaer" onclick="closeModal();A.speakerFormular('${evId}','${spId}')">✎ Bearbeiten</button>
+      <button class="btn primaer" onclick="closeModal();A.speakerFormular('${evId}','${spId}')">${ikon("stift",14)} Bearbeiten</button>
     </div>`);
 };
 
@@ -2446,26 +2450,26 @@ function tReise(e) {
       <div class="karte-kopf"><h2>Reiseabschnitte</h2><button class="btn primaer klein" onclick="A.reiseFormular('${e.id}')">+ Abschnitt</button></div>
       ${reisen.map(r => `
         <div class="reise-zeile">
-          <span class="reise-icon">${VM_ICON[r.art] || "🧭"}</span>
+          <span class="reise-icon">${vmIkon(r.art)}</span>
           <div class="ez-mitte">
             <div class="ez-name">${esc(r.von || "?")} → ${esc(r.nach || "?")} <span class="tag">${esc(r.art)}</span></div>
             <div class="ez-sub">${r.abfahrt ? "Ab " + esc(r.abfahrt.replace("T", " ")) : ""}${r.ankunft ? " · An " + esc(r.ankunft.replace("T", " ")) : ""}${r.notiz ? " · " + esc(r.notiz) : ""}</div>
           </div>
           <b>${fmtEUR(r.kosten)}</b>
-          <button class="btn klein" onclick="A.reiseFormular('${e.id}','${r.id}')">✎</button>
+          <button class="btn klein" onclick="A.reiseFormular('${e.id}','${r.id}')">${ikon("stift",14)}</button>
         </div>`).join("") || '<p class="leer">Noch keine Reise geplant – Hinfahrt, Rückfahrt und Transfers als Abschnitte anlegen.</p>'}
     </div>
     <div class="karte">
       <div class="karte-kopf"><h2>Übernachtung</h2><button class="btn primaer klein" onclick="A.hotelFormular('${e.id}')">+ Unterkunft</button></div>
       ${hotels.map(h => `
         <div class="reise-zeile">
-          <span class="reise-icon">🏨</span>
+          <span class="reise-icon">${ikon("bett",20)}</span>
           <div class="ez-mitte">
             <div class="ez-name">${esc(h.name)}</div>
             <div class="ez-sub">${fmtDatum(h.checkin)} – ${fmtDatum(h.checkout)}${h.notiz ? " · " + esc(h.notiz) : ""}</div>
           </div>
           <b>${fmtEUR(h.kosten)}</b>
-          <button class="btn klein" onclick="A.hotelFormular('${e.id}','${h.id}')">✎</button>
+          <button class="btn klein" onclick="A.hotelFormular('${e.id}','${h.id}')">${ikon("stift",14)}</button>
         </div>`).join("") || '<p class="leer">Keine Unterkunft erfasst.</p>'}
     </div>
   </div>`;
@@ -2557,7 +2561,7 @@ function tKostenEvent(e) {
     <div class="karte-kopf">
       <h2>Kosten für ${esc(e.kurz || e.name)} – gesamt ${fmtEUR(kostenSumme(e.id))}</h2>
       <div style="display:flex;gap:8px">
-        <button class="btn klein" onclick="A.reisekostenPdf('${e.id}')">🧾 Abrechnung (PDF)</button>
+        <button class="btn klein" onclick="A.reisekostenPdf('${e.id}')">${ikon("beleg",13)} Abrechnung (PDF)</button>
         <button class="btn primaer klein" onclick="A.kostenFormular('${e.id}')">+ Kostenposten</button>
       </div>
     </div>
@@ -2569,7 +2573,7 @@ function tKostenEvent(e) {
           <td class="rechts">${z.netto != null ? fmtEUR(z.netto) : "–"}</td>
           <td class="rechts">${z.ust != null ? fmtEUR(z.ust) + (z.ustSatz != null ? ` <span class="ez-sub">(${z.ustSatz} %)</span>` : "") : "–"}</td>
           <td class="rechts">${fmtEUR(z.betrag)}${z.waehrung && z.waehrung !== "EUR" ? `<div class="ez-sub">${(z.betragOriginal ?? 0).toLocaleString("de-DE")} ${esc(z.waehrung)} @ ${z.kurs}</div>` : ""}</td>
-          <td class="rechts">${z.quelle === "manuell" ? `<button class="btn klein" onclick="A.kostenFormular('${e.id}','${z.id}')">✎</button>` : `<span class="ez-sub" title="Automatisch aus ${z.quelle === 'anmeldung' ? 'Anmeldung' : z.quelle === 'reise' ? 'Reiseplanung' : 'Übernachtung'}">auto</span>`}</td>
+          <td class="rechts">${z.quelle === "manuell" ? `<button class="btn klein" onclick="A.kostenFormular('${e.id}','${z.id}')">${ikon("stift",14)}</button>` : `<span class="ez-sub" title="Automatisch aus ${z.quelle === 'anmeldung' ? 'Anmeldung' : z.quelle === 'reise' ? 'Reiseplanung' : 'Übernachtung'}">auto</span>`}</td>
         </tr>`).join("") || '<tr><td colspan="7" class="leer">Noch keine Kosten. Eintritt, Fahrt und Hotel entstehen automatisch aus den Tabs „Anmeldung" und „Reise"; Verpflegung &amp; Sonstiges hier erfassen.</td></tr>'}
         ${zeilen.length ? `
         <tr class="summen-zeile">
@@ -2756,7 +2760,7 @@ function tCommunity(e) {
         ${mitfahrten.map(m => mitfahrtZeile(m, e.id, false)).join("") || '<p class="leer">Keine Mitfahrgelegenheit angeboten.</p>'}
       </div>
       <div class="karte">
-        <div class="karte-kopf"><h2>✅ Aufgaben (${(S.aufgaben[e.id] || []).filter(a => !a.erledigt).length} offen)</h2><button class="btn primaer klein" onclick="A.aufgabeFormular('${e.id}')">+ Aufgabe</button></div>
+        <div class="karte-kopf"><h2>${ikon("haken",16)} Aufgaben (${(S.aufgaben[e.id] || []).filter(a => !a.erledigt).length} offen)</h2><button class="btn primaer klein" onclick="A.aufgabeFormular('${e.id}')">+ Aufgabe</button></div>
         ${(S.aufgaben[e.id] || []).map(a => `
         <div class="reise-zeile">
           <input type="checkbox" ${a.erledigt ? "checked" : ""} onchange="A.aufgabeErledigt('${e.id}','${a.id}')" style="width:18px;height:18px;margin:0;flex-shrink:0">
@@ -2764,7 +2768,7 @@ function tCommunity(e) {
             <div class="ez-name" style="${a.erledigt ? "text-decoration:line-through;opacity:.55" : ""}">${esc(a.text)}</div>
             ${a.wer && user(a.wer) ? `<div class="ez-sub">→ ${esc(user(a.wer).name)}</div>` : ""}
           </div>
-          <button class="btn klein" onclick="A.aufgabeFormular('${e.id}','${a.id}')">✎</button>
+          <button class="btn klein" onclick="A.aufgabeFormular('${e.id}','${a.id}')">${ikon("stift",14)}</button>
         </div>`).join("") || '<p class="leer">Keine Aufgaben – z. B. „Tisch reservieren", „Visitenkarten mitbringen", „Nachbetrachtung schreiben".</p>'}
       </div>
     </div>
@@ -2777,7 +2781,7 @@ function tCommunity(e) {
         <button class="btn primaer">Senden</button>
       </form>` : `
       <p class="leer">Zum Mitschreiben bitte anmelden.</p>
-      <button class="btn primaer" onclick="A.loginDialog()">🔐 Mit E-Mail anmelden</button>
+      <button class="btn primaer" onclick="A.loginDialog()">${ikon("schloss",14)} Mit E-Mail anmelden</button>
       <div style="height:12px"></div>`}
       ${beitraege.map(b => `
         <div class="beitrag">
@@ -2798,16 +2802,16 @@ function treffenZeile(t, evId, mitEvent) {
   const dabei = S.session && (t.teilnehmer || []).includes(S.session);
   return `
   <div class="reise-zeile">
-    <span class="reise-icon">🍽️</span>
+    <span class="reise-icon">${ikon("essen",20)}</span>
     <div class="ez-mitte">
       <div class="ez-name">${esc(t.titel || t.typ)} <span class="tag">${esc(t.typ)}</span>${mitEvent ? ` <a href="#" class="tag" onclick="A.openEvent('${evId}','community');return false">${esc(ev(evId)?.kurz || "?")}</a>` : ""}</div>
       <div class="ez-sub">${t.zeit ? esc(t.zeit.replace("T", " ")) + " · " : ""}${esc(t.ort || "Ort offen")}${t.notiz ? " · " + esc(t.notiz) : ""}</div>
       <div class="chip-reihe klein-chips">${teiln.map(u => `<span class="chip"><span class="avatar mini" style="background:${u.farbe}">${esc(u.name[0])}</span>${esc(u.name)}</span>`).join("")}</div>
     </div>
     <button class="btn klein ${dabei ? "" : "primaer"}" onclick="A.treffenToggle('${evId}','${t.id}')">${dabei ? "Absagen" : "Teilnehmen"}</button>
-    <button class="btn klein ${t.vorschlaege?.length ? "vlt-btn gewaehlt-vlt" : ""}" onclick="A.abstimmung('${evId}','${t.id}')" title="Terminabstimmung (Doodle-light)">🗳${t.vorschlaege?.length ? " " + t.vorschlaege.length : ""}</button>
-    <button class="btn klein" onclick="A.treffenEinladung('${evId}','${t.id}')" title="Kalender-Einladung verschicken">📆</button>
-    <button class="btn klein" onclick="A.treffenFormular('${evId}','${t.id}')">✎</button>
+    <button class="btn klein ${t.vorschlaege?.length ? "vlt-btn gewaehlt-vlt" : ""}" onclick="A.abstimmung('${evId}','${t.id}')" title="Terminabstimmung (Doodle-light)">${ikon("abstimmen",14)}${t.vorschlaege?.length ? " " + t.vorschlaege.length : ""}</button>
+    <button class="btn klein" onclick="A.treffenEinladung('${evId}','${t.id}')" title="Kalender-Einladung verschicken">${ikon("kalender-plus",14)}</button>
+    <button class="btn klein" onclick="A.treffenFormular('${evId}','${t.id}')">${ikon("stift",14)}</button>
   </div>`;
 }
 
@@ -2847,13 +2851,13 @@ A.treffenEinladung = function (evId, treffenId) {
     `\nDie angehängte/heruntergeladene .ics-Datei legt den Termin direkt in euren Kalender.\n\nBis dann!`);
   openModal("Treffen einladen: " + (t.titel || t.typ), `
     <table class="info-tabelle">
-      <tr><td>Wann</td><td>${t.zeit ? esc(t.zeit.replace("T", " ")) + " Uhr" : "noch offen – erst abstimmen 🗳"}</td></tr>
+      <tr><td>Wann</td><td>${t.zeit ? esc(t.zeit.replace("T", " ")) + " Uhr" : "noch offen – erst abstimmen"}</td></tr>
       <tr><td>Wo</td><td>${esc(t.ort || e.venue || e.ort)}</td></tr>
       <tr><td>Teilnehmer</td><td>${teiln.map(u => esc(u.name)).join(", ") || "–"}${mails.length ? ` <span class="ez-sub">(${mails.length} mit E-Mail)</span>` : ""}</td></tr>
     </table>
     <div class="modal-aktionen">
-      <button class="btn" id="ics-treffen-btn" type="button">⬇ .ics für den Kalender</button>
-      <a class="btn primaer" href="mailto:${mails.map(encodeURIComponent).join(",")}?subject=${betreff}&body=${body}">✉ E-Mail-Entwurf öffnen</a>
+      <button class="btn" id="ics-treffen-btn" type="button">${ikon("download",14)} .ics für den Kalender</button>
+      <a class="btn primaer" href="mailto:${mails.map(encodeURIComponent).join(",")}?subject=${betreff}&body=${body}">${ikon("mail",14)} E-Mail-Entwurf öffnen</a>
     </div>
     <p class="hinweis">Reihenfolge: Erst die .ics-Datei herunterladen, dann den E-Mail-Entwurf öffnen und die Datei anhängen – so landet das Treffen bei allen im Kalender, auch ohne die App.</p>`);
   const knopf = document.getElementById("ics-treffen-btn");
@@ -2872,7 +2876,7 @@ A.abstimmung = function (evId, treffenId) {
       const dabei = S.session && (v.stimmen || []).includes(S.session);
       return `
       <div class="reise-zeile">
-        <span class="reise-icon">🕐</span>
+        <span class="reise-icon">${ikon("uhr",20)}</span>
         <div class="ez-mitte">
           <div class="ez-name">${esc(v.zeit.replace("T", " "))} Uhr</div>
           <div class="ez-sub">${(v.stimmen || []).length} Stimme${(v.stimmen || []).length === 1 ? "" : "n"}: ${(v.stimmen || []).map(id => esc(user(id)?.name || "?")).join(", ") || "–"}</div>
@@ -2940,13 +2944,13 @@ function mitfahrtZeile(m, evId, mitEvent) {
   const binDrin = S.session && (m.mitfahrer || []).includes(S.session);
   return `
   <div class="reise-zeile">
-    <span class="reise-icon">🚘</span>
+    <span class="reise-icon">${ikon("auto",20)}</span>
     <div class="ez-mitte">
       <div class="ez-name">${esc(m.von || "?")} → ${esc(ev(evId)?.ort || "?")}${mitEvent ? ` <a href="#" class="tag" onclick="A.openEvent('${evId}','community');return false">${esc(ev(evId)?.kurz || "?")}</a>` : ""}</div>
       <div class="ez-sub">Fahrer: ${esc(fahrer?.name || "?")}${m.abfahrt ? " · Ab " + esc(m.abfahrt.replace("T", " ")) : ""} · ${frei} von ${m.plaetze} Plätzen frei${m.notiz ? " · " + esc(m.notiz) : ""}</div>
       <div class="chip-reihe klein-chips">${(m.mitfahrer || []).map(user).filter(Boolean).map(u => `<span class="chip"><span class="avatar mini" style="background:${u.farbe}">${esc(u.name[0])}</span>${esc(u.name)}</span>`).join("")}</div>
     </div>
-    ${m.fahrerId === S.session ? `<button class="btn klein" onclick="A.mitfahrtFormular('${evId}','${m.id}')">✎</button>` : `<button class="btn klein ${binDrin ? "" : "primaer"}" onclick="A.mitfahrtToggle('${evId}','${m.id}')">${binDrin ? "Aussteigen" : (frei > 0 ? "Mitfahren" : "voll")}</button>`}
+    ${m.fahrerId === S.session ? `<button class="btn klein" onclick="A.mitfahrtFormular('${evId}','${m.id}')">${ikon("stift",14)}</button>` : `<button class="btn klein ${binDrin ? "" : "primaer"}" onclick="A.mitfahrtToggle('${evId}','${m.id}')">${binDrin ? "Aussteigen" : (frei > 0 ? "Mitfahren" : "voll")}</button>`}
   </div>`;
 }
 
@@ -3117,7 +3121,7 @@ function tMaterialien(e) {
           const dabei = S.session && (S.sharing[e.id] || []).includes(S.session);
           return `
           <div class="sharing-leiste">
-            <span>🔗 Sharing-Runde: <b>${mitglieder.length}</b> angemeldet</span>
+            <span>${ikon("teilen",13)} Sharing-Runde: <b>${mitglieder.length}</b> angemeldet</span>
             <span class="chip-reihe klein-chips">${mitglieder.map(u => `<span class="chip"><span class="avatar mini" style="background:${u.farbe}">${esc(u.name[0])}</span>${esc(u.name)}</span>`).join("")}</span>
             <button class="btn klein ${dabei ? "" : "primaer"}" onclick="A.sharingToggle('${e.id}')">${dabei ? "Abmelden" : "Zum Sharing anmelden"}</button>
           </div>`;
@@ -3128,9 +3132,9 @@ function tMaterialien(e) {
         <div class="karte-kopf"><h2>Bilder</h2>
           <label class="btn primaer klein datei-btn">+ Bilder<input type="file" multiple accept="image/*" onchange="A.dateiHochladen('${e.id}','bild',this)"></label>
         </div>
-        <input id="suchfeld" class="suchfeld" style="max-width:none;margin-bottom:12px" placeholder="🔍 Bilder & erkannten Folientext durchsuchen …" value="${esc(bildSuche)}" oninput="A.bildSucheSetzen(this.value)">
+        <input id="suchfeld" class="suchfeld" style="max-width:none;margin-bottom:12px" placeholder="Bilder und erkannten Folientext durchsuchen …" value="${esc(bildSuche)}" oninput="A.bildSucheSetzen(this.value)">
         <div id="bildergalerie" class="galerie"><p class="leer">Lade…</p></div>
-        <p class="hinweis">🔎 auf einem Bild startet die Texterkennung (OCR) – erkannter Folientext wird gespeichert und ist hier durchsuchbar. Fotos werden beim Hochladen automatisch auf max. 1920 px verkleinert (spart Browserspeicher).</p>
+        <p class="hinweis">${ikon("scan",13)} auf einem Bild startet die Texterkennung (OCR) – erkannter Folientext wird gespeichert und ist hier durchsuchbar. Fotos werden beim Hochladen automatisch auf max. 1920 px verkleinert (spart Browserspeicher).</p>
       </div>
     </div>
   </div>`;
@@ -3156,16 +3160,16 @@ async function nachladenMaterialien() {
       const meins = d.ownerId === ich;
       return `
       <div class="reise-zeile">
-        <span class="reise-icon">📄</span>
-        <div class="ez-mitte"><div class="ez-name">${esc(d.name)} ${d.ownerId ? (d.geteilt !== false ? '<span class="tag">🔗 geteilt</span>' : '<span class="tag">🔒 privat</span>') : ""}</div>
+        <span class="reise-icon">${ikon("datei",20)}</span>
+        <div class="ez-mitte"><div class="ez-name">${esc(d.name)} ${d.ownerId ? (d.geteilt !== false ? `<span class="tag">${ikon("teilen",11)} geteilt</span>` : `<span class="tag">${ikon("schloss",11)} privat</span>`) : ""}</div>
           <div class="ez-sub">${besitzer ? "von " + esc(besitzer.name) + " · " : ""}${esc(d.datum)} · ${(d.blob.size / 1024).toFixed(0)} KB</div></div>
-        ${d.mime === "application/pdf" || /\.pdf$/i.test(d.name) ? `<button class="btn klein" onclick="A.folienAnsehen('${d.id}')" title="Folien in der App ansehen">📖</button>` : ""}
-        ${meins ? `<button class="btn klein" onclick="A.dateiTeilen('${d.id}')" title="Freigabe umschalten">${d.geteilt !== false ? "🔒" : "🔗"}</button>` : ""}
-        <button class="btn klein" onclick="A.dateiDownload('${d.id}')">⬇</button>
-        ${meins || !d.ownerId ? `<button class="btn klein gefahr" onclick="A.dateiLoeschen('${d.id}')">✕</button>` : ""}
+        ${d.mime === "application/pdf" || /\.pdf$/i.test(d.name) ? `<button class="btn klein" onclick="A.folienAnsehen('${d.id}')" title="Folien in der App ansehen">${ikon("buch",14)}</button>` : ""}
+        ${meins ? `<button class="btn klein" onclick="A.dateiTeilen('${d.id}')" title="Freigabe umschalten">${d.geteilt !== false ? ikon("schloss",13) : ikon("teilen",13)}</button>` : ""}
+        <button class="btn klein" onclick="A.dateiDownload('${d.id}')">${ikon("download",14)}</button>
+        ${meins || !d.ownerId ? `<button class="btn klein gefahr" onclick="A.dateiLoeschen('${d.id}')">${ikon("x",13)}</button>` : ""}
       </div>`;
     }).join("") || '<p class="leer">Keine Dateien – Vorträge, Handouts oder eigene Präsentationen hochladen.</p>')
-      + (verborgen > 0 ? `<p class="hinweis">🔒 ${verborgen} geteilte Datei${verborgen === 1 ? "" : "en"} verborgen – ${ich ? "melde dich oben zur Sharing-Runde an." : "bitte erst per E-Mail anmelden."}</p>` : "");
+      + (verborgen > 0 ? `<p class="hinweis">${ikon("schloss",12)} ${verborgen} geteilte Datei${verborgen === 1 ? "" : "en"} verborgen – ${ich ? "melde dich oben zur Sharing-Runde an." : "bitte erst per E-Mail anmelden."}</p>` : "");
     const bg = document.getElementById("bildergalerie");
     const q = bildSuche.trim().toLowerCase();
     const bilderGefiltert = q ? bilder.filter(b => (b.name + " " + (b.ocrText || "")).toLowerCase().includes(q)) : bilder;
@@ -3173,8 +3177,8 @@ async function nachladenMaterialien() {
       const url = URL.createObjectURL(b.blob);
       return `<div class="galerie-bild" title="${esc(b.name)}${b.ocrText ? "\n" + esc(b.ocrText.slice(0, 200)) : ""}">
         <img src="${url}" alt="${esc(b.name)}" onclick="A.bildAnzeigen('${b.id}')">
-        <button class="galerie-x" onclick="A.dateiLoeschen('${b.id}')">✕</button>
-        <button class="galerie-x galerie-ocr ${b.ocrText ? "hat-text" : ""}" onclick="A.bildOcr('${b.id}')" title="${b.ocrText ? "Text erneut erkennen (bereits erkannt)" : "Text erkennen (OCR)"}">🔎</button>
+        <button class="galerie-x" onclick="A.dateiLoeschen('${b.id}')">${ikon("x",13)}</button>
+        <button class="galerie-x galerie-ocr ${b.ocrText ? "hat-text" : ""}" onclick="A.bildOcr('${b.id}')" title="${b.ocrText ? "Text erneut erkennen (bereits erkannt)" : "Text erkennen (OCR)"}">${ikon("scan",12)}</button>
       </div>`;
     }).join("") || `<p class="leer">${q ? "Keine Bilder passen zur Suche „" + esc(bildSuche) + "“." : "Keine Bilder – Fotos von Ständen, Slides und Treffen hier sammeln."}</p>`;
   } catch (err) {
@@ -3265,7 +3269,7 @@ A.notizFormular = function (evId, notizId) {
     <form onsubmit="return A.notizSpeichern(event,'${evId}','${notizId || ""}')">
       <label>Titel <input name="titel" placeholder="z. B. Keynote-Takeaways" value="${esc(n?.titel || "")}"></label>
       <label style="display:flex;justify-content:space-between;align-items:center">Text
-        <button type="button" class="btn klein" id="diktat-btn" onclick="A.diktat()">🎤 Diktieren</button>
+        <button type="button" class="btn klein" id="diktat-btn" onclick="A.diktat()">${ikon("mikro",13)} Diktieren</button>
       </label>
       <textarea name="text" rows="8" required style="margin-top:0">${esc(n?.text || "")}</textarea>
       <div class="modal-aktionen">
@@ -3299,7 +3303,7 @@ function tErkenntnisse(e) {
   return `
   <div class="spalten">
     <div class="karte">
-      <div class="karte-kopf"><h2>🧭 Trends (${trends.length})</h2><button class="btn primaer klein" onclick="A.trendFormular('${e.id}')">+ Trend</button></div>
+      <div class="karte-kopf"><h2>${ikon("kompass",16)} Trends (${trends.length})</h2><button class="btn primaer klein" onclick="A.trendFormular('${e.id}')">+ Trend</button></div>
       ${trends.map(t => `
       <div class="trend-zeile" onclick="A.trendFormular('${e.id}','${t.id}')">
         <div class="ez-mitte">
@@ -3309,7 +3313,7 @@ function tErkenntnisse(e) {
       </div>`).join("") || '<p class="leer">Noch keine Trends – halte nach der Messe fest, welche Entwicklungen dir aufgefallen sind (Relevanz 1–5).</p>'}
     </div>
     <div class="karte">
-      <div class="karte-kopf"><h2>💎 Nuggets (${nuggets.length})</h2><button class="btn primaer klein" onclick="A.nuggetFormular('${e.id}')">+ Nugget</button></div>
+      <div class="karte-kopf"><h2>${ikon("stern",16)} Nuggets (${nuggets.length})</h2><button class="btn primaer klein" onclick="A.nuggetFormular('${e.id}')">+ Nugget</button></div>
       ${nuggets.map(n => `
       <div class="nugget" onclick="A.nuggetFormular('${e.id}','${n.id}')">
         <div class="nugget-text">„${esc(n.text)}“</div>
@@ -3446,14 +3450,14 @@ A.diktat = function () {
   erkennung.onend = () => {
     erkennung = null;
     const b = document.getElementById("diktat-btn");
-    if (b) { b.textContent = "🎤 Diktieren"; b.classList.remove("aufnahme"); }
+    if (b) { b.innerHTML = ikon("mikro",13) + " Diktieren"; b.classList.remove("aufnahme"); }
   };
   erkennung.onerror = e => {
     if (e.error === "not-allowed") alert("Mikrofon-Zugriff wurde blockiert – bitte in den Browser-Einstellungen erlauben.");
   };
   try {
     erkennung.start();
-    btn.textContent = "⏹ Stopp";
+    btn.innerHTML = ikon("mikro",13) + " Stopp";
     btn.classList.add("aufnahme");
   } catch (e) { erkennung = null; }
 };
@@ -3524,7 +3528,7 @@ function openModal(titel, html) {
   wrap.innerHTML = `
     <div class="modal-hintergrund" onclick="if(event.target===this)closeModal()">
       <div class="modal">
-        <div class="modal-kopf"><h2>${esc(titel)}</h2><button class="btn" onclick="closeModal()">✕</button></div>
+        <div class="modal-kopf"><h2>${esc(titel)}</h2><button class="btn" onclick="closeModal()">${ikon("x",13)}</button></div>
         <div class="modal-inhalt">${html}</div>
       </div>
     </div>`;
@@ -3544,6 +3548,10 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal()
 /* ---------------- Start ---------------- */
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Lucide-Icons in Navigation, Logo und Theme-Leiste einsetzen
+  document.querySelectorAll("[data-ico]").forEach(el => {
+    el.insertAdjacentHTML("afterbegin", ikon(el.dataset.ico) + (el.classList.contains("navlink") ? " " : ""));
+  });
   document.querySelectorAll(".navlink").forEach(el => el.addEventListener("click", () => A.nav(el.dataset.view)));
   A.theme(localStorage.getItem("aimg2026_theme") || "neon");
   render();

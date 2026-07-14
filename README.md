@@ -49,6 +49,7 @@ Verwaltungs-App für AI-Messen, -Konferenzen und -Veranstaltungen in Deutschland
 ```
 index.html        – Shell mit Sidebar-Navigation
 css/style.css     – dunkles, modernes UI (Indigo/Cyan)
+js/icons.js       – Icon-System: 57 Lucide-Icons (ISC-Lizenz) als Inline-SVG, ikon()-Helfer
 js/data.js        – Seed-Daten (10 AI-Events 2026, editierbar) + Konstanten
 js/karte.js       – Deutschlandkarte (16 Bundesländer als SVG-Pfade) + 36 Städte-Koordinaten
 js/auswahl.js     – Auswahlliste: 29 Kandidaten 2025/2026 (Recherche + Google-Kalender)

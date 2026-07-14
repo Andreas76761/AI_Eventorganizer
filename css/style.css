@@ -17,6 +17,15 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Icon-System (Lucide): einheitliche Stroke-Icons, erben currentColor */
+.ico { width: 18px; height: 18px; vertical-align: -3.5px; flex-shrink: 0; }
+.btn .ico { width: 15px; height: 15px; vertical-align: -2.5px; }
+.navlink .ico { width: 18px; height: 18px; }
+.logo-icon .ico { width: 22px; height: 22px; color: #fff; vertical-align: middle; }
+.theme-knopf .ico { width: 17px; height: 17px; vertical-align: -3px; }
+.burger-punkt .ico, .karte-kopf .ico, h2 .ico { vertical-align: -3px; margin-right: 2px; }
+.reise-icon .ico { width: 20px; height: 20px; color: var(--akzent2); }
 html, body { height: 100%; }
 body {
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
