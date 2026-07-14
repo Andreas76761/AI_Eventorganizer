@@ -82,6 +82,10 @@ a:hover { text-decoration: underline; }
   font-variant-numeric: tabular-nums;
 }
 .kosten-vorschau b { color: var(--text); }
+.preis-staffel { display: flex; flex-direction: column; gap: 4px; }
+.preis-zeile { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.preis-zeile span:first-child { color: var(--text2); }
+.preis-zeile b { white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* ---------- Deutschlandkarte ---------- */
 .karten-layout { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 4fr); gap: 20px; align-items: start; }

@@ -644,6 +644,7 @@ A.eventDetails = function (evId) {
       <tr><td>Status</td><td><span class="status ${STATUS_KLASSE[st]}">${st}</span></td></tr>
       <tr><td>Kosten</td><td><b>${fmtEUR(summe || (Number(a.preis ?? e.preis) || 0))}</b>
         ${summe ? `<div class="ez-sub">Eintritt ${fmtEUR(s["Eintritt"])} · Fahrt ${fmtEUR(s["Fahrtkosten"])} · Übernachtung ${fmtEUR(s["Übernachtung"])} · Verpflegung/Sonstiges ${fmtEUR(s["Verpflegung"] + s["Sonstiges"])}</div>` : `<div class="ez-sub">Ticketpreis (noch keine Posten erfasst)</div>`}</td></tr>
+      ${e.preise && e.preise.length ? `<tr><td>Ticketpreise</td><td>${preisStaffel(e)}</td></tr>` : ""}
       <tr><td>Inhalt</td><td>${esc(e.beschreibung) || "–"}</td></tr>
       ${e.url ? `<tr><td>Website</td><td><a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.url)}</a></td></tr>` : ""}
       <tr><td>Bewertung</td><td class="sterne">
@@ -1845,6 +1846,17 @@ function tabInhalt(e) {
 
 /* ---- Tab: Übersicht ---- */
 
+// Preisstaffel anzeigen: mehrere Ticketkategorien untereinander, sonst ab-Preis
+function preisStaffel(e) {
+  if (e.preise && e.preise.length) {
+    return `<div class="preis-staffel">${e.preise.map(p => `
+      <div class="preis-zeile"><span>${esc(p.typ)}</span>
+        <span><b>${p.betrag > 0 ? fmtEUR(p.betrag) : "kostenlos"}</b>${p.hinweis ? ` <span class="ez-sub">(${esc(p.hinweis)})</span>` : ""}</span>
+      </div>`).join("")}</div>`;
+  }
+  return e.preis > 0 ? "ab " + fmtEUR(e.preis) : "kostenlos";
+}
+
 function tUebersicht(e) {
   const teiln = (S.teilnehmer[e.id] || []).map(user).filter(Boolean);
   return `
@@ -1856,7 +1868,7 @@ function tUebersicht(e) {
         <tr><td>Kategorie</td><td><span class="tag">${esc(e.kategorie)}</span></td></tr>
         <tr><td>Zeitraum</td><td>${eventZeitraum(e)}</td></tr>
         <tr><td>Ort</td><td>${esc(e.ort)}${e.venue ? " – " + esc(e.venue) : ""}</td></tr>
-        <tr><td>Ticketpreis</td><td>${e.preis > 0 ? "ab " + fmtEUR(e.preis) : "kostenlos"}</td></tr>
+        <tr><td>Ticketpreis</td><td>${preisStaffel(e)}</td></tr>
         <tr><td>Website</td><td>${e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.url)}</a>` : "–"}</td></tr>
       </table>
       <div class="knopf-reihe">
