@@ -34,6 +34,8 @@ function ladeZustand() {
   }
   if (!Array.isArray(s.pcs) || !s.pcs.length) s.pcs = strukturKopie(SEED_PCS);
   if (!s.checks) s.checks = {};
+  if (!s.einstellungen) s.einstellungen = { githubToken: "", vercelToken: "" };
+  if (!s.hosting) s.hosting = {}; // appId -> {github:{...}, vercel:{...}, Fehler}
   return s;
 }
 
@@ -394,23 +396,175 @@ function renderRechner() {
 }
 
 function renderHosting() {
-  const zeilen = state.apps.map(a => `<tr>
+  const zeilen = state.apps.map(a => {
+    const h = state.hosting[a.id] || {};
+    const g = h.github;
+    return `<tr>
     <td><b>${esc(a.name)}</b></td>
-    <td>${a.github ? `<a href="${esc(a.github)}" target="_blank" rel="noopener">${esc(a.github.replace("https://github.com/", ""))}</a> ${a.visibility === "private" ? "🔒" : "🌐"}` : "–"}</td>
-    <td>${esc(a.letzterPush || "–")}</td>
-    <td>${a.vercelUrl ? `${checkBadge(a, "vercel")} <a href="${esc(a.vercelUrl)}" target="_blank" rel="noopener">${esc(a.vercelUrl.replace("https://", ""))}</a>${a.vercelBestaetigt || (state.checks[a.id + ":vercel"] || {}).status === "ok" ? "" : " <small>(vermutet)</small>"}` : "–"}</td>
+    <td>${a.github ? `<a href="${esc(a.github)}" target="_blank" rel="noopener">${esc(a.github.replace("https://github.com/", ""))}</a> ${a.visibility === "private" ? "🔒" : "🌐"}` : "–"}
+      ${h.githubFehler ? `<br><small class="fehltext">${esc(h.githubFehler)}</small>` : ""}</td>
+    <td>${g && g.commitMsg ? `${esc(g.commitDatum || "")}<br><small class="hinweis" style="margin:0" title="${esc(g.commitMsg)}">${esc(g.commitMsg.slice(0, 44))}${g.commitMsg.length > 44 ? "…" : ""}</small>` : esc(a.letzterPush || "–")}</td>
+    <td>${g ? (g.issues || 0) : "–"}</td>
+    <td>${g ? actionsSymbol(g.actions) : "–"}</td>
+    <td>${a.vercelUrl ? `${checkBadge(a, "vercel")} <a href="${esc(a.vercelUrl)}" target="_blank" rel="noopener">${esc(a.vercelUrl.replace("https://", ""))}</a>${a.vercelBestaetigt || (state.checks[a.id + ":vercel"] || {}).status === "ok" ? "" : " <small>(vermutet)</small>"}` : "–"}
+      ${h.vercel ? `<br>${vercelStatusHtml(h.vercel)}` : ""}${h.vercelFehler ? `<br><small class="fehltext">${esc(h.vercelFehler)}</small>` : ""}</td>
     <td>${a.lokalUrl ? `${checkBadge(a, "lokal")} <a href="${esc(a.lokalUrl)}" target="_blank" rel="noopener">${esc(a.lokalUrl)}</a>` : "–"}</td>
-    <td><button class="mini" onclick="pruefeAppId('${a.id}')" title="Erreichbarkeit prüfen">⟳</button></td>
-  </tr>`).join("");
+    <td><button class="mini" onclick="pruefeAppId('${a.id}')" title="Erreichbarkeit im Browser prüfen">⟳</button></td>
+  </tr>`;
+  }).join("");
   return `${statistikZeile()}
   <h2>GitHub &amp; Vercel</h2>
-  <p class="hinweis">Vercel-URLs nach dem Schema <code>&lt;projekt&gt;.vercel.app</code> sind <b>vermutet</b>, bis eine Prüfung
-  sie bestätigt (grüner Punkt). Die Prüfung läuft direkt in deinem Browser – im Heimnetz erreicht sie auch lokale Apps.</p>
-  <p><button class="knopf primär" onclick="pruefeAlle()">⟳ Alle prüfen</button></p>
+  <details class="einstellungen"${state.einstellungen.githubToken || state.einstellungen.vercelToken ? "" : " open"}>
+    <summary>🔑 API-Zugänge (bleiben nur in diesem Browser)</summary>
+    <form onsubmit="speichereTokens(event)" class="zweispaltig" style="align-items:end; margin-top:.6rem">
+      <label>GitHub-Token (PAT, „Contents: read" genügt; ohne Token: nur öffentliche Repos, 60 Abrufe/h)
+        <input name="gh" type="password" value="${esc(state.einstellungen.githubToken)}" placeholder="github_pat_…"></label>
+      <label>Vercel-Token (vercel.com → Settings → Tokens)
+        <input name="vc" type="password" value="${esc(state.einstellungen.vercelToken)}" placeholder="vercel_…"></label>
+      <div class="aktionen"><button class="knopf primär" type="submit">Speichern</button></div>
+    </form>
+  </details>
+  <p class="hinweis">„Live-Daten abrufen" holt je App den letzten Commit, offene Issues und den Actions-Status von GitHub
+  sowie das letzte Deployment von Vercel (bestätigt dabei die vermuteten URLs). Der ⟳-Knopf je Zeile prüft zusätzlich
+  die Erreichbarkeit direkt aus deinem Browser.
+  ${state.hostingZeit ? `<b>Zuletzt abgerufen: ${esc(state.hostingZeit)}</b>` : ""}</p>
+  ${state.hostingVercelFehler ? `<p class="fehltext">Vercel-Projektliste: ${esc(state.hostingVercelFehler)}</p>` : ""}
+  <p>
+    <button class="knopf primär" onclick="aktualisiereHosting()"${hostingLaeuft ? " disabled" : ""}>${hostingLaeuft ? "🔄 läuft …" : "⚡ Live-Daten von GitHub & Vercel abrufen"}</button>
+    <button class="knopf" onclick="pruefeAlle()">⟳ Erreichbarkeit aller URLs prüfen</button>
+  </p>
   <div class="tabellenrahmen"><table>
-    <thead><tr><th>App</th><th>GitHub-Repo</th><th>Letzter Push</th><th>Vercel</th><th>Lokal</th><th></th></tr></thead>
+    <thead><tr><th>App</th><th>GitHub-Repo</th><th>Letzter Commit</th><th>Issues</th><th>Actions</th><th>Vercel</th><th>Lokal</th><th></th></tr></thead>
     <tbody>${zeilen}</tbody>
   </table></div>`;
+}
+
+/* ---------- Phase 3: Live-Daten von GitHub & Vercel ---------- */
+
+let hostingLaeuft = false;
+let vercelProjekte = null; // Sitzungs-Cache der Projektliste
+
+function repoPfad(a) {
+  const m = (a.github || "").match(/github\.com\/([^/]+\/[^/#?]+)/);
+  return m ? m[1].replace(/\.git$/, "") : null;
+}
+
+async function githubApi(pfad) {
+  const kopf = { Accept: "application/vnd.github+json" };
+  if (state.einstellungen.githubToken) kopf.Authorization = "Bearer " + state.einstellungen.githubToken;
+  const r = await fetch("https://api.github.com" + pfad, { headers: kopf, signal: AbortSignal.timeout(10000) });
+  if (!r.ok) throw new Error("GitHub HTTP " + r.status + (r.status === 403 ? " (Ratenlimit? Token eintragen)" : r.status === 404 ? " (privates Repo? Token eintragen)" : ""));
+  return r.json();
+}
+
+async function vercelApi(pfad) {
+  const r = await fetch("https://api.vercel.com" + pfad, {
+    headers: { Authorization: "Bearer " + state.einstellungen.vercelToken },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!r.ok) throw new Error("Vercel HTTP " + r.status);
+  return r.json();
+}
+
+async function holeGithubInfo(a) {
+  const repo = repoPfad(a);
+  if (!repo) return;
+  const meta = await githubApi(`/repos/${repo}`);
+  const commits = await githubApi(`/repos/${repo}/commits?per_page=1`).catch(() => null);
+  const runs = await githubApi(`/repos/${repo}/actions/runs?per_page=1`).catch(() => null);
+  const c = commits && commits[0];
+  const lauf = runs && runs.workflow_runs && runs.workflow_runs[0];
+  const info = {
+    pushedAt: (meta.pushed_at || "").slice(0, 10),
+    issues: meta.open_issues_count,
+    commitMsg: c ? c.commit.message.split("\n")[0].slice(0, 80) : null,
+    commitDatum: c ? (c.commit.author.date || "").slice(0, 10) : null,
+    actions: lauf ? (lauf.conclusion || lauf.status) : null,
+  };
+  state.hosting[a.id] = Object.assign({}, state.hosting[a.id], { github: info, githubFehler: null });
+  if (info.pushedAt) a.letzterPush = info.pushedAt; // Inventurfeld auffrischen
+}
+
+function findeVercelProjekt(a) {
+  if (!vercelProjekte) return null;
+  const sub = ((a.vercelUrl || "").match(/https?:\/\/([^.]+)\.vercel\.app/) || [])[1];
+  const repoName = (repoPfad(a) || "").split("/")[1] || "";
+  return vercelProjekte.find(p =>
+    p.name === sub ||
+    p.name === repoName.toLowerCase() ||
+    (p.link && (p.link.repo || "").toLowerCase() === repoName.toLowerCase()));
+}
+
+async function holeVercelInfo(a) {
+  const projekt = findeVercelProjekt(a);
+  if (!projekt) {
+    if (a.vercelUrl || repoPfad(a)) state.hosting[a.id] = Object.assign({}, state.hosting[a.id], { vercel: { keinProjekt: true }, vercelFehler: null });
+    return;
+  }
+  const d = await vercelApi(`/v6/deployments?projectId=${projekt.id}&limit=1`);
+  const dep = d.deployments && d.deployments[0];
+  const info = {
+    projekt: projekt.name,
+    status: dep ? dep.state : "KEIN_DEPLOYMENT", // READY | ERROR | BUILDING | QUEUED | CANCELED
+    datum: dep ? new Date(dep.createdAt).toLocaleDateString("de-DE") : null,
+    url: dep ? "https://" + dep.url : null,
+  };
+  state.hosting[a.id] = Object.assign({}, state.hosting[a.id], { vercel: info, vercelFehler: null });
+  if (!a.vercelUrl) { a.vercelUrl = `https://${projekt.name}.vercel.app`; }
+  if (info.status === "READY") a.vercelBestaetigt = true;
+}
+
+async function aktualisiereHosting() {
+  if (hostingLaeuft) return;
+  hostingLaeuft = true;
+  render();
+  // Vercel-Projektliste einmal je Abruf holen
+  if (state.einstellungen.vercelToken) {
+    try {
+      const d = await vercelApi("/v9/projects?limit=100");
+      vercelProjekte = d.projects || [];
+    } catch (e) {
+      vercelProjekte = null;
+      state.hostingVercelFehler = e.message;
+    }
+  }
+  for (const a of state.apps) {
+    if (repoPfad(a)) {
+      try { await holeGithubInfo(a); }
+      catch (e) { state.hosting[a.id] = Object.assign({}, state.hosting[a.id], { githubFehler: e.message }); }
+    }
+    if (state.einstellungen.vercelToken && vercelProjekte) {
+      try { await holeVercelInfo(a); }
+      catch (e) { state.hosting[a.id] = Object.assign({}, state.hosting[a.id], { vercelFehler: e.message }); }
+    }
+    render(); // Zeile für Zeile sichtbar aktualisieren
+  }
+  state.hostingZeit = new Date().toLocaleString("de-DE");
+  hostingLaeuft = false;
+  speichere();
+  render();
+}
+
+function speichereTokens(ev) {
+  ev.preventDefault();
+  state.einstellungen.githubToken = ev.target.gh.value.trim();
+  state.einstellungen.vercelToken = ev.target.vc.value.trim();
+  state.hostingVercelFehler = null;
+  speichere();
+  render();
+}
+
+function actionsSymbol(status) {
+  if (!status) return "–";
+  const s = { success: "✅", failure: "❌", cancelled: "⛔", in_progress: "🔄", queued: "⏳" }[status] || status;
+  return `<span title="Letzter GitHub-Actions-Lauf: ${esc(status)}">${s}</span>`;
+}
+
+function vercelStatusHtml(v) {
+  if (!v) return "";
+  if (v.keinProjekt) return '<small class="hinweis" style="margin:0">kein Vercel-Projekt gefunden</small>';
+  const farbe = { READY: "gruen", ERROR: "rot", BUILDING: "gelb", QUEUED: "gelb", CANCELED: "grau" }[v.status] || "grau";
+  return `<span class="ampel ${farbe}">●</span> ${esc(v.status)}${v.datum ? ` <small>(${esc(v.datum)})</small>` : ""}`;
 }
 
 /* ---------- Bewertungs-/Vergleichsansicht ---------- */

@@ -210,6 +210,17 @@ tr:hover td { background: var(--fläche); }
 .bewertungstabelle td:first-child { white-space: normal; min-width: 240px; max-width: 380px; }
 .bewertungstabelle .sterne { white-space: nowrap; }
 
+/* GitHub/Vercel-Einstellungen */
+.einstellungen {
+  background: var(--fläche);
+  border: 1px solid var(--rand);
+  border-radius: .7rem;
+  padding: .7rem 1rem;
+  margin: .6rem 0;
+}
+.einstellungen summary { cursor: pointer; color: var(--gedämpft); }
+.fehltext { color: var(--rot); }
+
 /* Bewertung */
 .sterne { color: var(--gelb); letter-spacing: .06em; }
 .score { color: var(--gelb); font-size: 1.05rem; }

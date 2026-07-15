@@ -20,7 +20,11 @@ Dann http://localhost:8950 öffnen. (Direktes Öffnen von `index.html` per Doppe
   ★-Editor, sortierbarer Vergleichstabelle, Gesamt-Score, Apps/Ø-Score je Werkzeug und Top 3; die Startwerte
   sind Vorschläge aus der Code-Analyse (Notiz je App), „Nutzen" bleibt bewusst offen
 - **Rechner** – die 4 PCs im Heimnetz mit ihren zugeordneten Apps (Namen/Details editierbar)
-- **GitHub & Vercel** – Tabelle aller Repos und Deployments mit Live-Erreichbarkeitsprüfung („⟳ Alle prüfen")
+- **GitHub & Vercel** – Tabelle aller Repos und Deployments: Live-Daten über die APIs (letzter Commit,
+  offene Issues, Actions-Status, letztes Vercel-Deployment mit READY/ERROR) plus Erreichbarkeitsprüfung
+  im Browser. Tokens unter „🔑 API-Zugänge" eintragen (GitHub-PAT mit „Contents: read"; Vercel-Token
+  von vercel.com → Settings → Tokens) – sie bleiben ausschließlich im LocalStorage dieses Browsers.
+  Ohne GitHub-Token funktionieren öffentliche Repos mit 60 Abrufen/h; private brauchen das Token.
 - **Daten** – JSON-Export/-Import, Zurücksetzen auf Startdaten
 
 ## Daten
@@ -39,6 +43,6 @@ Status je App (läuft/läuft nicht) und **Start/Stopp direkt aus dem Dashboard**
 Sicherheit: siehe [agent/README.md](agent/README.md). Agent-Adresse + Token trägt man je Rechner
 unter „Rechner → ✎" ein; „⟳ Alle Rechner verbinden" holt den Live-Status.
 
-## Nächste Phasen
+## Nächste Ausbaustufen (optional)
 
-Phase 3 GitHub-/Vercel-API-Status (siehe Plan) · optional Wake-on-LAN.
+Wake-on-LAN zum Aufwecken ausgeschalteter PCs · Auto-Refresh-Intervall · Vercel-Redeploy per Deploy-Hook.
