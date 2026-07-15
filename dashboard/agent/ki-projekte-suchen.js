@@ -118,7 +118,10 @@ function durchsuche(start, maxTiefe) {
   }
   if (maxTiefe <= 0) return;
   for (const e of eintraege) {
-    if (e.isDirectory() && !UEBERSPRINGEN.has(e.name) && !e.name.startsWith("$")) {
+    // Punkt-Ordner (.codex, .claude, .lmstudio, .paperclip …), $-Ordner und
+    // Python-Installationen ueberspringen – das sind keine eigenen Projekte
+    if (e.isDirectory() && !UEBERSPRINGEN.has(e.name) && !e.name.startsWith("$")
+        && !e.name.startsWith(".") && !/^python\d/i.test(e.name)) {
       durchsuche(path.join(start, e.name), maxTiefe - 1);
     }
   }
