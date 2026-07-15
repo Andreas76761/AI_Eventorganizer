@@ -40,6 +40,7 @@ function ladeZustand() {
   if (!s.checks) s.checks = {};
   if (!s.einstellungen) s.einstellungen = { githubToken: "", vercelToken: "" };
   if (!s.hosting) s.hosting = {}; // appId -> {github:{...}, vercel:{...}, Fehler}
+  if (!s.vorschlagErledigt) s.vorschlagErledigt = {}; // "appId#index" -> true
   return s;
 }
 
@@ -813,9 +814,33 @@ function analyseDetail(a) {
       ${live && live.ms != null ? `<b class="score">${live.ms} ms</b> <small class="hinweis">(${esc(live.url)}, ${esc(live.zeit)}, Bestwert aus 3 Messungen)</small>` : ""}
       ${live && live.fehler ? `<span class="fehltext">${esc(live.fehler)}</span>` : ""}</p>
 
-    <h3>💡 Verbesserungsvorschläge</h3>
-    ${a.vorschlaege && a.vorschlaege.length ? `<ul class="vorschlaege">${a.vorschlaege.map(v => `<li>${esc(v)}</li>`).join("")}</ul>` : '<p class="leer">keine erfasst</p>'}
+    <h3>💡 Verbesserungen ${verbesserungFortschritt(a)}</h3>
+    ${a.vorschlaege && a.vorschlaege.length ? `<ul class="vorschlaege check">${a.vorschlaege.map((v, i) => {
+      const schon = v.startsWith("✅"); // von mir bereits umgesetzt (fix-Branch)
+      const text = v.replace(/^✅ umgesetzt[^:]*:\s*/, "").replace(/^✅\s*/, "");
+      const erledigt = schon || state.vorschlagErledigt[a.id + "#" + i];
+      return `<li class="${erledigt ? "erledigt" : ""}">
+        <label><input type="checkbox" ${erledigt ? "checked" : ""} ${schon ? "disabled" : ""}
+          onchange="toggleVorschlag('${a.id}',${i})"> ${esc(text)}${schon ? ' <span class="tagpill">von Claude umgesetzt</span>' : ""}</label>
+      </li>`;
+    }).join("")}</ul>` : '<p class="leer">keine erfasst</p>'}
   </div>`;
+}
+
+function toggleVorschlag(appId, i) {
+  const key = appId + "#" + i;
+  if (state.vorschlagErledigt[key]) delete state.vorschlagErledigt[key];
+  else state.vorschlagErledigt[key] = true;
+  speichere();
+  render();
+}
+
+function verbesserungFortschritt(a) {
+  if (!a.vorschlaege || !a.vorschlaege.length) return "";
+  const gesamt = a.vorschlaege.length;
+  const fertig = a.vorschlaege.filter((v, i) => v.startsWith("✅") || state.vorschlagErledigt[a.id + "#" + i]).length;
+  const alle = fertig === gesamt;
+  return `<span class="fortschritt${alle ? " voll" : ""}">${fertig}/${gesamt} umgesetzt</span>`;
 }
 
 function renderAnalyse() {

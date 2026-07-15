@@ -280,6 +280,15 @@ tr:hover td { background: var(--fläche); }
 .perfzeile { display: flex; gap: .8rem; flex-wrap: wrap; }
 .vorschlaege { padding-left: 1.2rem; font-size: .9rem; display: flex; flex-direction: column; gap: .35rem; }
 .vorschlaege li::marker { color: var(--gelb); }
+.vorschlaege.check { list-style: none; padding-left: 0; gap: .1rem; }
+.vorschlaege.check li { border-bottom: 1px dashed var(--rand); padding: .35rem 0; }
+.vorschlaege.check li:last-child { border-bottom: none; }
+.vorschlaege.check label { display: flex; gap: .5rem; align-items: flex-start; cursor: pointer; }
+.vorschlaege.check input { margin-top: .2rem; width: 1rem; height: 1rem; flex-shrink: 0; accent-color: var(--gruen); }
+.vorschlaege.check li.erledigt label { color: var(--gedämpft); text-decoration: line-through; }
+.tagpill { font-size: .68rem; background: #3ecf8e22; color: var(--gruen); border-radius: 1rem; padding: .05rem .45rem; text-decoration: none; display: inline-block; }
+.fortschritt { font-size: .74rem; font-weight: 600; background: var(--fläche2); color: var(--gedämpft); border-radius: 1rem; padding: .1rem .55rem; margin-left: .4rem; vertical-align: middle; }
+.fortschritt.voll { background: #3ecf8e22; color: var(--gruen); }
 @media (max-width: 900px) {
   .analyse-raster { grid-template-columns: 1fr; }
   .analyse-liste { position: static; flex-direction: row; flex-wrap: wrap; }
