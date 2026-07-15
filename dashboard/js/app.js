@@ -30,6 +30,10 @@ function ladeZustand() {
       });
       if (!alt.bewertung && seed.bewertung) alt.bewertung = strukturKopie(seed.bewertung);
     });
+    // neue Seed-Rechner nachtragen (Name/Adresse), eigene PCs unangetastet lassen
+    if (Array.isArray(s.pcs)) SEED_PCS.forEach(seedPc => {
+      if (!s.pcs.some(p => p.id === seedPc.id)) s.pcs.push(strukturKopie(seedPc));
+    });
     s.seedVersion = SEED_VERSION;
   }
   if (!Array.isArray(s.pcs) || !s.pcs.length) s.pcs = strukturKopie(SEED_PCS);

@@ -6,11 +6,14 @@
    Alles in der App editierbar; Änderungen liegen im LocalStorage und
    können unter „Daten" als JSON exportiert werden. */
 
-const SEED_VERSION = 7;
+const SEED_VERSION = 8;
 
 const URSPRUENGE = ["Claude", "Codex", "OpenAI", "Perplexity", "Lovable", "Gemini", "Sonstiges"];
 
+// Agent-Adresse ist voreingetragen; das geheime Token trägst du lokal am Rechner ein (nie im Repo).
 const SEED_PCS = [
+  { id: "tamara", name: "Tamara", os: "Windows", ort: "", notiz: "Laptop – Agent eingerichtet",
+    agentUrl: "http://192.168.0.171:9800", agentToken: "" },
   { id: "pc1", name: "PC 1", os: "Windows", ort: "", notiz: "" },
   { id: "pc2", name: "PC 2", os: "Windows", ort: "", notiz: "" },
   { id: "pc3", name: "PC 3", os: "Windows", ort: "", notiz: "" },
