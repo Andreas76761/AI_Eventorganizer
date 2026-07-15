@@ -682,6 +682,39 @@ function vercelStatusHtml(v) {
   return `<span class="ampel ${farbe}">●</span> ${esc(v.status)}${v.datum ? ` <small>(${esc(v.datum)})</small>` : ""}`;
 }
 
+/* ---------- Architektur-Diagramm je App (aus technik abgeleitet) ---------- */
+
+function dbInfo(backend) {
+  const b = (backend || "").toLowerCase();
+  if (/supabase/.test(b)) return { name: "Supabase", typ: "Postgres · Auth · RLS", cls: "db-supabase" };
+  if (/firebase|firestore/.test(b)) return { name: "Firebase / Firestore", typ: "NoSQL-Cloud", cls: "db-firebase" };
+  if (/notion/.test(b)) return { name: "Notion", typ: "API-Sync", cls: "db-notion" };
+  if (/localstorage|indexeddb|browser/.test(b)) return { name: "Browser-Speicher", typ: "LocalStorage / IndexedDB", cls: "db-local" };
+  if (/kein|none|—|clientseitig|daten als js/.test(b)) return { name: "kein Server", typ: "nur im Browser", cls: "db-none" };
+  return { name: backend || "unbekannt", typ: "", cls: "db-other" };
+}
+
+function archBox(icon, titel, text, cls) {
+  return `<div class="arch-box ${cls || ""}"><div class="arch-icon">${icon}</div><b>${esc(titel)}</b>${text ? `<small>${esc(text)}</small>` : ""}</div>`;
+}
+
+function architekturDiagramm(a) {
+  const t = a.technik;
+  const leerFeld = v => !v || /^(keins?|keine|—|-|unbekannt)/i.test(String(v).trim());
+  if (!t || /unbekannt/i.test(t.frontend || "")) {
+    return '<p class="leer">Architektur noch unbekannt – nach dem GitHub-Upload leite ich Frontend, Backend, Datenbank und LLM automatisch ab.</p>';
+  }
+  const boxen = [archBox("🖥", "Frontend", t.frontend, "fe")];
+  if (!leerFeld(t.middleware)) boxen.push(archBox("⚙", "Middleware", t.middleware, "mw"));
+  const db = dbInfo(t.backend);
+  boxen.push(archBox("🗄", "Datenbank / Backend", db.name + (db.typ ? " · " + db.typ : ""), db.cls));
+  const flow = boxen.map((b, i) => (i ? '<div class="arch-arrow">→</div>' : "") + b).join("");
+  return `<div class="arch-wrap">
+    <div class="arch-flow">${flow}</div>
+    ${!leerFeld(t.llm) ? `<div class="arch-llm">🤖 <b>LLM:</b> ${esc(t.llm)}</div>` : ""}
+  </div>`;
+}
+
 /* ---------- App-Analyse (Register mit Detailblick je App) ---------- */
 
 let analyseAppId = null;
@@ -760,6 +793,9 @@ function analyseDetail(a) {
     ${a.technik ? `<table class="steckbrief">${TECHNIK_ZEILEN.map(([label, key]) =>
       `<tr><th>${label}</th><td>${esc(a.technik[key] || "–")}</td></tr>`).join("")}</table>`
     : '<p class="leer">nicht erfasst</p>'}
+
+    <h3>🗺 Architektur-Diagramm</h3>
+    ${architekturDiagramm(a)}
 
     <h3>📖 Dokumentation</h3>
     <p>${a.doku ? `${esc(a.doku.text)}${a.doku.url ? ` – <a href="${esc(a.doku.url)}" target="_blank" rel="noopener">öffnen</a>` : ""}` : '<span class="leer">nicht erfasst</span>'}</p>
