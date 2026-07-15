@@ -464,7 +464,7 @@ function renderRechner() {
     mit dem Namen aus deren <code>config.json</code>.
     <form onsubmit="starteScan(event)" style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; margin-top:.5rem">
       <label style="display:flex;align-items:center;gap:.4rem">Netz
-        <input name="prefix" style="width:130px" value="${esc(state.einstellungen.scanPrefix || "192.168.178")}" title="Die ersten drei Zahlengruppen deiner Heimnetz-Adressen (ipconfig)"></label>
+        <input name="prefix" style="width:130px" value="${esc(state.einstellungen.scanPrefix || "192.168.0")}" title="Die ersten drei Zahlengruppen deiner Heimnetz-Adressen (ipconfig)"></label>
       <label style="display:flex;align-items:center;gap:.4rem">Port
         <input name="port" style="width:70px" value="${esc(String(state.einstellungen.scanPort || 9800))}"></label>
       <button class="knopf primär" type="submit"${scanStatus.laeuft ? " disabled" : ""}>${scanStatus.laeuft ? `🔄 scanne … ${scanStatus.geprueft}/${scanStatus.gesamt}` : "📡 Scan starten"}</button>
@@ -963,7 +963,7 @@ function bearbeitePc(id) {
       <label>Standort<input name="ort" value="${esc(pc.ort)}"></label>
     </div>
     <div class="zweispaltig">
-      <label>Agent-Adresse (WLAN)<input name="agentUrl" placeholder="http://192.168.178.23:9800" value="${esc(pc.agentUrl || "")}"></label>
+      <label>Agent-Adresse (WLAN)<input name="agentUrl" placeholder="http://192.168.0.171:9800" value="${esc(pc.agentUrl || "")}"></label>
       <label>Agent-Token<input name="agentToken" type="password" value="${esc(pc.agentToken || "")}"></label>
     </div>
     <label>Notiz<textarea name="notiz" rows="2">${esc(pc.notiz)}</textarea></label>
