@@ -6,7 +6,7 @@
    Alles in der App editierbar; Änderungen liegen im LocalStorage und
    können unter „Daten" als JSON exportiert werden. */
 
-const SEED_VERSION = 14;
+const SEED_VERSION = 15;
 
 const URSPRUENGE = ["Claude", "Codex", "OpenAI", "Perplexity", "Lovable", "Gemini", "Sonstiges"];
 
@@ -189,7 +189,7 @@ const SEED_APPS = [
     performance: { ladezeitMs: 430, groesseKB: 3204, hinweis: "vorher 13 s (Google-CDN blockiert) – nach dem Fix 0,4 s und offlinefähig" },
     vorschlaege: [
       "✅ umgesetzt (Branch claude/verbesserungen): Inter + Material Icons lokal gebündelt (@fontsource/inter, material-icons) – Ladezeit 13 s → 0,4 s",
-      "GEMINI_API_KEY nur über .env.local (nie einchecken); README-Schritte prüfen",
+      "✅ geprüft: Key-Hygiene bereits vorbildlich (.env* gitignored, nur .env.example eingecheckt, kein Key im Repo)",
       "firestore.rules mit dem Firebase-Emulator testen",
     ],
     bewertung: { nutzen: 0, reifegrad: 3, wartbarkeit: 3, techQualitaet: 4, zukunft: 4,
@@ -223,7 +223,7 @@ const SEED_APPS = [
     performance: { ladezeitMs: 137, groesseKB: 1160, hinweis: "schnell; startet seit dem Fix auch ohne Key" },
     vorschlaege: [
       "✅ umgesetzt (Branch claude/verbesserungen): App startet ohne Key und zeigt einen Hinweis im Chat statt weißer Seite; Key kommt sauber aus .env.local",
-      "test.txt aus dem Repo entfernen",
+      "✅ umgesetzt (Branch claude/verbesserungen): test.txt aus dem Repo entfernt",
     ],
     bewertung: { nutzen: 0, reifegrad: 2, wartbarkeit: 3, techQualitaet: 3, zukunft: 3,
       notiz: "Vorschlag aus Code-Analyse: aufgeräumtes React/TypeScript, aber die App stürzt ohne GEMINI_API_KEY komplett ab (weiße Seite) – Key-Handling sollte abgefangen werden." },
