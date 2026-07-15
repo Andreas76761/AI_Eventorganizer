@@ -6,7 +6,7 @@
    Alles in der App editierbar; Änderungen liegen im LocalStorage und
    können unter „Daten" als JSON exportiert werden. */
 
-const SEED_VERSION = 10;
+const SEED_VERSION = 11;
 
 const URSPRUENGE = ["Claude", "Codex", "OpenAI", "Perplexity", "Lovable", "Gemini", "Sonstiges"];
 
@@ -16,7 +16,8 @@ const SEED_PCS = [
     agentUrl: "http://192.168.0.171:9800", agentToken: "" },
   { id: "smartaiz1", name: "smartAIZ1", os: "Windows", ort: "", notiz: "Agent eingerichtet",
     agentUrl: "http://192.168.0.245:9800", agentToken: "" },
-  { id: "pc3", name: "PC 3", os: "Windows", ort: "", notiz: "" },
+  { id: "dell-andreas", name: "Dell Andreas", os: "Windows", ort: "", notiz: "Agent noch nicht eingerichtet – START.bat ausführen, dann per Scan verbinden",
+    agentUrl: "", agentToken: "" },
   { id: "pc4", name: "PC 4", os: "Windows", ort: "", notiz: "" },
 ];
 
