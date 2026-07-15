@@ -6,7 +6,7 @@
    Alles in der App editierbar; Änderungen liegen im LocalStorage und
    können unter „Daten" als JSON exportiert werden. */
 
-const SEED_VERSION = 5;
+const SEED_VERSION = 6;
 
 const URSPRUENGE = ["Claude", "Codex", "OpenAI", "Perplexity", "Lovable", "Gemini", "Sonstiges"];
 
@@ -145,9 +145,9 @@ const SEED_APPS = [
     status: "aktiv",
     doku: { text: "AI-Studio-Standard-README + metadata.json; Firestore-Regeln liegen bei", url: "https://github.com/Andreas76761/Task-Hub-2026-V1#readme" },
     analyse: "Größte Codebasis (10.953 Zeilen): Angular mit Material und SSR-Konfiguration, Firebase/Firestore, @google/genai, D3. Sauber strukturiert, braucht aber GEMINI_API_KEY und Firebase-Projekt, um voll zu laufen. Lädt Inter + Material Icons von fonts.googleapis.com.",
-    performance: { ladezeitMs: 13018, groesseKB: 3204, hinweis: "hing im Test an Google-Fonts vom CDN; Bundle 3,2 MB" },
+    performance: { ladezeitMs: 430, groesseKB: 3204, hinweis: "vorher 13 s (Google-CDN blockiert) – nach dem Fix 0,4 s und offlinefähig" },
     vorschlaege: [
-      "Fonts und Material-Icons lokal bundeln statt fonts.googleapis.com – schneller und offlinefähig",
+      "✅ umgesetzt (Branch claude/verbesserungen): Inter + Material Icons lokal gebündelt (@fontsource/inter, material-icons) – Ladezeit 13 s → 0,4 s",
       "GEMINI_API_KEY nur über .env.local (nie einchecken); README-Schritte prüfen",
       "firestore.rules mit dem Firebase-Emulator testen",
     ],
