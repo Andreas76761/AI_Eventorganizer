@@ -224,6 +224,61 @@ async function agentAktion(pcId, appId, aktion) {
   setTimeout(() => pruefeAgent(pcId), 1200); // kurz warten, dann Status auffrischen
 }
 
+/* ---------- Netzwerk-Scan: Agents im WLAN finden und Rechner beschriften ---------- */
+
+const scanStatus = { laeuft: false, geprueft: 0, gesamt: 0, gefunden: [] };
+
+async function scanPing(url) {
+  try {
+    const r = await fetch(url + "/ping", { signal: AbortSignal.timeout(1500) });
+    const d = await r.json();
+    if (d && d.agent === "homelab") return d;
+  } catch (e) { /* kein Agent unter dieser Adresse */ }
+  return null;
+}
+
+async function starteScan(ev) {
+  ev.preventDefault();
+  const prefix = ev.target.prefix.value.trim().replace(/\.+$/, "");
+  const port = parseInt(ev.target.port.value, 10) || 9800;
+  if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(prefix)) { alert("Bitte die ersten drei Zahlengruppen angeben, z. B. 192.168.178"); return; }
+  state.einstellungen.scanPrefix = prefix;
+  state.einstellungen.scanPort = port;
+  speichere();
+  scanStatus.laeuft = true; scanStatus.geprueft = 0; scanStatus.gesamt = 254; scanStatus.gefunden = [];
+  render();
+  const ips = Array.from({ length: 254 }, (_, i) => `${prefix}.${i + 1}`);
+  const BLOCK = 16; // 16 Adressen gleichzeitig, gesamt ~30 s
+  for (let i = 0; i < ips.length; i += BLOCK) {
+    await Promise.all(ips.slice(i, i + BLOCK).map(async ip => {
+      const url = `http://${ip}:${port}`;
+      const d = await scanPing(url);
+      scanStatus.geprueft++;
+      if (d) scanStatus.gefunden.push({ url, name: d.name || ip });
+    }));
+    if (ansicht === "rechner") render();
+  }
+  scanStatus.laeuft = false;
+  render();
+}
+
+function uebernehmeAgent(url, name) {
+  let pc = state.pcs.find(p => p.agentUrl === url) // schon bekannt → nur Name auffrischen
+        || state.pcs.find(p => p.name === name)
+        || state.pcs.find(p => !p.agentUrl);       // erster Rechner ohne Agent
+  if (!pc) {
+    let nid = "pc" + (state.pcs.length + 1), n = state.pcs.length + 1;
+    while (state.pcs.some(p => p.id === nid)) nid = "pc" + ++n;
+    pc = { id: nid, name: "", os: "", ort: "", notiz: "" };
+    state.pcs.push(pc);
+  }
+  pc.agentUrl = url;
+  pc.name = name; // Beschriftung: Name kommt vom Agent (config.json des PCs)
+  speichere();
+  render();
+  bearbeitePc(pc.id); // direkt öffnen, damit das Token eingetragen werden kann
+}
+
 function agentBadge(pcId) {
   const s = agentStatus[pcId];
   const pc = state.pcs.find(p => p.id === pcId);
@@ -369,7 +424,23 @@ function renderRechner() {
   er verbindet den Rechner über WLAN/LAN mit diesem Dashboard. Agent-Adresse und Token über ✎ am Rechner eintragen.
   Hinweis: Die Steuerung funktioniert aus dem lokal geöffneten Dashboard (http://…); aus der HTTPS-Vercel-Version
   blockiert der Browser LAN-Zugriffe (Mixed Content).</p>
-  <p><button class="knopf primär" onclick="pruefeAlleAgents()">⟳ Alle Rechner verbinden</button></p>
+  <div class="einstellungen" style="margin-bottom:.8rem">
+    <b>📡 Netzwerk-Scan:</b> findet alle eingeschalteten Rechner mit laufendem Agent und beschriftet sie automatisch
+    mit dem Namen aus deren <code>config.json</code>.
+    <form onsubmit="starteScan(event)" style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; margin-top:.5rem">
+      <label style="display:flex;align-items:center;gap:.4rem">Netz
+        <input name="prefix" style="width:130px" value="${esc(state.einstellungen.scanPrefix || "192.168.178")}" title="Die ersten drei Zahlengruppen deiner Heimnetz-Adressen (ipconfig)"></label>
+      <label style="display:flex;align-items:center;gap:.4rem">Port
+        <input name="port" style="width:70px" value="${esc(String(state.einstellungen.scanPort || 9800))}"></label>
+      <button class="knopf primär" type="submit"${scanStatus.laeuft ? " disabled" : ""}>${scanStatus.laeuft ? `🔄 scanne … ${scanStatus.geprueft}/${scanStatus.gesamt}` : "📡 Scan starten"}</button>
+      <button class="knopf" type="button" onclick="pruefeAlleAgents()">⟳ Bekannte Rechner verbinden</button>
+    </form>
+    ${scanStatus.gefunden.length ? `<ul class="appliste" style="margin-top:.5rem">${scanStatus.gefunden.map(f =>
+      `<li>🟢 <b>${esc(f.name)}</b> <span class="hinweis" style="margin:0">${esc(f.url)}</span>
+        ${state.pcs.some(p => p.agentUrl === f.url) ? '<span class="badge online">übernommen</span>' : `<button class="knopf" onclick="uebernehmeAgent('${esc(f.url)}','${esc(f.name)}')">➕ als Rechner übernehmen</button>`}
+      </li>`).join("")}</ul>`
+    : (!scanStatus.laeuft && scanStatus.gesamt ? '<p class="hinweis" style="margin:.5rem 0 0">Scan fertig – keine Agents gefunden. Läuft der Agent auf den PCs? Stimmen Netz-Präfix und Port? Firewall (private Netzwerke) erlaubt?</p>' : "")}
+  </div>
   <div class="raster pc-raster">
     ${state.pcs.map(pc => {
       const apps = state.apps.filter(a => a.rechner === pc.id);
