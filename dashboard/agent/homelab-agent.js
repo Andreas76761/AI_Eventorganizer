@@ -13,6 +13,7 @@
    Autostart (Windows):   node homelab-agent.js --autostart
    Netzwerk-Scan:         node homelab-agent.js --scan        (Netz wird erkannt)
                           node homelab-agent.js --scan 192.168.1 9800
+   Selbst-Check je PC:    node homelab-agent.js --pruefe      (prüft alle Schritte)
    Einrichtung wiederholen: config.json löschen und neu starten.
 
    Endpunkte:  GET  /ping         – Lebenszeichen (ohne Token)
@@ -159,6 +160,96 @@ async function netzScan(argPrefix, argPort) {
   console.log(`Liste gespeichert: ${path.join(BASIS, "scan-ergebnis.json")}`);
 }
 
+/* ---------- Selbst-Check (--pruefe): alle Schritte auf DIESEM PC prüfen ---------- */
+
+async function pruefeSchritte(argPrefix, argPort) {
+  let zaehler = { ok: 0, warn: 0, fehler: 0 };
+  const ok = t => { zaehler.ok++; console.log("  ✅ " + t); };
+  const warn = t => { zaehler.warn++; console.log("  ⚠  " + t); };
+  const schlecht = t => { zaehler.fehler++; console.log("  ❌ " + t); };
+
+  console.log(`\n╔═ Selbst-Check: ${os.hostname()} ═${"═".repeat(Math.max(0, 40 - os.hostname().length))}╗\n`);
+
+  // 1. Node-Version
+  console.log("Schritt 1 – Node.js");
+  const major = parseInt(process.versions.node.split(".")[0], 10);
+  if (major >= 18) ok(`Node ${process.versions.node} (ausreichend)`);
+  else schlecht(`Node ${process.versions.node} ist zu alt – bitte LTS von nodejs.org installieren (mind. 18)`);
+
+  // 2. Konfiguration
+  console.log("\nSchritt 2 – Konfiguration");
+  let konfig = null;
+  if (!fs.existsSync(KONFIG_PFAD)) {
+    schlecht("config.json fehlt – einfach `node homelab-agent.js` starten, der Assistent legt sie an");
+  } else {
+    try {
+      konfig = JSON.parse(fs.readFileSync(KONFIG_PFAD, "utf8"));
+      if (!konfig.token || konfig.token === "BITTE-AENDERN") schlecht("config.json: token fehlt oder ist noch die Vorlage");
+      else ok(`config.json in Ordnung (Name: „${konfig.name || os.hostname()}", Port ${konfig.port || 9800})`);
+    } catch (e) { schlecht("config.json ist kein gültiges JSON: " + e.message); }
+  }
+  const port = parseInt(argPort, 10) || (konfig && konfig.port) || 9800;
+
+  // 3. App-Whitelist
+  console.log("\nSchritt 3 – Apps (apps.json)");
+  if (!fs.existsSync(APPS_PFAD)) {
+    warn("apps.json fehlt – der Agent läuft, kann aber keine Apps starten");
+  } else {
+    try {
+      const alle = JSON.parse(fs.readFileSync(APPS_PFAD, "utf8"));
+      const echte = alle.filter(a => a && a.id && !a._hinweis);
+      if (!echte.length) warn("apps.json enthält nur Vorlagen-Einträge – Apps dieses Rechners eintragen");
+      else {
+        ok(`${echte.length} App(s) in der Whitelist: ${echte.map(a => a.id).join(", ")}`);
+        for (const a of echte) {
+          if (!a.cmd) warn(`App „${a.id}": kein Startkommando (cmd)`);
+          if (a.cwd && !fs.existsSync(a.cwd)) warn(`App „${a.id}": Ordner ${a.cwd} existiert nicht auf diesem PC`);
+        }
+      }
+    } catch (e) { schlecht("apps.json ist kein gültiges JSON: " + e.message); }
+  }
+
+  // 4. Läuft der Agent?
+  console.log("\nSchritt 4 – Agent läuft?");
+  try {
+    const r = await fetch(`http://127.0.0.1:${port}/ping`, { signal: AbortSignal.timeout(1500) });
+    const d = await r.json();
+    if (d && d.agent === "homelab") ok(`Agent läuft auf Port ${port} („${d.name}", v${d.version})`);
+    else warn(`Auf Port ${port} antwortet etwas anderes als der HomeLab-Agent`);
+  } catch (e) {
+    schlecht(`Agent läuft NICHT (Port ${port}) – starten mit: node homelab-agent.js  (Autostart: --autostart)`);
+  }
+
+  // 5. Netzwerk
+  console.log("\nSchritt 5 – Netzwerk (WLAN/LAN)");
+  const ips = eigeneIps();
+  if (!ips.length) schlecht("Keine Netzwerkadresse gefunden – ist WLAN/LAN verbunden?");
+  else ok(`Im Netz erreichbar unter: ${ips.map(ip => `http://${ip}:${port}`).join("  ")}`);
+
+  // 6. Andere Rechner sichtbar?
+  console.log("\nSchritt 6 – Andere Rechner im Netz");
+  const prefixe = argPrefix ? [argPrefix.replace(/\.+$/, "")] : [...new Set(ips.map(ip => ip.split(".").slice(0, 3).join(".")))];
+  const gefunden = [];
+  for (const prefix of prefixe) {
+    const kandidaten = Array.from({ length: 254 }, (_, i) => `${prefix}.${i + 1}`);
+    for (let i = 0; i < kandidaten.length; i += 32) {
+      await Promise.all(kandidaten.slice(i, i + 32).map(async ip => {
+        try {
+          const r = await fetch(`http://${ip}:${port}/ping`, { signal: AbortSignal.timeout(900) });
+          const d = await r.json();
+          if (d && d.agent === "homelab") gefunden.push({ ip, name: d.name || ip });
+        } catch (e) { /* dort läuft nichts */ }
+      }));
+    }
+  }
+  const andere = gefunden.filter(g => !ips.includes(g.ip));
+  if (andere.length) ok(`${andere.length} weitere(r) Rechner mit Agent sichtbar: ${andere.map(g => `${g.name} (${g.ip})`).join(", ")}`);
+  else warn("Keine anderen Rechner mit Agent gefunden – dort Agent starten bzw. Firewall (private Netzwerke) erlauben");
+
+  // Fazit
+  console.log(`\n╚═ Ergebnis: ${zaehler.ok} ✅ · ${zaehler.warn} ⚠ · ${zaehler.fehler} ❌ – ${zaehler.fehler === 0 ? "dieser PC ist BEREIT" : "bitte ❌-Punkte beheben"} ═╝\n`);
+}
+
 /* ---------- Autostart (--autostart) ---------- */
 
 function richteAutostartEin() {
@@ -302,6 +393,8 @@ function starteAgent() {
 /* ---------- Ablauf ---------- */
 
 (async () => {
+  const pruefIdx = process.argv.findIndex(a => a === "--pruefe" || a === "--check");
+  if (pruefIdx !== -1) return pruefeSchritte(process.argv[pruefIdx + 1], process.argv[pruefIdx + 2]);
   const scanIdx = process.argv.indexOf("--scan");
   if (scanIdx !== -1) return netzScan(process.argv[scanIdx + 1], process.argv[scanIdx + 2]);
   if (process.argv.includes("--autostart")) return richteAutostartEin();
