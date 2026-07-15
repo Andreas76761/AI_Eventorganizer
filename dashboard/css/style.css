@@ -106,6 +106,17 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--akzent); }
   gap: .5rem;
 }
 .karte.inaktiv { opacity: .6; }
+.karte .shot {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: top;
+  border: 1px solid var(--rand);
+  border-radius: .5rem;
+  cursor: zoom-in;
+  background: #fff;
+}
+.shot-gross { width: 100%; border-radius: .5rem; border: 1px solid var(--rand); margin-top: .6rem; }
 .karte-kopf { display: flex; justify-content: space-between; align-items: start; gap: .5rem; }
 .karte p { font-size: .88rem; color: #c3cae0; }
 .meta { display: flex; gap: .8rem; flex-wrap: wrap; font-size: .8rem; color: var(--gedämpft); }
@@ -214,6 +225,7 @@ tr:hover td { background: var(--fläche); }
   max-height: 90vh;
   overflow-y: auto;
 }
+.modal-box.breit { width: min(1000px, 100%); }
 .modal-box form { display: flex; flex-direction: column; gap: .6rem; margin-top: .8rem; }
 .modal-box label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--gedämpft); }
 .zweispaltig { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }

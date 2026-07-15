@@ -16,9 +16,19 @@ function ladeZustand() {
   if (!s || !Array.isArray(s.apps)) {
     s = { seedVersion: SEED_VERSION, apps: strukturKopie(SEED_APPS), pcs: strukturKopie(SEED_PCS), checks: {} };
   } else if ((s.seedVersion || 0) < SEED_VERSION) {
-    // neue Seed-Apps ergänzen, vorhandene (evtl. editierte) nicht überschreiben
-    const ids = new Set(s.apps.map(a => a.id));
-    SEED_APPS.forEach(a => { if (!ids.has(a.id)) s.apps.push(strukturKopie(a)); });
+    // neue Seed-Apps ergänzen; bei vorhandenen die Inventur-Felder auffrischen,
+    // eigene Eingaben (Rechner, gesetzte Werkzeuge/Beschreibungen) aber behalten
+    SEED_APPS.forEach(seed => {
+      const alt = s.apps.find(a => a.id === seed.id);
+      if (!alt) { s.apps.push(strukturKopie(seed)); return; }
+      ["beschreibung", "ursprung", "stack", "tags", "vercelUrl", "lokalUrl"].forEach(f => {
+        const leer = alt[f] == null || alt[f] === "" || (Array.isArray(alt[f]) && !alt[f].length);
+        if (leer && seed[f] !== undefined) alt[f] = strukturKopie(seed[f]);
+      });
+      ["umfang", "screenshot", "letzterPush", "visibility", "vercelBestaetigt"].forEach(f => {
+        if (seed[f] !== undefined) alt[f] = strukturKopie(seed[f]);
+      });
+    });
     s.seedVersion = SEED_VERSION;
   }
   if (!Array.isArray(s.pcs) || !s.pcs.length) s.pcs = strukturKopie(SEED_PCS);
@@ -147,6 +157,7 @@ function appKarte(a) {
   if (a.lokalUrl) links.push(`<a class="knopf" href="${esc(a.lokalUrl)}" target="_blank" rel="noopener">🖥 Lokal ${checkBadge(a, "lokal")}</a>`);
   if (a.github) links.push(`<a class="knopf" href="${esc(a.github)}" target="_blank" rel="noopener">GitHub${a.visibility === "private" ? " 🔒" : ""}</a>`);
   return `<div class="karte${(a.status || "aktiv") !== "aktiv" ? " inaktiv" : ""}">
+    ${a.screenshot ? `<img class="shot" src="${esc(a.screenshot)}" alt="Screenshot ${esc(a.name)}" loading="lazy" onclick="zeigeShot('${a.id}')" title="Klicken zum Vergrößern">` : ""}
     <div class="karte-kopf">
       <h3>${esc(a.name)}</h3>
       <button class="mini" onclick="bearbeiteApp('${a.id}')" title="Bearbeiten">✎</button>
@@ -156,6 +167,7 @@ function appKarte(a) {
     <div class="meta">
       ${a.rechner ? `<span>🖥 ${esc(pcName(a.rechner))}</span>` : '<span class="leer">Rechner?</span>'}
       ${a.letzterPush ? `<span>Push: ${esc(a.letzterPush)}</span>` : ""}
+      ${a.umfang && a.umfang.loc ? `<span>${a.umfang.dateien} Dateien · ${a.umfang.loc.toLocaleString("de-DE")} Zeilen</span>` : ""}
     </div>
     ${stack || tags ? `<div class="chips">${stack}${tags}</div>` : ""}
     <div class="aktionen">${links.join("")}
@@ -265,7 +277,7 @@ function renderDaten() {
 
 /* ---------- Formulare (Modal) ---------- */
 
-function zeigeModal(html) { $("#modal").innerHTML = `<div class="modal-box">${html}</div>`; $("#modal").classList.add("offen"); }
+function zeigeModal(html, klasse) { $("#modal").innerHTML = `<div class="modal-box${klasse ? " " + klasse : ""}">${html}</div>`; $("#modal").classList.add("offen"); }
 function schliesseModal() { $("#modal").classList.remove("offen"); $("#modal").innerHTML = ""; }
 
 function bearbeiteApp(id) {
@@ -366,6 +378,15 @@ function loeschePc(id) {
   state.pcs = state.pcs.filter(p => p.id !== id);
   state.apps.forEach(a => { if (a.rechner === id) a.rechner = ""; });
   speichere(); schliesseModal(); render();
+}
+
+function zeigeShot(id) {
+  const a = state.apps.find(x => x.id === id);
+  if (!a || !a.screenshot) return;
+  zeigeModal(`<h3>${esc(a.name)}</h3>
+    <img class="shot-gross" src="${esc(a.screenshot)}" alt="Screenshot ${esc(a.name)}">
+    <p class="hinweis">${esc(a.beschreibung || "")}</p>
+    <div class="aktionen"><button class="knopf" onclick="schliesseModal()">Schließen</button></div>`, "breit");
 }
 
 /* ---------- Aktionen ---------- */
