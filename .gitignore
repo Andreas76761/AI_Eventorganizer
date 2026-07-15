@@ -10,3 +10,7 @@ Thumbs.db
 .vercel
 
 .vercel
+
+# GitHub-Upload-Token nie einchecken
+github-token.txt
+upload-plan.txt

@@ -1,0 +1,40 @@
+================================================================
+  Lokale Projekte als PRIVATE Repos zu GitHub hochladen
+================================================================
+
+Voraussetzungen (einmalig):
+  - Node.js:  https://nodejs.org
+  - Git:      https://git-scm.com
+  - GitHub-Token (Passwort-Ersatz), so:
+      1. github.com -> Settings -> Developer settings
+         -> Personal access tokens -> Fine-grained tokens
+         -> Generate new token
+      2. Resource owner: dein Konto (Andreas76761)
+      3. Repository access: All repositories
+      4. Permissions:  Contents = Read and write,
+                       Administration = Read and write
+      5. Token erzeugen und KOPIEREN.
+      6. Neben diese Dateien eine Datei  github-token.txt  anlegen
+         und das Token als einzige Zeile hineinschreiben.
+      (github-token.txt niemals weitergeben oder committen!)
+
+Ablauf:
+  1) Doppelklick:  1-Projekte-finden.bat
+     -> erstellt  upload-plan.txt  mit allen gefundenen Projekten.
+
+  2) upload-plan.txt oeffnen:
+     - jede Zeile = ein Projekt (Ordner / Repo-Name / private)
+     - Zeilen von Projekten, die du NICHT hochladen willst, loeschen
+     - Repo-Namen bei Bedarf anpassen
+     - "private" zu "public" aendern, falls ein Repo oeffentlich sein soll
+       (Business-/Finanz-Apps besser privat lassen!)
+
+  3) Doppelklick:  2-Hochladen.bat
+     -> legt je Zeile ein privates GitHub-Repo an und laedt den Code hoch.
+
+Hinweise:
+  - Projekte, die schon mit GitHub verbunden sind, werden uebersprungen.
+  - Das Token steht nur kurz in der Push-Adresse und wird danach entfernt.
+  - Auf jedem PC einzeln ausfuehren (Tamara, smartAIZ1, Dell Andreas ...).
+  - Wenn alle Projekte hochgeladen sind: sag Claude Bescheid, dann ziehe
+    ich Screenshots, Technologie und Architektur-Diagramme automatisch nach.
