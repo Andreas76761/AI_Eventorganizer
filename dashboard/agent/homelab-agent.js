@@ -1,0 +1,263 @@
+#!/usr/bin/env node
+/* ============================================================================
+   HomeLab-Agent – Alles-in-einer-Datei-Installation
+   ----------------------------------------------------------------------------
+   Diese EINE Datei auf den PC kopieren (z. B. nach C:\homelab-agent\) und starten:
+
+       node homelab-agent.js
+
+   Beim ersten Start führt sie einen Einrichtungs-Assistenten aus (PC-Name,
+   Port, Token) und legt config.json + apps.json neben sich an. Danach läuft
+   sie als Dienst und verbindet den PC über WLAN/LAN mit dem HomeLab-Dashboard.
+
+   Autostart (Windows):   node homelab-agent.js --autostart
+   Einrichtung wiederholen: config.json löschen und neu starten.
+
+   Endpunkte:  GET  /ping         – Lebenszeichen (ohne Token)
+               GET  /status       – Rechner-Infos + laufende Apps (Token)
+               POST /start/<id>   – App aus apps.json starten (Token)
+               POST /stop/<id>    – gestartete App stoppen (Token)
+
+   Sicherheit: nur im Heimnetz betreiben, Port niemals ins Internet weiterleiten.
+   Gestartet wird ausschließlich, was in apps.json steht (Whitelist).
+   ============================================================================ */
+
+"use strict";
+
+const http = require("node:http");
+const { spawn, exec, execSync } = require("node:child_process");
+const fs = require("node:fs");
+const path = require("node:path");
+const os = require("node:os");
+const net = require("node:net");
+const crypto = require("node:crypto");
+const readline = require("node:readline");
+
+const VERSION = "1.1";
+const BASIS = __dirname;
+const KONFIG_PFAD = path.join(BASIS, "config.json");
+const APPS_PFAD = path.join(BASIS, "apps.json");
+
+/* ---------- Hilfen ---------- */
+
+function ladeJson(pfad) {
+  try {
+    return JSON.parse(fs.readFileSync(pfad, "utf8"));
+  } catch (e) {
+    console.error(`FEHLER: ${path.basename(pfad)} ist kein gültiges JSON: ${e.message}`);
+    process.exit(1);
+  }
+}
+
+function eigeneIps() {
+  return Object.values(os.networkInterfaces()).flat()
+    .filter(i => i && i.family === "IPv4" && !i.internal).map(i => i.address);
+}
+
+/* ---------- Einrichtungs-Assistent (läuft, wenn config.json fehlt) ---------- */
+
+const APPS_VORLAGE = [
+  {
+    "_hinweis": "VORLAGE – bitte durch die Apps DIESES Rechners ersetzen. Einträge mit _hinweis ignoriert der Agent.",
+    "id": "beispiel-app",
+    "name": "Beispiel: statische App mit Python starten",
+    "cmd": "python -m http.server 8933 --directory C:/2026/Claude/AI_Messe_Guide",
+    "cwd": "C:/2026/Claude/AI_Messe_Guide",
+    "port": 8933,
+    "url": "http://localhost:8933"
+  },
+  {
+    "_hinweis": "Beispiel für eine Vite/React-App im Dev-Modus. id muss zur App-ID im Dashboard passen.",
+    "id": "diagramm-builder",
+    "name": "Diagramm Builder (Dev-Server)",
+    "cmd": "npm run dev",
+    "cwd": "C:/2026/Claude/Diagramm_Builder",
+    "port": 5173,
+    "url": "http://localhost:5173"
+  }
+];
+
+async function assistent() {
+  // eigene Zeilen-Warteschlange statt rl.question: verliert keine Eingaben,
+  // wenn Antworten schneller eintreffen als gefragt wird (z. B. eingefügter Text)
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const zeilen = [];
+  const wartende = [];
+  rl.on("line", z => { const w = wartende.shift(); if (w) w(z); else zeilen.push(z); });
+  const frage = (text, vorgabe) => new Promise(resolve => {
+    process.stdout.write(`${text}${vorgabe ? ` [${vorgabe}]` : ""}: `);
+    const nimm = z => resolve(z.trim() || vorgabe || "");
+    if (zeilen.length) nimm(zeilen.shift()); else wartende.push(nimm);
+  });
+
+  console.log("╔══════════════════════════════════════════════════╗");
+  console.log("║  HomeLab-Agent – Einrichtung (einmalig)           ║");
+  console.log("╚══════════════════════════════════════════════════╝");
+  const name = await frage("Wie soll dieser PC im Dashboard heißen", os.hostname());
+  const port = parseInt(await frage("Port für den Agent", "9800"), 10) || 9800;
+  const tokenVorschlag = crypto.randomBytes(8).toString("hex");
+  const token = await frage("Geheimes Token (Enter = Vorschlag übernehmen)", tokenVorschlag);
+  rl.close();
+
+  fs.writeFileSync(KONFIG_PFAD, JSON.stringify({ name, port, token }, null, 2));
+  console.log(`\n✔ config.json angelegt (${KONFIG_PFAD})`);
+
+  if (!fs.existsSync(APPS_PFAD)) {
+    fs.writeFileSync(APPS_PFAD, JSON.stringify(APPS_VORLAGE, null, 2));
+    console.log(`✔ apps.json mit Vorlage angelegt – bitte die Apps dieses Rechners eintragen!`);
+  }
+
+  console.log("\nIns Dashboard eintragen (Rechner → ✎):");
+  for (const ip of eigeneIps()) console.log(`   Agent-Adresse: http://${ip}:${port}`);
+  console.log(`   Agent-Token:   ${token}`);
+  console.log("\nWindows-Firewall beim ersten Start für PRIVATE Netzwerke erlauben.");
+  console.log("Autostart einrichten:  node homelab-agent.js --autostart\n");
+}
+
+/* ---------- Autostart (--autostart) ---------- */
+
+function richteAutostartEin() {
+  const eigenerPfad = path.join(BASIS, path.basename(__filename));
+  if (process.platform === "win32") {
+    try {
+      execSync(`schtasks /Create /F /SC ONLOGON /TN "HomeLab-Agent" /TR "\\"${process.execPath}\\" \\"${eigenerPfad}\\""`, { stdio: "inherit" });
+      console.log("✔ Autostart eingerichtet (Aufgabenplanung, Aufgabe \"HomeLab-Agent\", bei Anmeldung).");
+      console.log("  Entfernen mit:  schtasks /Delete /TN \"HomeLab-Agent\" /F");
+    } catch (e) {
+      console.error("Autostart fehlgeschlagen – Eingabeaufforderung als Administrator ausführen und erneut versuchen.");
+    }
+  } else {
+    console.log("Linux/macOS: systemd-Unit oder Autostart-Eintrag anlegen, z. B.:");
+    console.log(`  ExecStart=${process.execPath} ${eigenerPfad}`);
+  }
+}
+
+/* ---------- Agent (Hauptteil) ---------- */
+
+function starteAgent() {
+  const konfig = ladeJson(KONFIG_PFAD);
+  if (!konfig.token) { console.error("FEHLER: token fehlt in config.json"); process.exit(1); }
+  const PORT = konfig.port || 9800;
+  const apps = fs.existsSync(APPS_PFAD) ? ladeJson(APPS_PFAD) : [];
+  const echteApps = apps.filter(a => a && a.id && !a._hinweis); // _hinweis-Einträge sind nur Vorlagen
+
+  const prozesse = new Map(); // appId -> pid
+
+  const pidLebt = pid => { try { process.kill(pid, 0); return true; } catch (e) { return false; } };
+
+  const portOffen = port => new Promise(resolve => {
+    const s = net.connect({ port, host: "127.0.0.1" });
+    const fertig = ok => { s.destroy(); resolve(ok); };
+    s.once("connect", () => fertig(true));
+    s.once("error", () => fertig(false));
+    s.setTimeout(1500, () => fertig(false));
+  });
+
+  async function appLaeuft(app) {
+    const pid = prozesse.get(app.id);
+    if (pid && pidLebt(pid)) return { laeuft: true, pid };
+    if (app.port && await portOffen(app.port)) return { laeuft: true, pid: null };
+    return { laeuft: false, pid: null };
+  }
+
+  function starteApp(app) {
+    if (!app.cmd) throw new Error("kein Startkommando (cmd) in apps.json hinterlegt");
+    const kind = spawn(app.cmd, {
+      shell: true,
+      cwd: app.cwd || BASIS,
+      detached: process.platform !== "win32",
+      stdio: "ignore",
+      windowsHide: true,
+    });
+    kind.unref();
+    prozesse.set(app.id, kind.pid);
+    console.log(`[start] ${app.id} (PID ${kind.pid}): ${app.cmd}`);
+    return kind.pid;
+  }
+
+  function stoppeApp(app) {
+    const pid = prozesse.get(app.id);
+    if (!pid || !pidLebt(pid)) {
+      prozesse.delete(app.id);
+      throw new Error("App wurde nicht von diesem Agent gestartet (oder läuft nicht mehr) – bitte am Rechner beenden");
+    }
+    if (process.platform === "win32") exec(`taskkill /pid ${pid} /t /f`);
+    else { try { process.kill(-pid, "SIGTERM"); } catch (e) { process.kill(pid, "SIGTERM"); } }
+    prozesse.delete(app.id);
+    console.log(`[stopp] ${app.id} (PID ${pid})`);
+  }
+
+  function antworte(res, code, daten) {
+    res.writeHead(code, {
+      "Content-Type": "application/json; charset=utf-8",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type",
+    });
+    res.end(JSON.stringify(daten));
+  }
+
+  const tokenOk = req => req.headers.authorization === `Bearer ${konfig.token}`;
+
+  const server = http.createServer(async (req, res) => {
+    const url = req.url.split("?")[0];
+    if (req.method === "OPTIONS") return antworte(res, 204, {});
+    if (req.method === "GET" && url === "/ping")
+      return antworte(res, 200, { ok: true, agent: "homelab", version: VERSION, name: konfig.name || os.hostname() });
+    if (!tokenOk(req)) return antworte(res, 401, { fehler: "Token fehlt oder falsch (Authorization: Bearer <token>)" });
+
+    if (req.method === "GET" && url === "/status") {
+      const liste = [];
+      for (const app of echteApps) {
+        const s = await appLaeuft(app);
+        liste.push({ id: app.id, name: app.name || app.id, port: app.port || null, url: app.url || null, laeuft: s.laeuft, pid: s.pid });
+      }
+      return antworte(res, 200, {
+        ok: true,
+        name: konfig.name || os.hostname(),
+        hostname: os.hostname(),
+        plattform: `${os.type()} ${os.release()}`,
+        betriebszeitMin: Math.round(os.uptime() / 60),
+        apps: liste,
+      });
+    }
+
+    const start = url.match(/^\/start\/([\w-]+)$/);
+    const stopp = url.match(/^\/stop\/([\w-]+)$/);
+    if (req.method === "POST" && (start || stopp)) {
+      const id = (start || stopp)[1];
+      const app = echteApps.find(a => a.id === id);
+      if (!app) return antworte(res, 404, { fehler: `App '${id}' steht nicht in apps.json (Whitelist)` });
+      try {
+        if (start) {
+          const s = await appLaeuft(app);
+          if (s.laeuft) return antworte(res, 200, { ok: true, hinweis: "läuft bereits", pid: s.pid });
+          return antworte(res, 200, { ok: true, pid: starteApp(app) });
+        }
+        stoppeApp(app);
+        return antworte(res, 200, { ok: true });
+      } catch (e) {
+        return antworte(res, 500, { fehler: e.message });
+      }
+    }
+
+    antworte(res, 404, { fehler: "unbekannter Endpunkt (kenne /ping /status /start/<id> /stop/<id>)" });
+  });
+
+  server.listen(PORT, "0.0.0.0", () => {
+    const ips = eigeneIps();
+    console.log(`HomeLab-Agent v${VERSION} auf ${konfig.name || os.hostname()}`);
+    console.log(`Erreichbar im Heimnetz unter: ${ips.map(ip => `http://${ip}:${PORT}`).join("  ") || `http://localhost:${PORT}`}`);
+    if (echteApps.length) console.log(`${echteApps.length} App(s) in der Whitelist: ${echteApps.map(a => a.id).join(", ")}`);
+    else console.log("⚠ apps.json enthält noch keine echten Apps – Vorlage-Einträge bitte ersetzen.");
+    console.log("Diese Adresse im Dashboard beim jeweiligen Rechner als Agent-Adresse eintragen.");
+  });
+}
+
+/* ---------- Ablauf ---------- */
+
+(async () => {
+  if (process.argv.includes("--autostart")) return richteAutostartEin();
+  if (!fs.existsSync(KONFIG_PFAD)) await assistent();
+  starteAgent();
+})();

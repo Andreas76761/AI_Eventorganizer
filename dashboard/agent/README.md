@@ -13,34 +13,43 @@ Dashboard (Browser, http://localhost:8950)
     └── http://192.168.x.14:9800  → Agent auf PC 4
 ```
 
-## Installation je PC (einmalig, ~5 Minuten)
+## Installation je PC: EINE Datei (einmalig, ~3 Minuten)
+
+Es wird nur **`homelab-agent.js`** benötigt — Einrichtungs-Assistent, Agent und
+Autostart-Einrichtung stecken in dieser einen Datei (keine npm-Pakete).
 
 1. **Node.js installieren** (falls nicht vorhanden): https://nodejs.org (LTS)
-2. Den Ordner `agent/` auf den PC kopieren, z. B. nach `C:\homelab-agent\`
-3. `config.example.json` → als `config.json` speichern und anpassen:
-   - `name`: Anzeigename des Rechners (z. B. "Büro-PC")
-   - `token`: **eigenes geheimes Passwort** eintragen (auf allen PCs dasselbe oder je PC eines)
-4. `apps.example.json` → als `apps.json` speichern: alle Apps **dieses** Rechners eintragen.
+2. `homelab-agent.js` auf den PC kopieren, z. B. nach `C:\homelab-agent\`
+   (optional dazu `Agent-starten.bat` für den Doppelklick-Start)
+3. Starten — beim **ersten Start** fragt der Assistent PC-Name, Port und Token ab
+   und legt `config.json` + `apps.json` (Vorlage) automatisch an:
+   ```
+   node homelab-agent.js
+   ```
+   Am Ende zeigt er genau an, was im Dashboard einzutragen ist
+   (z. B. `Agent-Adresse: http://192.168.178.23:9800` + Token).
+4. `apps.json` öffnen und die Vorlage durch die Apps **dieses** Rechners ersetzen:
    - `id` muss der App-ID im Dashboard entsprechen (steht im JSON-Export)
    - `cmd` = Startkommando, `cwd` = Projektordner, `port` = lokaler Port (für die Läuft-Erkennung)
-5. Starten:
-   ```
-   node agent.js
-   ```
-   Der Agent zeigt beim Start seine Adresse an, z. B. `http://192.168.178.23:9800`.
-6. **Windows-Firewall:** Beim ersten Start fragt Windows nach – Zugriff für **private Netzwerke**
+   - Einträge mit `"_hinweis"` sind nur Vorlagen und werden ignoriert
+5. **Windows-Firewall:** Beim ersten Start fragt Windows nach – Zugriff für **private Netzwerke**
    erlauben. (Alternativ: Eingehende Regel für TCP-Port 9800 anlegen.)
-7. Die angezeigte Adresse im Dashboard eintragen: **Rechner → ✎ → Agent-Adresse + Token**.
+6. Die angezeigte Adresse im Dashboard eintragen: **Rechner → ✎ → Agent-Adresse + Token**.
 
+Einrichtung wiederholen: `config.json` löschen und neu starten.
 Die IP-Adresse eines PCs findest du auch mit `ipconfig` (Windows) bzw. `ip a` (Linux).
 Tipp: Im Router (z. B. FritzBox) den PCs **feste IP-Adressen** zuweisen, sonst ändern sie sich.
 
 ## Autostart (empfohlen)
 
-**Windows – Aufgabenplanung:** Aufgabe „Bei Anmeldung" anlegen mit Programm `node` und
-Argument `C:\homelab-agent\agent.js` (Starten in: `C:\homelab-agent`).
+**Windows:** Eingabeaufforderung als Administrator, dann
+```
+node homelab-agent.js --autostart
+```
+Das legt die Aufgabe „HomeLab-Agent" (bei Anmeldung) in der Aufgabenplanung an.
+Entfernen: `schtasks /Delete /TN "HomeLab-Agent" /F`
 
-**Linux – systemd:** Unit mit `ExecStart=/usr/bin/node /home/du/homelab-agent/agent.js`.
+**Linux – systemd:** Unit mit `ExecStart=/usr/bin/node /home/du/homelab-agent/homelab-agent.js`.
 
 ## Endpunkte (für eigene Skripte)
 
