@@ -143,6 +143,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--akzent); }
 .badge.u-gemini { background: #3a5c9a33; color: #9ab8f0; }
 .badge.u-sonstiges { background: var(--fläche2); color: var(--gedämpft); }
 .badge.offen { background: #f2c34e22; color: var(--gelb); }
+.badge.online { background: #3ecf8e22; color: var(--gruen); }
+.badge.offline { background: #f26d6d22; color: var(--rot); }
+.appliste .knopf { padding: .15rem .5rem; font-size: .76rem; margin-left: .4rem; }
+.appliste .badge { margin-left: .4rem; }
 
 /* Knöpfe */
 .aktionen { display: flex; gap: .45rem; flex-wrap: wrap; margin-top: auto; }

@@ -110,6 +110,63 @@ async function pruefeApp(app) {
   }
 }
 
+/* ---------- Agent-Anbindung (PCs im WLAN/Heimnetz) ---------- */
+
+const agentStatus = {}; // pcId -> {online, name, plattform, betriebszeitMin, apps:{id:{laeuft}}, fehler, zeit} – nur im Speicher
+
+async function agentAbruf(pc, pfad, methode) {
+  const url = pc.agentUrl.replace(/\/$/, "") + pfad;
+  const antwort = await fetch(url, {
+    method: methode || "GET",
+    headers: pc.agentToken ? { Authorization: "Bearer " + pc.agentToken } : {},
+    signal: AbortSignal.timeout(6000),
+  });
+  const daten = await antwort.json();
+  if (!antwort.ok) throw new Error(daten.fehler || ("HTTP " + antwort.status));
+  return daten;
+}
+
+async function pruefeAgent(pcId) {
+  const pc = state.pcs.find(p => p.id === pcId);
+  if (!pc || !pc.agentUrl) return;
+  agentStatus[pcId] = { laedt: true };
+  render();
+  try {
+    const s = await agentAbruf(pc, "/status");
+    const apps = {};
+    (s.apps || []).forEach(a => { apps[a.id] = a; });
+    agentStatus[pcId] = { online: true, name: s.name, plattform: s.plattform, betriebszeitMin: s.betriebszeitMin, apps, zeit: new Date().toLocaleTimeString("de-DE") };
+  } catch (e) {
+    agentStatus[pcId] = { online: false, fehler: e.message, zeit: new Date().toLocaleTimeString("de-DE") };
+  }
+  render();
+}
+
+async function pruefeAlleAgents() {
+  await Promise.all(state.pcs.filter(p => p.agentUrl).map(p => pruefeAgent(p.id)));
+}
+
+async function agentAktion(pcId, appId, aktion) {
+  const pc = state.pcs.find(p => p.id === pcId);
+  if (!pc) return;
+  try {
+    await agentAbruf(pc, `/${aktion}/${appId}`, "POST");
+  } catch (e) {
+    alert(`${aktion === "start" ? "Starten" : "Stoppen"} fehlgeschlagen: ${e.message}`);
+  }
+  setTimeout(() => pruefeAgent(pcId), 1200); // kurz warten, dann Status auffrischen
+}
+
+function agentBadge(pcId) {
+  const s = agentStatus[pcId];
+  const pc = state.pcs.find(p => p.id === pcId);
+  if (!pc || !pc.agentUrl) return '<span class="badge offen">kein Agent</span>';
+  if (!s) return '<span class="badge offen">Agent ungeprüft</span>';
+  if (s.laedt) return '<span class="badge offen">verbinde …</span>';
+  if (s.online) return `<span class="badge online" title="geprüft ${esc(s.zeit)}">● verbunden</span>`;
+  return `<span class="badge offline" title="${esc(s.fehler || "")} (${esc(s.zeit)})">● offline</span>`;
+}
+
 function checkBadge(app, feld) {
   const c = state.checks[app.id + ":" + feld];
   if (!c) return '<span class="ampel grau" title="ungeprüft">●</span>';
@@ -172,8 +229,20 @@ function appKarte(a) {
     ${stack || tags ? `<div class="chips">${stack}${tags}</div>` : ""}
     <div class="aktionen">${links.join("")}
       <button class="knopf" onclick="pruefeAppId('${a.id}')" title="Erreichbarkeit prüfen">⟳ Status</button>
+      ${agentKnoepfe(a)}
     </div>
   </div>`;
+}
+
+function agentKnoepfe(a) {
+  if (!a.rechner) return "";
+  const s = agentStatus[a.rechner];
+  if (!s || !s.online) return "";
+  const eintrag = s.apps[a.id];
+  if (!eintrag) return "";
+  return eintrag.laeuft
+    ? `<span class="badge online">läuft</span><button class="knopf gefahr" onclick="agentAktion('${a.rechner}','${a.id}','stop')">■ Stopp</button>`
+    : `<button class="knopf primär" onclick="agentAktion('${a.rechner}','${a.id}','start')">▶ Start</button>`;
 }
 
 function renderUebersicht() {
@@ -225,17 +294,28 @@ function renderWerkzeug() {
 function renderRechner() {
   return `${statistikZeile()}
   <h2>Rechner im Heimnetz</h2>
-  <p class="hinweis">Namen und Details über ✎ pflegen; Apps werden über das App-Formular einem Rechner zugeordnet.</p>
+  <p class="hinweis">Auf jedem PC läuft der <b>HomeLab-Agent</b> (Ordner <code>agent/</code> im Repo, Anleitung dort) –
+  er verbindet den Rechner über WLAN/LAN mit diesem Dashboard. Agent-Adresse und Token über ✎ am Rechner eintragen.
+  Hinweis: Die Steuerung funktioniert aus dem lokal geöffneten Dashboard (http://…); aus der HTTPS-Vercel-Version
+  blockiert der Browser LAN-Zugriffe (Mixed Content).</p>
+  <p><button class="knopf primär" onclick="pruefeAlleAgents()">⟳ Alle Rechner verbinden</button></p>
   <div class="raster pc-raster">
     ${state.pcs.map(pc => {
       const apps = state.apps.filter(a => a.rechner === pc.id);
+      const s = agentStatus[pc.id];
       return `<div class="karte pc">
         <div class="karte-kopf"><h3>🖥 ${esc(pc.name)}</h3>
           <button class="mini" onclick="bearbeitePc('${pc.id}')" title="Bearbeiten">✎</button></div>
-        <div class="meta">${pc.os ? `<span>${esc(pc.os)}</span>` : ""}${pc.ort ? `<span>${esc(pc.ort)}</span>` : ""}</div>
+        <div class="badges">${agentBadge(pc.id)}</div>
+        <div class="meta">${pc.os ? `<span>${esc(pc.os)}</span>` : ""}${pc.ort ? `<span>${esc(pc.ort)}</span>` : ""}
+          ${s && s.online ? `<span>${esc(s.plattform || "")}</span><span>an seit ${Math.floor((s.betriebszeitMin || 0) / 60)} h ${(s.betriebszeitMin || 0) % 60} min</span>` : ""}</div>
         ${pc.notiz ? `<p>${esc(pc.notiz)}</p>` : ""}
-        <p class="hinweis">${apps.length} App(s)</p>
-        <ul class="appliste">${apps.map(a => `<li><a href="#uebersicht" onclick="filter.text='${esc(a.name)}'">${esc(a.name)}</a></li>`).join("") || "<li class='leer'>keine zugeordnet</li>"}</ul>
+        ${pc.agentUrl ? `<div class="aktionen"><button class="knopf" onclick="pruefeAgent('${pc.id}')">⟳ Verbinden</button><span class="hinweis" style="margin:0">${esc(pc.agentUrl)}</span></div>` : ""}
+        <p class="hinweis">${apps.length} App(s) zugeordnet${s && s.online ? ` · ${Object.values(s.apps).filter(x => x.laeuft).length} laufen laut Agent` : ""}</p>
+        <ul class="appliste">${apps.map(a => {
+          const e = s && s.online ? s.apps[a.id] : null;
+          return `<li>${e ? (e.laeuft ? "🟢 " : "⚪ ") : ""}<a href="#uebersicht" onclick="filter.text='${esc(a.name)}'">${esc(a.name)}</a>${agentKnoepfe(a)}</li>`;
+        }).join("") || "<li class='leer'>keine zugeordnet</li>"}</ul>
       </div>`;
     }).join("")}
   </div>
@@ -342,7 +422,7 @@ function loescheApp(id) {
 }
 
 function bearbeitePc(id) {
-  const pc = id ? state.pcs.find(p => p.id === id) : { id: "", name: "", os: "", ort: "", notiz: "" };
+  const pc = id ? state.pcs.find(p => p.id === id) : { id: "", name: "", os: "", ort: "", notiz: "", agentUrl: "", agentToken: "" };
   if (!pc) return;
   zeigeModal(`<h3>${id ? "Rechner bearbeiten" : "Neuer Rechner"}</h3>
   <form onsubmit="speicherePc(event,'${id || ""}')">
@@ -350,6 +430,10 @@ function bearbeitePc(id) {
     <div class="zweispaltig">
       <label>Betriebssystem<input name="os" value="${esc(pc.os)}"></label>
       <label>Standort<input name="ort" value="${esc(pc.ort)}"></label>
+    </div>
+    <div class="zweispaltig">
+      <label>Agent-Adresse (WLAN)<input name="agentUrl" placeholder="http://192.168.178.23:9800" value="${esc(pc.agentUrl || "")}"></label>
+      <label>Agent-Token<input name="agentToken" type="password" value="${esc(pc.agentToken || "")}"></label>
     </div>
     <label>Notiz<textarea name="notiz" rows="2">${esc(pc.notiz)}</textarea></label>
     <div class="aktionen">
@@ -363,7 +447,8 @@ function bearbeitePc(id) {
 function speicherePc(ev, id) {
   ev.preventDefault();
   const f = ev.target;
-  const daten = { name: f.name.value.trim(), os: f.os.value.trim(), ort: f.ort.value.trim(), notiz: f.notiz.value.trim() };
+  const daten = { name: f.name.value.trim(), os: f.os.value.trim(), ort: f.ort.value.trim(), notiz: f.notiz.value.trim(),
+    agentUrl: f.agentUrl.value.trim(), agentToken: f.agentToken.value };
   if (id) Object.assign(state.pcs.find(p => p.id === id), daten);
   else {
     let nid = "pc" + (state.pcs.length + 1), n = state.pcs.length + 1;

@@ -1,0 +1,18 @@
+[
+  {
+    "id": "ai-eventorganizer",
+    "name": "AI Messe Guide 2026",
+    "cmd": "python -m http.server 8933 --directory C:/2026/Claude/AI_Messe_Guide",
+    "cwd": "C:/2026/Claude/AI_Messe_Guide",
+    "port": 8933,
+    "url": "http://localhost:8933"
+  },
+  {
+    "id": "diagramm-builder",
+    "name": "Diagramm Builder (Dev-Server)",
+    "cmd": "npm run dev",
+    "cwd": "C:/2026/Claude/Diagramm_Builder",
+    "port": 5173,
+    "url": "http://localhost:5173"
+  }
+]

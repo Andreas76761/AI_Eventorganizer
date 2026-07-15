@@ -28,6 +28,14 @@ Dann http://localhost:8950 öffnen. (Direktes Öffnen von `index.html` per Doppe
 - Unter „Daten" als `homelab-apps.json` exportieren — diese Datei kann später als gepflegte Registry ins Repo
   übernommen werden
 
+## PCs über WLAN verbinden (Agent)
+
+Im Ordner [`agent/`](agent/) liegt der **HomeLab-Agent**: eine einzelne Node.js-Datei ohne
+Abhängigkeiten, die auf jedem PC läuft und ihn über das Heimnetz mit dem Dashboard verbindet —
+Status je App (läuft/läuft nicht) und **Start/Stopp direkt aus dem Dashboard**. Installation und
+Sicherheit: siehe [agent/README.md](agent/README.md). Agent-Adresse + Token trägt man je Rechner
+unter „Rechner → ✎" ein; „⟳ Alle Rechner verbinden" holt den Live-Status.
+
 ## Nächste Phasen
 
-Phase 2 Bewertung/Vergleich · Phase 3 GitHub-/Vercel-API-Status · Phase 4 Start/Stop über Agents (siehe Plan).
+Phase 2 Bewertung/Vergleich · Phase 3 GitHub-/Vercel-API-Status (siehe Plan).
