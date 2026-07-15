@@ -1,11 +1,12 @@
 /* HomeLab App-Dashboard – Seed-Registry
-   Quelle: GitHub-Inventur vom 15.07.2026 – alle 11 Repos geklont und analysiert
+   Quelle: GitHub-Inventur vom 15.07.2026 – alle 11 Repos geklont und analysiert;
+   Performance lokal gemessen (Headless Chromium, 15.07.2026)
    (Technologie aus package.json/Code, Umfang gezählt, Ursprung aus README/Commits,
    Screenshots aus lokal gebauten Apps).
    Alles in der App editierbar; Änderungen liegen im LocalStorage und
    können unter „Daten" als JSON exportiert werden. */
 
-const SEED_VERSION = 3;
+const SEED_VERSION = 4;
 
 const URSPRUENGE = ["Claude", "Codex", "OpenAI", "Perplexity", "Lovable", "Gemini", "Sonstiges"];
 
@@ -34,6 +35,14 @@ const SEED_APPS = [
     screenshot: "screenshots/ai-eventorganizer.png",
     tags: ["produktiv", "events"],
     status: "aktiv",
+    doku: { text: "README + Benutzerhandbuch, Release-Notes und Präsentation in docs/", url: "https://github.com/Andreas76761/AI_Eventorganizer/tree/main/docs" },
+    analyse: "Statisches Frontend ohne Build-Schritt, als PWA mit Service Worker; optional Supabase-Cloud (Auth mit MFA, Row-Level-Security, DSGVO-Löschung). Saubere Daten-/Logik-Trennung (data.js, karte.js, auswahl.js), aber app.js ist mit ~5.000 Zeilen ein Monolith. Beste Doku aller Apps.",
+    performance: { ladezeitMs: 93, groesseKB: 1064, hinweis: "sehr schnell; komplett ohne CDN-Abhängigkeiten" },
+    vorschlaege: [
+      "app.js in Module aufteilen (Ansichten, Zustand, Helfer) – erleichtert Wartung deutlich",
+      "Icon-/Design-System als wiederverwendbares Paket für die anderen Apps auskoppeln",
+      "Playwright-Tests für die Kernflüsse (Event anlegen, Kosten, Export)",
+    ],
     bewertung: { nutzen: 0, reifegrad: 4, wartbarkeit: 3, techQualitaet: 4, zukunft: 4,
       notiz: "Vorschlag aus Code-Analyse: sehr funktionsreich und produktiv auf Vercel; app.js als ~5.000-Zeilen-Monolith drückt die Wartbarkeit." },
   },
@@ -53,6 +62,14 @@ const SEED_APPS = [
     screenshot: "screenshots/diagramm-builder.png",
     tags: ["diagramme", "vercel.json vorhanden"],
     status: "aktiv",
+    doku: { text: "nur Standard-Vite-README – eigene Beschreibung fehlt", url: "https://github.com/Andreas76761/Diagramm_Builder#readme" },
+    analyse: "Moderner React/Vite-Stack mit Recharts, sauber in Komponenten gegliedert. Excel-/PDF-/PowerPoint-Export (xlsx, jsPDF, pptxgenjs) liegt im Hauptbundle – dadurch 2,4 MB Build trotz überschaubarer App.",
+    performance: { ladezeitMs: 138, groesseKB: 2476, hinweis: "schnell; Bundle durch Export-Bibliotheken groß" },
+    vorschlaege: [
+      "Export-Bibliotheken (xlsx, jsPDF, pptxgenjs) per dynamischem import() erst beim Export laden – Startbundle schrumpft massiv",
+      "README durch echte Projektbeschreibung mit Screenshot ersetzen",
+      "Vercel-Projekt verbinden (vercel.json liegt bereits im Repo)",
+    ],
     bewertung: { nutzen: 0, reifegrad: 3, wartbarkeit: 4, techQualitaet: 4, zukunft: 4,
       notiz: "Vorschlag aus Code-Analyse: moderner React/Vite-Stack, saubere Komponenten; README noch Vite-Standard." },
   },
@@ -60,7 +77,7 @@ const SEED_APPS = [
     id: "servicevertrag-dashboard",
     name: "ServiceVertrag-Dashboard",
     beschreibung: "Automotive Service Contract Management (v7.5): KPIs, Vertragsvergleich, Garantiepakete, LCC- & ROI-Kalkulator, Aftermarket (Werkstattnetz, Retention, Penetration)",
-    ursprung: [],
+    ursprung: ["Perplexity"],
     stack: ["HTML/JS statisch", "Chart.js (CDN)"],
     rechner: "",
     github: "https://github.com/Andreas76761/ServiceVertrag-Dashboard",
@@ -72,6 +89,15 @@ const SEED_APPS = [
     screenshot: "screenshots/servicevertrag-dashboard.png",
     tags: ["automotive", "größte App"],
     status: "aktiv",
+    doku: { text: "keine README – aber 7 aussagekräftige Screenshots im Repo", url: "https://github.com/Andreas76761/ServiceVertrag-Dashboard" },
+    analyse: "Mit Perplexity gebaut (die Seite erlaubt *.preview.i.perplexity.ai). Inhaltlich die umfangreichste App: 17.369 Zeilen Vanilla-JS in 27 thematisch getrennten Dateien (KPIs, LCC, Aftermarket, Marketing …), aber ohne Modulsystem – alles global. Chart.js, jsPDF, pptxgenjs und xlsx kommen zur Laufzeit vom CDN.",
+    performance: { ladezeitMs: 13007, groesseKB: 2896, hinweis: "hing im Test an 5 CDN-Bibliotheken (jsdelivr) + Google Fonts – ohne Internet startet die App nicht" },
+    vorschlaege: [
+      "CDN-Bibliotheken lokal ins Repo legen (vendor/ oder npm-Build) – schneller Start, offlinefähig, versionsstabil",
+      "README mit Zweck + den vorhandenen Screenshots anlegen",
+      "JS-Dateien in ES-Module umstellen, globale Variablen kapseln",
+      "Klären, wo die App laufen soll (Vercel-Deployment fehlt bisher)",
+    ],
     bewertung: { nutzen: 0, reifegrad: 4, wartbarkeit: 2, techQualitaet: 3, zukunft: 3,
       notiz: "Vorschlag aus Code-Analyse: inhaltlich sehr umfangreich (v7.5, 17.000+ Zeilen), aber Vanilla-JS ohne Build/Modulsystem und Chart.js vom CDN – Wartung wird mit der Größe schwer." },
   },
@@ -91,6 +117,14 @@ const SEED_APPS = [
     screenshot: "screenshots/thumbnail-generator.png",
     tags: ["präsentationen", "multi-llm", "vercel.json vorhanden"],
     status: "aktiv",
+    doku: { text: "ausführliche README mit Features, Architektur und Roadmap", url: "https://github.com/Andreas76761/Thumnail_Generator#readme" },
+    analyse: "Technisch die ausgereifteste React-App: Web Worker für PPTX-Parsing, virtuelles Scrollen, OCR (tesseract.js), Voice-Chat mit 4 LLM-Anbietern, Notion-Sync. Mit 436 KB das kleinste Build. Stolperstein: Vite-base ist fest auf /Thumnail_Generator/ (GitHub Pages) gestellt.",
+    performance: { ladezeitMs: 75, groesseKB: 436, hinweis: "schnellste App im Test" },
+    vorschlaege: [
+      "Vite-base per Umgebung steuern: '/Thumnail_Generator/' nur für GitHub Pages, './' für Vercel – sonst weiße Seite",
+      "Umgang mit den LLM-API-Schlüsseln in der README dokumentieren",
+      "Repo-Tippfehler 'Thumnail' → 'Thumbnail' bei Gelegenheit beheben",
+    ],
     bewertung: { nutzen: 0, reifegrad: 3, wartbarkeit: 3, techQualitaet: 4, zukunft: 4,
       notiz: "Vorschlag aus Code-Analyse: technisch ambitioniert (Web Worker, OCR, virtuelles Scrollen, Multi-LLM); Achtung: Build nutzt GitHub-Pages-Basispfad /Thumnail_Generator/ – ergibt auf Vercel eine weiße Seite." },
   },
@@ -110,6 +144,14 @@ const SEED_APPS = [
     screenshot: "screenshots/task-hub.png",
     tags: ["organisation", "ai-studio"],
     status: "aktiv",
+    doku: { text: "AI-Studio-Standard-README + metadata.json; Firestore-Regeln liegen bei", url: "https://github.com/Andreas76761/Task-Hub-2026-V1#readme" },
+    analyse: "Größte Codebasis (10.953 Zeilen): Angular mit Material und SSR-Konfiguration, Firebase/Firestore, @google/genai, D3. Sauber strukturiert, braucht aber GEMINI_API_KEY und Firebase-Projekt, um voll zu laufen. Lädt Inter + Material Icons von fonts.googleapis.com.",
+    performance: { ladezeitMs: 13018, groesseKB: 3204, hinweis: "hing im Test an Google-Fonts vom CDN; Bundle 3,2 MB" },
+    vorschlaege: [
+      "Fonts und Material-Icons lokal bundeln statt fonts.googleapis.com – schneller und offlinefähig",
+      "GEMINI_API_KEY nur über .env.local (nie einchecken); README-Schritte prüfen",
+      "firestore.rules mit dem Firebase-Emulator testen",
+    ],
     bewertung: { nutzen: 0, reifegrad: 3, wartbarkeit: 3, techQualitaet: 4, zukunft: 4,
       notiz: "Vorschlag aus Code-Analyse: strukturierter Angular-Stack mit Material und Firebase; Firebase-Konfiguration und Gemini-Key nötig, um alles zu nutzen." },
   },
@@ -129,6 +171,14 @@ const SEED_APPS = [
     screenshot: "screenshots/ki-hub.png",
     tags: ["ki", "ai-studio"],
     status: "aktiv",
+    doku: { text: "AI-Studio-README + requirements.md mit Anforderungen", url: "https://github.com/Andreas76761/KI-Hub-2026#readme" },
+    analyse: "Kompaktes, aufgeräumtes React/TypeScript-Projekt (1.431 Zeilen) mit Recharts und @google/genai. Kritisch: new GoogleGenAI() läuft beim Modul-Import – ohne GEMINI_API_KEY stürzt die ganze App mit weißer Seite ab (process.env existiert im Browser nicht).",
+    performance: { ladezeitMs: 137, groesseKB: 1160, hinweis: "schnell (gemessen mit gesetztem Key)" },
+    vorschlaege: [
+      "GoogleGenAI erst bei Bedarf initialisieren und fehlenden Key abfangen – App soll ohne Key rendern und einen Hinweis zeigen",
+      "Key über Vite-define bzw. import.meta.env statt process.env",
+      "test.txt aus dem Repo entfernen",
+    ],
     bewertung: { nutzen: 0, reifegrad: 2, wartbarkeit: 3, techQualitaet: 3, zukunft: 3,
       notiz: "Vorschlag aus Code-Analyse: aufgeräumtes React/TypeScript, aber die App stürzt ohne GEMINI_API_KEY komplett ab (weiße Seite) – Key-Handling sollte abgefangen werden." },
   },
@@ -148,6 +198,10 @@ const SEED_APPS = [
     screenshot: "",
     tags: ["bau", "nur-readme"],
     status: "aktiv",
+    doku: { text: "nur README (eine Zeile)", url: "https://github.com/Andreas76761/baudokumentation2026_V1#readme" },
+    analyse: "Auf GitHub liegt nur die README („Baudokumentation mit Claude Fable, 11.07.2026“) – der Code ist vermutlich lokal auf einem PC.",
+    performance: null,
+    vorschlaege: ["Code pushen – dann können Analyse, Screenshot und Performance-Messung nachgezogen werden", "Lokalen Pfad/PC im Dashboard eintragen (✎)"],
   },
   {
     id: "bauplaner",
@@ -165,6 +219,10 @@ const SEED_APPS = [
     screenshot: "",
     tags: ["bau", "nur-readme"],
     status: "aktiv",
+    doku: { text: "nur README (eine Zeile)", url: "https://github.com/Andreas76761/Bauplaner_Version1#readme" },
+    analyse: "Auf GitHub liegt nur die README („Mockup Bauplaner mit Codex“) – der Code ist vermutlich lokal auf einem PC.",
+    performance: null,
+    vorschlaege: ["Code pushen – dann können Analyse, Screenshot und Performance-Messung nachgezogen werden", "Lokalen Pfad/PC im Dashboard eintragen (✎)"],
   },
   {
     id: "taxflow",
@@ -182,6 +240,10 @@ const SEED_APPS = [
     screenshot: "",
     tags: ["finanzen", "ai-studio", "nur-readme"],
     status: "aktiv",
+    doku: { text: "nur AI-Studio-Standard-README", url: "https://github.com/Andreas76761/TaxFlow#readme" },
+    analyse: "„Built with AI Studio“ – die App lebt vermutlich in Google AI Studio bzw. lokal; im Repo ist noch kein Code.",
+    performance: null,
+    vorschlaege: ["App aus AI Studio exportieren und pushen", "Kurz beschreiben, was TaxFlow tut (README)"],
   },
   {
     id: "simulation-sc",
@@ -199,6 +261,10 @@ const SEED_APPS = [
     screenshot: "",
     tags: ["simulation", "ai-studio", "nur-readme"],
     status: "aktiv",
+    doku: { text: "nur AI-Studio-Standard-README", url: "https://github.com/Andreas76761/Simulation_SC_V1#readme" },
+    analyse: "„Built with AI Studio“ – die App lebt vermutlich in Google AI Studio bzw. lokal; im Repo ist noch kein Code.",
+    performance: null,
+    vorschlaege: ["App aus AI Studio exportieren und pushen", "Kurz beschreiben, was simuliert wird (README)"],
   },
   {
     id: "paperclip-bau",
@@ -216,5 +282,9 @@ const SEED_APPS = [
     screenshot: "",
     tags: ["bau", "repo-leer"],
     status: "pausiert",
+    doku: { text: "keine – das Repo ist leer (0 Commits)", url: "https://github.com/Andreas76761/Paperclip_Bau" },
+    analyse: "Das Repo enthält keine Commits – vermutlich ist ein früherer Upload fehlgeschlagen oder die App existiert nur lokal.",
+    performance: null,
+    vorschlaege: ["Lokalen Stand pushen oder das leere Repo löschen", "Falls die App lokal läuft: Pfad/PC im Dashboard eintragen"],
   },
 ];

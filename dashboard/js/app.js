@@ -25,7 +25,7 @@ function ladeZustand() {
         const leer = alt[f] == null || alt[f] === "" || (Array.isArray(alt[f]) && !alt[f].length);
         if (leer && seed[f] !== undefined) alt[f] = strukturKopie(seed[f]);
       });
-      ["umfang", "screenshot", "letzterPush", "visibility", "vercelBestaetigt"].forEach(f => {
+      ["umfang", "screenshot", "letzterPush", "visibility", "vercelBestaetigt", "doku", "analyse", "performance", "vorschlaege"].forEach(f => {
         if (seed[f] !== undefined) alt[f] = strukturKopie(seed[f]);
       });
       if (!alt.bewertung && seed.bewertung) alt.bewertung = strukturKopie(seed.bewertung);
@@ -306,6 +306,7 @@ function render() {
   document.querySelectorAll(".nav a").forEach(a => a.classList.toggle("aktiv", a.getAttribute("href") === "#" + ansicht));
   const wurzel = $("#inhalt");
   if (ansicht === "werkzeug") wurzel.innerHTML = renderWerkzeug();
+  else if (ansicht === "analyse") wurzel.innerHTML = renderAnalyse();
   else if (ansicht === "bewertung") wurzel.innerHTML = renderBewertung();
   else if (ansicht === "rechner") wurzel.innerHTML = renderRechner();
   else if (ansicht === "hosting") wurzel.innerHTML = renderHosting();
@@ -636,6 +637,117 @@ function vercelStatusHtml(v) {
   if (v.keinProjekt) return '<small class="hinweis" style="margin:0">kein Vercel-Projekt gefunden</small>';
   const farbe = { READY: "gruen", ERROR: "rot", BUILDING: "gelb", QUEUED: "gelb", CANCELED: "grau" }[v.status] || "grau";
   return `<span class="ampel ${farbe}">●</span> ${esc(v.status)}${v.datum ? ` <small>(${esc(v.datum)})</small>` : ""}`;
+}
+
+/* ---------- App-Analyse (Register mit Detailblick je App) ---------- */
+
+let analyseAppId = null;
+const perfLive = {}; // appId -> {laeuft|ms|fehler} – nur im Speicher
+
+function waehleAnalyseApp(id) { analyseAppId = id; render(); }
+
+async function messeLadezeit(id) {
+  const a = state.apps.find(x => x.id === id);
+  if (!a) return;
+  const url = a.lokalUrl || a.vercelUrl;
+  if (!url) { perfLive[id] = { fehler: "keine URL hinterlegt" }; render(); return; }
+  perfLive[id] = { laeuft: true };
+  render();
+  try {
+    const zeiten = [];
+    for (let i = 0; i < 3; i++) {
+      const t0 = performance.now();
+      await fetch(url, { mode: "no-cors", cache: "no-store", signal: AbortSignal.timeout(10000) });
+      zeiten.push(Math.round(performance.now() - t0));
+    }
+    perfLive[id] = { ms: Math.min(...zeiten), url, zeit: new Date().toLocaleTimeString("de-DE") };
+  } catch (e) {
+    perfLive[id] = { fehler: "nicht erreichbar – im Heimnetz bzw. lokal geöffnetem Dashboard messen" };
+  }
+  render();
+}
+
+function analyseDetail(a) {
+  const pc = state.pcs.find(p => p.id === a.rechner);
+  const score = appScore(a);
+  const b = a.bewertung || {};
+  const p = a.performance;
+  const live = perfLive[a.id];
+  const links = [];
+  if (a.vercelUrl) links.push(`<a class="knopf" href="${esc(a.vercelUrl)}" target="_blank" rel="noopener">▶ Öffnen (Vercel)</a>`);
+  if (a.lokalUrl) links.push(`<a class="knopf" href="${esc(a.lokalUrl)}" target="_blank" rel="noopener">🖥 Öffnen (lokal)</a>`);
+  if (a.github) links.push(`<a class="knopf" href="${esc(a.github)}" target="_blank" rel="noopener">GitHub${a.visibility === "private" ? " 🔒" : ""}</a>`);
+  if (a.doku && a.doku.url) links.push(`<a class="knopf" href="${esc(a.doku.url)}" target="_blank" rel="noopener">📖 Doku</a>`);
+
+  const steckbrief = [
+    ["Status", esc(a.status || "aktiv")],
+    ["Gebaut mit", (a.ursprung || []).join(", ") || "unbekannt"],
+    ["Rechner (PC)", pc ? esc(pc.name) : "nicht zugeordnet"],
+    ["GitHub", a.github ? `${esc(a.github.replace("https://github.com/", ""))} (${a.visibility === "private" ? "privat 🔒" : "öffentlich 🌐"})` : "–"],
+    ["Vercel", a.vercelUrl ? esc(a.vercelUrl.replace("https://", "")) + (a.vercelBestaetigt ? " ✓" : " (vermutet)") : "–"],
+    ["Letzter Push", esc(a.letzterPush || "–")],
+    ["Umfang", a.umfang && a.umfang.loc ? `${a.umfang.dateien} Dateien · ${a.umfang.loc.toLocaleString("de-DE")} Zeilen` : "–"],
+    ["Stack", (a.stack || []).join(", ") || "–"],
+    ["Tags", (a.tags || []).map(t => "#" + t).join(" ") || "–"],
+  ];
+
+  return `<div class="karte analyse-detail">
+    <div class="karte-kopf">
+      <h2 style="margin:0">${esc(a.name)}</h2>
+      <span style="white-space:nowrap">
+        <button class="mini" onclick="bearbeiteBewertung('${a.id}')" title="Bewerten">★</button>
+        <button class="mini" onclick="bearbeiteApp('${a.id}')" title="Bearbeiten">✎</button>
+      </span>
+    </div>
+    <div class="badges">${(a.ursprung || []).map(u => `<span class="badge u-${esc(u.toLowerCase())}">${esc(u)}</span>`).join("")}
+      ${score != null ? `<span class="badge score-badge">★ ${score.toFixed(1)}</span>` : ""}
+      ${(a.status || "aktiv") !== "aktiv" ? `<span class="badge offen">${esc(a.status)}</span>` : ""}</div>
+    ${a.beschreibung ? `<p>${esc(a.beschreibung)}</p>` : ""}
+    <div class="aktionen">${links.join("")}</div>
+    ${a.screenshot ? `<img class="shot" style="aspect-ratio:auto" src="${esc(a.screenshot)}" alt="Screenshot ${esc(a.name)}" onclick="zeigeShot('${a.id}')" title="Klicken zum Vergrößern">` : '<p class="leer">Kein Screenshot – App liegt (noch) nicht lauffähig auf GitHub.</p>'}
+
+    <h3>📇 Steckbrief</h3>
+    <table class="steckbrief">${steckbrief.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join("")}</table>
+
+    <h3>📖 Dokumentation</h3>
+    <p>${a.doku ? `${esc(a.doku.text)}${a.doku.url ? ` – <a href="${esc(a.doku.url)}" target="_blank" rel="noopener">öffnen</a>` : ""}` : '<span class="leer">nicht erfasst</span>'}</p>
+
+    <h3>🔬 Analyse (Code-Inventur 15.07.2026)</h3>
+    <p>${a.analyse ? esc(a.analyse) : '<span class="leer">noch keine Analyse – Code liegt nicht auf GitHub</span>'}</p>
+    ${score != null ? `<p class="hinweis">Bewertung: ${KRITERIEN.map(k => b[k.key] ? `${k.label} ${b[k.key]}★` : "").filter(Boolean).join(" · ")}${b.notiz ? `<br>${esc(b.notiz)}` : ""}</p>` : ""}
+
+    <h3>⏱ Performance</h3>
+    ${p ? `<div class="perfzeile"><span class="stat"><b>${p.ladezeitMs >= 1000 ? (p.ladezeitMs / 1000).toFixed(1) + " s" : p.ladezeitMs + " ms"}</b><span>Ladezeit (gemessen)</span></span>
+      <span class="stat"><b>${p.groesseKB >= 1024 ? (p.groesseKB / 1024).toFixed(1) + " MB" : p.groesseKB + " KB"}</b><span>Größe</span></span></div>
+      <p class="hinweis">${esc(p.hinweis || "")} · Messung: Headless Chromium, 15.07.2026</p>`
+    : '<p class="leer">keine Messung möglich (kein lauffähiger Code auf GitHub)</p>'}
+    <p><button class="knopf" onclick="messeLadezeit('${a.id}')"${live && live.laeuft ? " disabled" : ""}>${live && live.laeuft ? "🔄 misst …" : "⏱ Ladezeit jetzt von hier messen"}</button>
+      ${live && live.ms != null ? `<b class="score">${live.ms} ms</b> <small class="hinweis">(${esc(live.url)}, ${esc(live.zeit)}, Bestwert aus 3 Messungen)</small>` : ""}
+      ${live && live.fehler ? `<span class="fehltext">${esc(live.fehler)}</span>` : ""}</p>
+
+    <h3>💡 Verbesserungsvorschläge</h3>
+    ${a.vorschlaege && a.vorschlaege.length ? `<ul class="vorschlaege">${a.vorschlaege.map(v => `<li>${esc(v)}</li>`).join("")}</ul>` : '<p class="leer">keine erfasst</p>'}
+  </div>`;
+}
+
+function renderAnalyse() {
+  if (!analyseAppId || !state.apps.some(a => a.id === analyseAppId)) analyseAppId = (state.apps[0] || {}).id;
+  const a = state.apps.find(x => x.id === analyseAppId);
+  return `${statistikZeile()}
+  <h2>App-Analyse</h2>
+  <p class="hinweis">Links eine App wählen – rechts Stand, Links, Screenshot, Doku, Analyse, Performance und Vorschläge.</p>
+  <div class="analyse-raster">
+    <div class="analyse-liste">
+      ${state.apps.map(x => {
+        const s = appScore(x);
+        return `<button class="analyse-eintrag${x.id === analyseAppId ? " aktiv" : ""}" onclick="waehleAnalyseApp('${x.id}')">
+          <b>${esc(x.name)}</b><br>
+          <small>${(x.ursprung || []).join(", ") || "Werkzeug?"}${s != null ? ` · ★ ${s.toFixed(1)}` : ""}${x.performance ? "" : " · ⚠ kein Code"}</small>
+        </button>`;
+      }).join("")}
+    </div>
+    ${a ? analyseDetail(a) : ""}
+  </div>`;
 }
 
 /* ---------- Bewertungs-/Vergleichsansicht ---------- */

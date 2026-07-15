@@ -16,6 +16,8 @@ Dann http://localhost:8950 öffnen. (Direktes Öffnen von `index.html` per Doppe
 
 - **Übersicht** – alle Apps als Karten mit Screenshot, Volltextsuche und Filtern (Werkzeug, Rechner, Hosting, Status)
 - **Nach Werkzeug** – Gruppierung nach Claude, Codex, OpenAI, Perplexity, Lovable, Gemini, Sonstiges
+- **App-Analyse** – Detailregister je App: Stand, Links, Screenshot, Doku, PC/GitHub/Vercel-Steckbrief,
+  Code-Analyse, gemessene Performance (Ladezeit/Größe) mit Live-Nachmessung und Verbesserungsvorschläge
 - **Bewertung** – 5 Kriterien je App (Nutzen, Reifegrad, Wartbarkeit, Tech-Qualität, Zukunftsfähigkeit) mit
   ★-Editor, sortierbarer Vergleichstabelle, Gesamt-Score, Apps/Ø-Score je Werkzeug und Top 3; die Startwerte
   sind Vorschläge aus der Code-Analyse (Notiz je App), „Nutzen" bleibt bewusst offen

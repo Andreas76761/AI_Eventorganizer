@@ -210,6 +210,39 @@ tr:hover td { background: var(--fläche); }
 .bewertungstabelle td:first-child { white-space: normal; min-width: 240px; max-width: 380px; }
 .bewertungstabelle .sterne { white-space: nowrap; }
 
+/* App-Analyse */
+.analyse-raster {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+.analyse-liste { display: flex; flex-direction: column; gap: .35rem; position: sticky; top: 1rem; }
+.analyse-eintrag {
+  text-align: left;
+  background: var(--fläche);
+  border: 1px solid var(--rand);
+  color: var(--text);
+  border-radius: .6rem;
+  padding: .5rem .7rem;
+  cursor: pointer;
+  font-size: .86rem;
+}
+.analyse-eintrag small { color: var(--gedämpft); }
+.analyse-eintrag:hover { border-color: var(--akzent); }
+.analyse-eintrag.aktiv { background: linear-gradient(90deg, #6c7bff33, transparent); border-color: var(--akzent); }
+.analyse-detail h3 { margin-top: 1rem; border-top: 1px solid var(--rand); padding-top: .8rem; }
+.steckbrief { font-size: .88rem; }
+.steckbrief th { background: none; padding: .3rem .8rem .3rem 0; color: var(--gedämpft); font-weight: 500; white-space: nowrap; vertical-align: top; }
+.steckbrief td { padding: .3rem 0; border-bottom: 1px dashed var(--rand); white-space: normal; }
+.perfzeile { display: flex; gap: .8rem; flex-wrap: wrap; }
+.vorschlaege { padding-left: 1.2rem; font-size: .9rem; display: flex; flex-direction: column; gap: .35rem; }
+.vorschlaege li::marker { color: var(--gelb); }
+@media (max-width: 900px) {
+  .analyse-raster { grid-template-columns: 1fr; }
+  .analyse-liste { position: static; flex-direction: row; flex-wrap: wrap; }
+}
+
 /* GitHub/Vercel-Einstellungen */
 .einstellungen {
   background: var(--fläche);
