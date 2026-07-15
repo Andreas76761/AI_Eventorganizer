@@ -6,7 +6,7 @@
    Alles in der App editierbar; Änderungen liegen im LocalStorage und
    können unter „Daten" als JSON exportiert werden. */
 
-const SEED_VERSION = 11;
+const SEED_VERSION = 12;
 
 const URSPRUENGE = ["Claude", "Codex", "OpenAI", "Perplexity", "Lovable", "Gemini", "Sonstiges"];
 
@@ -16,8 +16,8 @@ const SEED_PCS = [
     agentUrl: "http://192.168.0.171:9800", agentToken: "" },
   { id: "smartaiz1", name: "smartAIZ1", os: "Windows", ort: "", notiz: "Agent eingerichtet",
     agentUrl: "http://192.168.0.245:9800", agentToken: "" },
-  { id: "dell-andreas", name: "Dell Andreas", os: "Windows", ort: "", notiz: "Agent noch nicht eingerichtet – START.bat ausführen, dann per Scan verbinden",
-    agentUrl: "", agentToken: "" },
+  { id: "dell-andreas", name: "Dell Andreas", os: "Windows 11 (26200)", ort: "", notiz: "PC-Name Andreas · Nutzer andre · 17 GB RAM · 20 Kerne · Haupt-Entwicklungsrechner (C:/2026/Claude)",
+    agentUrl: "http://192.168.0.13:9800", agentToken: "" },
   { id: "pc4", name: "PC 4", os: "Windows", ort: "", notiz: "" },
 ];
 
@@ -28,7 +28,8 @@ const SEED_APPS = [
     beschreibung: "Verwaltung von AI-Messen, -Konferenzen und -Events: Kalender, Programm, Kosten, Reise, Community, PWA (Supabase optional)",
     ursprung: ["Claude"],
     stack: ["HTML/JS statisch", "PWA", "Supabase"],
-    rechner: "smartaiz1",
+    rechner: "dell-andreas",
+    lokalPfad: "C:\\2026\\Claude\\AI_Messe_Guide",
     github: "https://github.com/Andreas76761/AI_Eventorganizer",
     vercelUrl: "https://ai-messe-guide.vercel.app",
     vercelBestaetigt: true,
@@ -131,10 +132,11 @@ const SEED_APPS = [
     beschreibung: "Intelligentes PowerPoint-Archiv: Upload & KI-Analyse, Volltextsuche, Design-Varianten je Folie, Voice-Chat (Claude/GPT-4/Gemini/Llama), OCR, Notion-Sync",
     ursprung: [],
     stack: ["React", "Vite", "Tailwind", "tesseract.js", "Web Worker"],
-    rechner: "",
+    rechner: "dell-andreas",
     github: "https://github.com/Andreas76761/Thumnail_Generator",
     vercelUrl: "https://thumnail-generator.vercel.app",
     lokalUrl: "",
+    lokalPfad: "C:\\2026\\Claude\\Thumbnail",
     visibility: "public",
     letzterPush: "2026-05-01",
     umfang: { dateien: 55, loc: 6472 },
@@ -387,6 +389,31 @@ const SEED_APPS = [
     vorschlaege: [
       "Werkzeug (Claude/Codex/…) und kurze Beschreibung per Stift ergaenzen",
       "Code zu GitHub hochladen – danach volle Analyse",
+    ],
+    technik: { frontend: "unbekannt – Code noch nicht einsehbar", middleware: "unbekannt", llm: "—", backend: "unbekannt" },
+    gestartet: "",
+  },
+  {
+    id: "deckungsbeitrag",
+    name: "Deckungsbeitragflussrechnung",
+    beschreibung: "Lokale App (mit Claude/Fable gebaut): Deckungsbeitrags-/Flussrechnung mit Undo, CSV-Import, Simulations-Übernahme und Diagrammen. Noch nicht auf GitHub.",
+    ursprung: ["Claude"],
+    stack: [],
+    rechner: "dell-andreas",
+    github: "",
+    vercelUrl: "",
+    lokalUrl: "",
+    lokalPfad: "C:\\2026\\Claude\\Fable\\Deckungsbeitragflussrechnung",
+    visibility: "",
+    letzterPush: "2026-07-11",
+    tags: ["finanzen", "nur-lokal"],
+    status: "aktiv",
+    doku: { text: "keine – lokales Projekt ohne GitHub", url: "" },
+    analyse: "Liegt lokal auf Dell Andreas (C:/2026/Claude/Fable/Deckungsbeitragflussrechnung), nicht auf GitHub. Letzter lokaler Commit 11.07.2026 (Undo, CSV-Import, Sim-Übernahme, Diagramme). Nach dem Push ziehe ich Technologie, Umfang, Screenshot und Performance nach.",
+    performance: null,
+    vorschlaege: [
+      "Code zu GitHub hochladen (Anleitung docs/CODE_HOCHLADEN.md) – danach volle Analyse und Screenshot",
+      "Zum Starten/Stoppen aus dem Dashboard: Startkommando in agent/apps.json auf Dell Andreas eintragen",
     ],
     technik: { frontend: "unbekannt – Code noch nicht einsehbar", middleware: "unbekannt", llm: "—", backend: "unbekannt" },
     gestartet: "",
