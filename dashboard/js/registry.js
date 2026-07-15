@@ -6,7 +6,7 @@
    Alles in der App editierbar; Änderungen liegen im LocalStorage und
    können unter „Daten" als JSON exportiert werden. */
 
-const SEED_VERSION = 12;
+const SEED_VERSION = 13;
 
 const URSPRUENGE = ["Claude", "Codex", "OpenAI", "Perplexity", "Lovable", "Gemini", "Sonstiges"];
 
@@ -14,7 +14,7 @@ const URSPRUENGE = ["Claude", "Codex", "OpenAI", "Perplexity", "Lovable", "Gemin
 const SEED_PCS = [
   { id: "tamara", name: "Tamara", os: "Windows 11 (26200)", ort: "", notiz: "Laptop LAPTOP-D63BIAGK · Nutzer tamar · 6 GB RAM · 8 Kerne · Agent eingerichtet",
     agentUrl: "http://192.168.0.171:9800", agentToken: "" },
-  { id: "smartaiz1", name: "smartAIZ1", os: "Windows", ort: "", notiz: "Agent eingerichtet",
+  { id: "smartaiz1", name: "smartAIZ1", os: "Windows 11 (26200)", ort: "", notiz: "PC-Name SmartAIZ1 · Nutzer andre · 16 GB RAM · 12 Kerne · Agent eingerichtet",
     agentUrl: "http://192.168.0.245:9800", agentToken: "" },
   { id: "dell-andreas", name: "Dell Andreas", os: "Windows 11 (26200)", ort: "", notiz: "PC-Name Andreas · Nutzer andre · 17 GB RAM · 20 Kerne · Haupt-Entwicklungsrechner (C:/2026/Claude)",
     agentUrl: "http://192.168.0.13:9800", agentToken: "" },
@@ -417,5 +417,30 @@ const SEED_APPS = [
     ],
     technik: { frontend: "unbekannt – Code noch nicht einsehbar", middleware: "unbekannt", llm: "—", backend: "unbekannt" },
     gestartet: "",
+  },
+  {
+    id: "bauplaner-ki-v2",
+    name: "Bauplaner KI Version2",
+    beschreibung: "Lokale App auf smartAIZ1 (Folgeversion des Bauplaner). Noch nicht auf GitHub. Werkzeug vermutlich Codex wie Version 1 – per KI-Projekt-Suche bestätigbar.",
+    ursprung: [],
+    stack: [],
+    rechner: "smartaiz1",
+    github: "",
+    vercelUrl: "",
+    lokalUrl: "",
+    lokalPfad: "C:\\Users\\andre\\Documents\\Auswertung CFD Trades\\Bauplaner_KI Version2",
+    visibility: "",
+    letzterPush: "2026-06-09",
+    tags: ["bau", "nur-lokal"],
+    status: "aktiv",
+    doku: { text: "keine – lokales Projekt ohne GitHub", url: "" },
+    analyse: "Liegt lokal auf smartAIZ1 (C:/Users/andre/Documents/Auswertung CFD Trades/Bauplaner_KI Version2). Erst-Commit 09.06.2026. Werkzeug bitte per KI-Projekt-Suche/Stift bestätigen; nach dem Push ziehe ich die Analyse nach.",
+    performance: null,
+    vorschlaege: [
+      "Werkzeug per KI-Projekte-Suche bestimmen (Claude/Codex/…)",
+      "Code zu GitHub hochladen (Anleitung docs/CODE_HOCHLADEN.md) – danach volle Analyse",
+    ],
+    technik: { frontend: "unbekannt – Code noch nicht einsehbar", middleware: "unbekannt", llm: "—", backend: "unbekannt" },
+    gestartet: "2026-06-09",
   },
 ];
