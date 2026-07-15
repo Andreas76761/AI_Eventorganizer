@@ -11,6 +11,8 @@
    sie als Dienst und verbindet den PC über WLAN/LAN mit dem HomeLab-Dashboard.
 
    Autostart (Windows):   node homelab-agent.js --autostart
+   Netzwerk-Scan:         node homelab-agent.js --scan        (Netz wird erkannt)
+                          node homelab-agent.js --scan 192.168.1 9800
    Einrichtung wiederholen: config.json löschen und neu starten.
 
    Endpunkte:  GET  /ping         – Lebenszeichen (ohne Token)
@@ -112,6 +114,49 @@ async function assistent() {
   console.log(`   Agent-Token:   ${token}`);
   console.log("\nWindows-Firewall beim ersten Start für PRIVATE Netzwerke erlauben.");
   console.log("Autostart einrichten:  node homelab-agent.js --autostart\n");
+}
+
+/* ---------- Netzwerk-Scan (--scan): alle PCs mit Agent finden ---------- */
+
+async function netzScan(argPrefix, argPort) {
+  const port = parseInt(argPort, 10) || 9800;
+  const prefixe = argPrefix
+    ? [argPrefix.replace(/\.+$/, "")]
+    : [...new Set(eigeneIps().map(ip => ip.split(".").slice(0, 3).join(".")))];
+  if (!prefixe.length) { console.error("Kein Netz gefunden – Präfix angeben: node homelab-agent.js --scan 192.168.178"); process.exit(1); }
+
+  const gefunden = [];
+  for (const prefix of prefixe) {
+    console.log(`Scanne ${prefix}.1–254 auf Port ${port} …`);
+    const ips = Array.from({ length: 254 }, (_, i) => `${prefix}.${i + 1}`);
+    const BLOCK = 32;
+    let geprueft = 0;
+    for (let i = 0; i < ips.length; i += BLOCK) {
+      await Promise.all(ips.slice(i, i + BLOCK).map(async ip => {
+        try {
+          const r = await fetch(`http://${ip}:${port}/ping`, { signal: AbortSignal.timeout(900) });
+          const d = await r.json();
+          if (d && d.agent === "homelab") gefunden.push({ name: d.name || ip, url: `http://${ip}:${port}`, version: d.version });
+        } catch (e) { /* dort läuft kein Agent */ }
+        geprueft++;
+      }));
+      process.stdout.write(`\r  ${geprueft}/254 geprüft, ${gefunden.length} Agent(s) gefunden`);
+    }
+    console.log("");
+  }
+
+  if (!gefunden.length) {
+    console.log("\nKeine Agents gefunden. Läuft der Agent auf den anderen PCs? Firewall (private Netzwerke) erlaubt? Richtiges Netz?");
+    process.exit(0);
+  }
+  console.log("\n╔═ Gefundene Rechner ═════════════════════════════════════╗");
+  gefunden.sort((a, b) => a.url.localeCompare(b.url, "de", { numeric: true }))
+    .forEach(g => console.log(`  🟢 ${g.name.padEnd(24)} ${g.url}`));
+  console.log("╚═════════════════════════════════════════════════════════╝");
+  console.log("\nIm Dashboard einlesen: Rechner → 📡 Netzwerk-Scan → Scan starten");
+  console.log("(oder je Rechner über ✎ die Agent-Adresse von oben + dessen Token eintragen)");
+  fs.writeFileSync(path.join(BASIS, "scan-ergebnis.json"), JSON.stringify(gefunden, null, 2));
+  console.log(`Liste gespeichert: ${path.join(BASIS, "scan-ergebnis.json")}`);
 }
 
 /* ---------- Autostart (--autostart) ---------- */
@@ -257,6 +302,8 @@ function starteAgent() {
 /* ---------- Ablauf ---------- */
 
 (async () => {
+  const scanIdx = process.argv.indexOf("--scan");
+  if (scanIdx !== -1) return netzScan(process.argv[scanIdx + 1], process.argv[scanIdx + 2]);
   if (process.argv.includes("--autostart")) return richteAutostartEin();
   if (!fs.existsSync(KONFIG_PFAD)) await assistent();
   starteAgent();
