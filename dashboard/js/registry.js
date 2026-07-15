@@ -6,7 +6,7 @@
    Alles in der App editierbar; Änderungen liegen im LocalStorage und
    können unter „Daten" als JSON exportiert werden. */
 
-const SEED_VERSION = 8;
+const SEED_VERSION = 9;
 
 const URSPRUENGE = ["Claude", "Codex", "OpenAI", "Perplexity", "Lovable", "Gemini", "Sonstiges"];
 
@@ -14,8 +14,8 @@ const URSPRUENGE = ["Claude", "Codex", "OpenAI", "Perplexity", "Lovable", "Gemin
 const SEED_PCS = [
   { id: "tamara", name: "Tamara", os: "Windows", ort: "", notiz: "Laptop – Agent eingerichtet",
     agentUrl: "http://192.168.0.171:9800", agentToken: "" },
-  { id: "pc1", name: "PC 1", os: "Windows", ort: "", notiz: "" },
-  { id: "pc2", name: "PC 2", os: "Windows", ort: "", notiz: "" },
+  { id: "smartaiz1", name: "smartAIZ1", os: "Windows", ort: "", notiz: "Agent eingerichtet",
+    agentUrl: "http://192.168.0.245:9800", agentToken: "" },
   { id: "pc3", name: "PC 3", os: "Windows", ort: "", notiz: "" },
   { id: "pc4", name: "PC 4", os: "Windows", ort: "", notiz: "" },
 ];
@@ -27,7 +27,7 @@ const SEED_APPS = [
     beschreibung: "Verwaltung von AI-Messen, -Konferenzen und -Events: Kalender, Programm, Kosten, Reise, Community, PWA (Supabase optional)",
     ursprung: ["Claude"],
     stack: ["HTML/JS statisch", "PWA", "Supabase"],
-    rechner: "pc1",
+    rechner: "smartaiz1",
     github: "https://github.com/Andreas76761/AI_Eventorganizer",
     vercelUrl: "https://ai-messe-guide.vercel.app",
     vercelBestaetigt: true,
