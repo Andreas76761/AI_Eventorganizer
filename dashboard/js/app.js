@@ -352,17 +352,28 @@ function render() {
   else wurzel.innerHTML = renderUebersicht();
 }
 
+function verbesserungenGesamt() {
+  let gesamt = 0, fertig = 0;
+  state.apps.forEach(a => (a.vorschlaege || []).forEach((v, i) => {
+    gesamt++;
+    if (v.startsWith("✅") || state.vorschlagErledigt[a.id + "#" + i]) fertig++;
+  }));
+  return { gesamt, fertig, prozent: gesamt ? Math.round(fertig / gesamt * 100) : 0 };
+}
+
 function statistikZeile() {
   const n = state.apps.length;
   const git = state.apps.filter(a => a.github).length;
   const ver = state.apps.filter(a => a.vercelUrl).length;
   const ohne = state.apps.filter(a => !(a.ursprung || []).length).length;
+  const vb = verbesserungenGesamt();
   return `<div class="statzeile">
     <div class="stat"><b>${n}</b><span>Apps</span></div>
     <div class="stat"><b>${state.pcs.length}</b><span>Rechner</span></div>
     <div class="stat"><b>${git}</b><span>auf GitHub</span></div>
     <div class="stat"><b>${ver}</b><span>auf Vercel</span></div>
     <div class="stat${ohne ? " warn" : ""}"><b>${ohne}</b><span>ohne Werkzeug-Zuordnung</span></div>
+    <a class="stat fortschritt-stat" href="#bewertung" title="Zur Fortschrittsübersicht"><b>${vb.fertig}/${vb.gesamt}</b><span>Verbesserungen umgesetzt</span></a>
   </div>`;
 }
 
@@ -873,6 +884,45 @@ function sortiereBewertung(feld) {
   render();
 }
 
+function renderFortschritt() {
+  const vb = verbesserungenGesamt();
+  // je Rechner
+  const pcListe = [...state.pcs, { id: "(nicht zugeordnet)", name: "Nicht zugeordnet" }].map(pc => {
+    const apps = state.apps.filter(a => (a.rechner || "(nicht zugeordnet)") === pc.id);
+    let g = 0, f = 0;
+    apps.forEach(a => (a.vorschlaege || []).forEach((v, i) => { g++; if (v.startsWith("✅") || state.vorschlagErledigt[a.id + "#" + i]) f++; }));
+    return { name: pc.name, apps: apps.length, g, f };
+  }).filter(p => p.apps);
+  // offene Aufgaben (nur bewertete/analysierte Apps zeigen echte To-dos)
+  const offene = [];
+  state.apps.forEach(a => (a.vorschlaege || []).forEach((v, i) => {
+    if (!v.startsWith("✅") && !state.vorschlagErledigt[a.id + "#" + i] && !a.lokalPfad) // lokale "hochladen"-Todos ausblenden
+      offene.push({ app: a.name, id: a.id, text: v });
+  }));
+
+  return `<div class="karte" style="margin-bottom:1.2rem">
+    <h3>🎯 Verbesserungen gesamt: ${vb.fertig} / ${vb.gesamt} umgesetzt (${vb.prozent}%)</h3>
+    <div class="balkenbahn" style="height:1rem"><div class="balken gold" style="width:${vb.prozent}%"></div></div>
+    <div class="zweispaltig" style="margin-top:1rem; align-items:start">
+      <div>
+        <h4 style="margin:.2rem 0 .5rem">Fortschritt je Rechner</h4>
+        ${pcListe.map(p => `<div class="balkenzeile">
+          <span class="balkenname">${esc(p.name)}</span>
+          <div class="balkenbahn"><div class="balken" style="width:${p.g ? Math.round(p.f / p.g * 100) : 0}%"></div></div>
+          <span class="balkenwert">${p.f}/${p.g}</span>
+        </div>`).join("")}
+      </div>
+      <div>
+        <h4 style="margin:.2rem 0 .5rem">Nächste offene Aufgaben (${offene.length})</h4>
+        ${offene.length ? `<ul class="appliste">${offene.slice(0, 8).map(o =>
+          `<li><button class="mini" onclick="waehleAnalyseApp('${o.id}');location.hash='#analyse'" title="App öffnen">→</button> <b>${esc(o.app)}:</b> ${esc(o.text.slice(0, 70))}${o.text.length > 70 ? "…" : ""}</li>`).join("")}</ul>${offene.length > 8 ? `<p class="hinweis">… und ${offene.length - 8} weitere</p>` : ""}`
+        : '<p class="leer">Alle konkreten Verbesserungen umgesetzt! 🎉</p>'}
+        <p class="hinweis">Lokale Apps zeigen als Aufgabe „zu GitHub hochladen" – hier ausgeblendet, bis der Code da ist.</p>
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderBewertung() {
   const wert = (a, feld) => {
     if (feld === "name") return a.name.toLowerCase();
@@ -906,6 +956,7 @@ function renderBewertung() {
   const beste = [...bewertet].sort((x, y) => appScore(y) - appScore(x)).slice(0, 3);
 
   return `${statistikZeile()}
+  ${renderFortschritt()}
   <h2>Bewertung &amp; Vergleich</h2>
   <p class="hinweis">Spaltenkopf anklicken zum Sortieren · ★ öffnet den Bewertungs-Editor. Die vorbefüllten Werte sind
   <b>Vorschläge aus der Code-Analyse</b> (siehe Notiz) – „Nutzen" kannst nur du vergeben.</p>

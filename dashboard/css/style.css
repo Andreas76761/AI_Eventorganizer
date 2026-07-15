@@ -75,6 +75,9 @@ a { color: var(--cyan); }
 .stat b { font-size: 1.4rem; color: var(--cyan); display: block; }
 .stat span { font-size: .78rem; color: var(--gedämpft); }
 .stat.warn b { color: var(--gelb); }
+.stat.fortschritt-stat { text-decoration: none; cursor: pointer; }
+.stat.fortschritt-stat b { color: var(--gruen); }
+.stat.fortschritt-stat:hover { border-color: var(--akzent); }
 
 /* Filter */
 .filterzeile { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .4rem; }
