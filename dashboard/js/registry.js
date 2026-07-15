@@ -6,13 +6,13 @@
    Alles in der App editierbar; Änderungen liegen im LocalStorage und
    können unter „Daten" als JSON exportiert werden. */
 
-const SEED_VERSION = 9;
+const SEED_VERSION = 10;
 
 const URSPRUENGE = ["Claude", "Codex", "OpenAI", "Perplexity", "Lovable", "Gemini", "Sonstiges"];
 
 // Agent-Adresse ist voreingetragen; das geheime Token trägst du lokal am Rechner ein (nie im Repo).
 const SEED_PCS = [
-  { id: "tamara", name: "Tamara", os: "Windows", ort: "", notiz: "Laptop – Agent eingerichtet",
+  { id: "tamara", name: "Tamara", os: "Windows 11 (26200)", ort: "", notiz: "Laptop LAPTOP-D63BIAGK · Nutzer tamar · 6 GB RAM · 8 Kerne · Agent eingerichtet",
     agentUrl: "http://192.168.0.171:9800", agentToken: "" },
   { id: "smartaiz1", name: "smartAIZ1", os: "Windows", ort: "", notiz: "Agent eingerichtet",
     agentUrl: "http://192.168.0.245:9800", agentToken: "" },
@@ -339,5 +339,55 @@ const SEED_APPS = [
     analyse: "Das Repo enthält keine Commits – vermutlich ist ein früherer Upload fehlgeschlagen oder die App existiert nur lokal.",
     performance: null,
     vorschlaege: ["Lokalen Stand pushen oder das leere Repo löschen", "Falls die App lokal läuft: Pfad/PC im Dashboard eintragen"],
+  },
+  {
+    id: "codex-blutdruck",
+    name: "Blutdruckmessung (Codex)",
+    beschreibung: "Lokale App zur Blutdruck-Erfassung, gebaut mit Codex. Liegt auf Tamara, noch nicht auf GitHub.",
+    ursprung: ["Codex"],
+    stack: [],
+    rechner: "tamara",
+    github: "",
+    vercelUrl: "",
+    lokalUrl: "",
+    lokalPfad: "C:\\Users\\tamar\\Documents\\Codex-Blutdruckmessung-Andreas",
+    visibility: "",
+    letzterPush: "",
+    tags: ["gesundheit", "nur-lokal"],
+    status: "aktiv",
+    doku: { text: "keine – lokales Projekt ohne GitHub", url: "" },
+    analyse: "Liegt lokal auf Tamara, nicht auf GitHub. Sobald der Code gepusht ist, ziehe ich Technologie, Umfang, Screenshot und Performance nach.",
+    performance: null,
+    vorschlaege: [
+      "Code zu GitHub hochladen (Anleitung docs/CODE_HOCHLADEN.md) – danach volle Analyse und Screenshot",
+      "Zum Starten/Stoppen aus dem Dashboard: Startkommando in agent/apps.json auf Tamara eintragen",
+    ],
+    technik: { frontend: "unbekannt – Code noch nicht einsehbar", middleware: "unbekannt", llm: "—", backend: "unbekannt" },
+    gestartet: "",
+  },
+  {
+    id: "testing-agent",
+    name: "Testing Agent",
+    beschreibung: "Lokales Projekt auf Tamara. Zweck noch offen. Noch nicht auf GitHub.",
+    ursprung: [],
+    stack: [],
+    rechner: "tamara",
+    github: "",
+    vercelUrl: "",
+    lokalUrl: "",
+    lokalPfad: "C:\\Users\\tamar\\Documents\\Testing Agent",
+    visibility: "",
+    letzterPush: "",
+    tags: ["nur-lokal"],
+    status: "aktiv",
+    doku: { text: "keine – lokales Projekt ohne GitHub", url: "" },
+    analyse: "Liegt lokal auf Tamara, nicht auf GitHub. Werkzeug/Zweck bitte per Stift ergaenzen; nach dem Push ziehe ich die Analyse nach.",
+    performance: null,
+    vorschlaege: [
+      "Werkzeug (Claude/Codex/…) und kurze Beschreibung per Stift ergaenzen",
+      "Code zu GitHub hochladen – danach volle Analyse",
+    ],
+    technik: { frontend: "unbekannt – Code noch nicht einsehbar", middleware: "unbekannt", llm: "—", backend: "unbekannt" },
+    gestartet: "",
   },
 ];

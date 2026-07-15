@@ -25,7 +25,7 @@ function ladeZustand() {
         const leer = alt[f] == null || alt[f] === "" || (Array.isArray(alt[f]) && !alt[f].length);
         if (leer && seed[f] !== undefined) alt[f] = strukturKopie(seed[f]);
       });
-      ["umfang", "screenshot", "letzterPush", "visibility", "vercelBestaetigt", "doku", "analyse", "performance", "vorschlaege", "technik", "gestartet"].forEach(f => {
+      ["umfang", "screenshot", "letzterPush", "visibility", "vercelBestaetigt", "doku", "analyse", "performance", "vorschlaege", "technik", "gestartet", "lokalPfad"].forEach(f => {
         if (seed[f] !== undefined) alt[f] = strukturKopie(seed[f]);
       });
       if (!alt.bewertung && seed.bewertung) alt.bewertung = strukturKopie(seed.bewertung);
@@ -728,6 +728,7 @@ function analyseDetail(a) {
     ["Rechner (PC)", pc ? esc(pc.name) : "nicht zugeordnet"],
     ["GitHub", a.github ? `${esc(a.github.replace("https://github.com/", ""))} (${a.visibility === "private" ? "privat 🔒" : "öffentlich 🌐"})` : "–"],
     ["Vercel", a.vercelUrl ? esc(a.vercelUrl.replace("https://", "")) + (a.vercelBestaetigt ? " ✓" : " (vermutet)") : "–"],
+    ["Ordner auf dem PC", a.lokalPfad ? esc(a.lokalPfad) : "–"],
     ["Gestartet", esc(a.gestartet || "–") + (a.gestartet ? " (erster Commit)" : "")],
     ["Letzte Änderung", esc(a.letzterPush || "–")],
     ["Umfang", a.umfang && a.umfang.loc ? `${a.umfang.dateien} Dateien · ${a.umfang.loc.toLocaleString("de-DE")} Zeilen` : "–"],
