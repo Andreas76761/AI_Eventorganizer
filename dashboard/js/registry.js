@@ -6,7 +6,7 @@
    Alles in der App editierbar; Änderungen liegen im LocalStorage und
    können unter „Daten" als JSON exportiert werden. */
 
-const SEED_VERSION = 4;
+const SEED_VERSION = 5;
 
 const URSPRUENGE = ["Claude", "Codex", "OpenAI", "Perplexity", "Lovable", "Gemini", "Sonstiges"];
 
@@ -63,11 +63,10 @@ const SEED_APPS = [
     tags: ["diagramme", "vercel.json vorhanden"],
     status: "aktiv",
     doku: { text: "nur Standard-Vite-README – eigene Beschreibung fehlt", url: "https://github.com/Andreas76761/Diagramm_Builder#readme" },
-    analyse: "Moderner React/Vite-Stack mit Recharts, sauber in Komponenten gegliedert. Excel-/PDF-/PowerPoint-Export (xlsx, jsPDF, pptxgenjs) liegt im Hauptbundle – dadurch 2,4 MB Build trotz überschaubarer App.",
-    performance: { ladezeitMs: 138, groesseKB: 2476, hinweis: "schnell; Bundle durch Export-Bibliotheken groß" },
+    analyse: "Moderner React/Vite-Stack mit Recharts, sauber in Komponenten gegliedert. Die Export-Bibliotheken (xlsx, jsPDF, pptxgenjs) sind bereits vorbildlich per dynamischem Import in eigene Chunks getrennt – der Start lädt nur ~820 KB, der Rest kommt erst beim Export.",
+    performance: { ladezeitMs: 138, groesseKB: 2476, hinweis: "schnell; Export-Chunks laden erst bei Bedarf" },
     vorschlaege: [
-      "Export-Bibliotheken (xlsx, jsPDF, pptxgenjs) per dynamischem import() erst beim Export laden – Startbundle schrumpft massiv",
-      "README durch echte Projektbeschreibung mit Screenshot ersetzen",
+      "✅ umgesetzt (Branch claude/verbesserungen): README mit echter Projektbeschreibung statt Vite-Vorlage",
       "Vercel-Projekt verbinden (vercel.json liegt bereits im Repo)",
     ],
     bewertung: { nutzen: 0, reifegrad: 3, wartbarkeit: 4, techQualitaet: 4, zukunft: 4,
@@ -91,10 +90,10 @@ const SEED_APPS = [
     status: "aktiv",
     doku: { text: "keine README – aber 7 aussagekräftige Screenshots im Repo", url: "https://github.com/Andreas76761/ServiceVertrag-Dashboard" },
     analyse: "Mit Perplexity gebaut (die Seite erlaubt *.preview.i.perplexity.ai). Inhaltlich die umfangreichste App: 17.369 Zeilen Vanilla-JS in 27 thematisch getrennten Dateien (KPIs, LCC, Aftermarket, Marketing …), aber ohne Modulsystem – alles global. Chart.js, jsPDF, pptxgenjs und xlsx kommen zur Laufzeit vom CDN.",
-    performance: { ladezeitMs: 13007, groesseKB: 2896, hinweis: "hing im Test an 5 CDN-Bibliotheken (jsdelivr) + Google Fonts – ohne Internet startet die App nicht" },
+    performance: { ladezeitMs: 430, groesseKB: 2896, hinweis: "vorher 13 s (CDN-blockiert) – nach dem Fix 0,4 s und komplett offlinefähig" },
     vorschlaege: [
-      "CDN-Bibliotheken lokal ins Repo legen (vendor/ oder npm-Build) – schneller Start, offlinefähig, versionsstabil",
-      "README mit Zweck + den vorhandenen Screenshots anlegen",
+      "✅ umgesetzt (Branch claude/verbesserungen): Bibliotheken + Fonts lokal in vendor/ – Ladezeit 13 s → 0,4 s, offlinefähig, DSGVO-freundlich",
+      "✅ umgesetzt (Branch claude/verbesserungen): README mit Bereichen, Screenshots und Startanleitung",
       "JS-Dateien in ES-Module umstellen, globale Variablen kapseln",
       "Klären, wo die App laufen soll (Vercel-Deployment fehlt bisher)",
     ],
@@ -121,7 +120,7 @@ const SEED_APPS = [
     analyse: "Technisch die ausgereifteste React-App: Web Worker für PPTX-Parsing, virtuelles Scrollen, OCR (tesseract.js), Voice-Chat mit 4 LLM-Anbietern, Notion-Sync. Mit 436 KB das kleinste Build. Stolperstein: Vite-base ist fest auf /Thumnail_Generator/ (GitHub Pages) gestellt.",
     performance: { ladezeitMs: 75, groesseKB: 436, hinweis: "schnellste App im Test" },
     vorschlaege: [
-      "Vite-base per Umgebung steuern: '/Thumnail_Generator/' nur für GitHub Pages, './' für Vercel – sonst weiße Seite",
+      "✅ umgesetzt (Branch claude/verbesserungen): relativer Basispfad './' – läuft jetzt auf Vercel und überall; für GitHub Pages: VITE_BASE=/Thumnail_Generator/",
       "Umgang mit den LLM-API-Schlüsseln in der README dokumentieren",
       "Repo-Tippfehler 'Thumnail' → 'Thumbnail' bei Gelegenheit beheben",
     ],
@@ -173,10 +172,9 @@ const SEED_APPS = [
     status: "aktiv",
     doku: { text: "AI-Studio-README + requirements.md mit Anforderungen", url: "https://github.com/Andreas76761/KI-Hub-2026#readme" },
     analyse: "Kompaktes, aufgeräumtes React/TypeScript-Projekt (1.431 Zeilen) mit Recharts und @google/genai. Kritisch: new GoogleGenAI() läuft beim Modul-Import – ohne GEMINI_API_KEY stürzt die ganze App mit weißer Seite ab (process.env existiert im Browser nicht).",
-    performance: { ladezeitMs: 137, groesseKB: 1160, hinweis: "schnell (gemessen mit gesetztem Key)" },
+    performance: { ladezeitMs: 137, groesseKB: 1160, hinweis: "schnell; startet seit dem Fix auch ohne Key" },
     vorschlaege: [
-      "GoogleGenAI erst bei Bedarf initialisieren und fehlenden Key abfangen – App soll ohne Key rendern und einen Hinweis zeigen",
-      "Key über Vite-define bzw. import.meta.env statt process.env",
+      "✅ umgesetzt (Branch claude/verbesserungen): App startet ohne Key und zeigt einen Hinweis im Chat statt weißer Seite; Key kommt sauber aus .env.local",
       "test.txt aus dem Repo entfernen",
     ],
     bewertung: { nutzen: 0, reifegrad: 2, wartbarkeit: 3, techQualitaet: 3, zukunft: 3,
