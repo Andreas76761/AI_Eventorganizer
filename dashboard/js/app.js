@@ -25,7 +25,7 @@ function ladeZustand() {
         const leer = alt[f] == null || alt[f] === "" || (Array.isArray(alt[f]) && !alt[f].length);
         if (leer && seed[f] !== undefined) alt[f] = strukturKopie(seed[f]);
       });
-      ["umfang", "screenshot", "letzterPush", "visibility", "vercelBestaetigt", "doku", "analyse", "performance", "vorschlaege"].forEach(f => {
+      ["umfang", "screenshot", "letzterPush", "visibility", "vercelBestaetigt", "doku", "analyse", "performance", "vorschlaege", "technik", "gestartet"].forEach(f => {
         if (seed[f] !== undefined) alt[f] = strukturKopie(seed[f]);
       });
       if (!alt.bewertung && seed.bewertung) alt.bewertung = strukturKopie(seed.bewertung);
@@ -350,7 +350,8 @@ function appKarte(a) {
     ${a.beschreibung ? `<p>${esc(a.beschreibung)}</p>` : '<p class="leer">Keine Beschreibung – ✎ klicken und ergänzen.</p>'}
     <div class="meta">
       ${a.rechner ? `<span>🖥 ${esc(pcName(a.rechner))}</span>` : '<span class="leer">Rechner?</span>'}
-      ${a.letzterPush ? `<span>Push: ${esc(a.letzterPush)}</span>` : ""}
+      ${a.gestartet ? `<span>Start: ${esc(a.gestartet)}</span>` : ""}
+      ${a.letzterPush ? `<span>Geändert: ${esc(a.letzterPush)}</span>` : ""}
       ${a.umfang && a.umfang.loc ? `<span>${a.umfang.dateien} Dateien · ${a.umfang.loc.toLocaleString("de-DE")} Zeilen</span>` : ""}
     </div>
     ${stack || tags ? `<div class="chips">${stack}${tags}</div>` : ""}
@@ -685,11 +686,14 @@ function analyseDetail(a) {
     ["Rechner (PC)", pc ? esc(pc.name) : "nicht zugeordnet"],
     ["GitHub", a.github ? `${esc(a.github.replace("https://github.com/", ""))} (${a.visibility === "private" ? "privat 🔒" : "öffentlich 🌐"})` : "–"],
     ["Vercel", a.vercelUrl ? esc(a.vercelUrl.replace("https://", "")) + (a.vercelBestaetigt ? " ✓" : " (vermutet)") : "–"],
-    ["Letzter Push", esc(a.letzterPush || "–")],
+    ["Gestartet", esc(a.gestartet || "–") + (a.gestartet ? " (erster Commit)" : "")],
+    ["Letzte Änderung", esc(a.letzterPush || "–")],
     ["Umfang", a.umfang && a.umfang.loc ? `${a.umfang.dateien} Dateien · ${a.umfang.loc.toLocaleString("de-DE")} Zeilen` : "–"],
     ["Stack", (a.stack || []).join(", ") || "–"],
     ["Tags", (a.tags || []).map(t => "#" + t).join(" ") || "–"],
   ];
+
+  const TECHNIK_ZEILEN = [["Frontend", "frontend"], ["Middleware", "middleware"], ["LLM-Modell", "llm"], ["Backend", "backend"]];
 
   return `<div class="karte analyse-detail">
     <div class="karte-kopf">
@@ -708,6 +712,11 @@ function analyseDetail(a) {
 
     <h3>📇 Steckbrief</h3>
     <table class="steckbrief">${steckbrief.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join("")}</table>
+
+    <h3>🧱 Technologie</h3>
+    ${a.technik ? `<table class="steckbrief">${TECHNIK_ZEILEN.map(([label, key]) =>
+      `<tr><th>${label}</th><td>${esc(a.technik[key] || "–")}</td></tr>`).join("")}</table>`
+    : '<p class="leer">nicht erfasst</p>'}
 
     <h3>📖 Dokumentation</h3>
     <p>${a.doku ? `${esc(a.doku.text)}${a.doku.url ? ` – <a href="${esc(a.doku.url)}" target="_blank" rel="noopener">öffnen</a>` : ""}` : '<span class="leer">nicht erfasst</span>'}</p>
