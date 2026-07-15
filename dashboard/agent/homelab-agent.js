@@ -417,6 +417,11 @@ function starteAgent() {
 /* ---------- Ablauf ---------- */
 
 (async () => {
+  if (process.argv.includes("--setup")) { // nur Einrichtung (für den Installer), ohne Server zu starten
+    if (fs.existsSync(KONFIG_PFAD)) console.log("Bereits eingerichtet (config.json vorhanden) – Einrichtung übersprungen.");
+    else await assistent();
+    return;
+  }
   const pruefIdx = process.argv.findIndex(a => a === "--pruefe" || a === "--check");
   if (pruefIdx !== -1) return pruefeSchritte(process.argv[pruefIdx + 1], process.argv[pruefIdx + 2]);
   const scanIdx = process.argv.indexOf("--scan");
