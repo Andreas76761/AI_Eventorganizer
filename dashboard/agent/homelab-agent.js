@@ -358,6 +358,30 @@ function starteAgent() {
       });
     }
 
+    if (req.method === "GET" && url === "/check") {
+      const schritte = [];
+      // Node
+      const major = parseInt(process.versions.node.split(".")[0], 10);
+      schritte.push({ schritt: "Node.js", ampel: major >= 18 ? "ok" : "fehler",
+        text: major >= 18 ? `Node ${process.versions.node}` : `Node ${process.versions.node} zu alt (mind. 18)` });
+      // Konfiguration
+      schritte.push({ schritt: "Konfiguration", ampel: konfig.token ? "ok" : "fehler",
+        text: konfig.token ? `Name „${konfig.name || os.hostname()}", Port ${PORT}` : "Token fehlt in config.json" });
+      // Apps
+      if (!echteApps.length) schritte.push({ schritt: "Apps", ampel: "warn", text: "keine echten Apps in apps.json (nur Vorlagen)" });
+      else {
+        const fehlOrdner = echteApps.filter(a => a.cwd && !fs.existsSync(a.cwd)).map(a => a.id);
+        schritte.push({ schritt: "Apps", ampel: fehlOrdner.length ? "warn" : "ok",
+          text: `${echteApps.length} App(s): ${echteApps.map(a => a.id).join(", ")}` + (fehlOrdner.length ? ` – Ordner fehlt bei: ${fehlOrdner.join(", ")}` : "") });
+      }
+      // Netzwerk
+      const ips = eigeneIps();
+      schritte.push({ schritt: "Netzwerk", ampel: ips.length ? "ok" : "fehler",
+        text: ips.length ? ips.map(ip => `${ip}:${PORT}`).join("  ") : "keine Netzwerkadresse" });
+      const fehler = schritte.filter(s => s.ampel === "fehler").length;
+      return antworte(res, 200, { ok: true, name: konfig.name || os.hostname(), bereit: fehler === 0, schritte });
+    }
+
     const start = url.match(/^\/start\/([\w-]+)$/);
     const stopp = url.match(/^\/stop\/([\w-]+)$/);
     if (req.method === "POST" && (start || stopp)) {
@@ -377,7 +401,7 @@ function starteAgent() {
       }
     }
 
-    antworte(res, 404, { fehler: "unbekannter Endpunkt (kenne /ping /status /start/<id> /stop/<id>)" });
+    antworte(res, 404, { fehler: "unbekannter Endpunkt (kenne /ping /status /check /start/<id> /stop/<id>)" });
   });
 
   server.listen(PORT, "0.0.0.0", () => {

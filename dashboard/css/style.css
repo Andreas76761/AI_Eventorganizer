@@ -210,6 +210,13 @@ tr:hover td { background: var(--fläche); }
 .bewertungstabelle td:first-child { white-space: normal; min-width: 240px; max-width: 380px; }
 .bewertungstabelle .sterne { white-space: nowrap; }
 
+/* PC-Selbst-Check im Dashboard */
+.checkbox-erg { margin-top: .5rem; background: var(--fläche2); border-radius: .5rem; padding: .5rem .7rem; }
+.check-fazit { font-weight: 600; margin-bottom: .3rem; }
+.check-fazit.bereit { color: var(--gruen); }
+.check-fazit.problem { color: var(--rot); }
+.check-fazit small { color: var(--gedämpft); font-weight: 400; }
+
 /* App-Analyse */
 .analyse-raster {
   display: grid;

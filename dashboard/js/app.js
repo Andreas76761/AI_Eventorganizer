@@ -213,6 +213,39 @@ async function pruefeAlleAgents() {
   await Promise.all(state.pcs.filter(p => p.agentUrl).map(p => pruefeAgent(p.id)));
 }
 
+const checkErgebnis = {}; // pcId -> {laedt|bereit|schritte|fehler} – nur im Speicher
+
+async function checkAlleAgents() {
+  await Promise.all(state.pcs.filter(p => p.agentUrl).map(p => checkAgent(p.id)));
+}
+
+async function checkAgent(pcId) {
+  const pc = state.pcs.find(p => p.id === pcId);
+  if (!pc || !pc.agentUrl) return;
+  checkErgebnis[pcId] = { laedt: true };
+  render();
+  try {
+    const d = await agentAbruf(pc, "/check");
+    checkErgebnis[pcId] = { bereit: d.bereit, schritte: d.schritte, zeit: new Date().toLocaleTimeString("de-DE") };
+  } catch (e) {
+    checkErgebnis[pcId] = { fehler: e.message };
+  }
+  render();
+}
+
+function checkErgebnisHtml(pcId) {
+  const e = checkErgebnis[pcId];
+  if (!e) return "";
+  if (e.laedt) return '<p class="hinweis" style="margin:.4rem 0">🔄 prüfe …</p>';
+  if (e.fehler) return `<p class="fehltext" style="margin:.4rem 0">Prüfung fehlgeschlagen: ${esc(e.fehler)}</p>`;
+  const sym = { ok: "✅", warn: "⚠", fehler: "❌" };
+  return `<div class="checkbox-erg">
+    <div class="check-fazit ${e.bereit ? "bereit" : "problem"}">${e.bereit ? "✅ Bereit" : "❌ Bitte beheben"} <small>(${esc(e.zeit)})</small></div>
+    <ul class="appliste">${e.schritte.map(s =>
+      `<li>${sym[s.ampel] || "•"} <b>${esc(s.schritt)}:</b> <span class="hinweis" style="margin:0">${esc(s.text)}</span></li>`).join("")}</ul>
+  </div>`;
+}
+
 async function agentAktion(pcId, appId, aktion) {
   const pc = state.pcs.find(p => p.id === pcId);
   if (!pc) return;
@@ -436,6 +469,7 @@ function renderRechner() {
         <input name="port" style="width:70px" value="${esc(String(state.einstellungen.scanPort || 9800))}"></label>
       <button class="knopf primär" type="submit"${scanStatus.laeuft ? " disabled" : ""}>${scanStatus.laeuft ? `🔄 scanne … ${scanStatus.geprueft}/${scanStatus.gesamt}` : "📡 Scan starten"}</button>
       <button class="knopf" type="button" onclick="pruefeAlleAgents()">⟳ Bekannte Rechner verbinden</button>
+      <button class="knopf" type="button" onclick="checkAlleAgents()">🔍 Alle Rechner prüfen</button>
     </form>
     ${scanStatus.gefunden.length ? `<ul class="appliste" style="margin-top:.5rem">${scanStatus.gefunden.map(f =>
       `<li>🟢 <b>${esc(f.name)}</b> <span class="hinweis" style="margin:0">${esc(f.url)}</span>
@@ -454,7 +488,11 @@ function renderRechner() {
         <div class="meta">${pc.os ? `<span>${esc(pc.os)}</span>` : ""}${pc.ort ? `<span>${esc(pc.ort)}</span>` : ""}
           ${s && s.online ? `<span>${esc(s.plattform || "")}</span><span>an seit ${Math.floor((s.betriebszeitMin || 0) / 60)} h ${(s.betriebszeitMin || 0) % 60} min</span>` : ""}</div>
         ${pc.notiz ? `<p>${esc(pc.notiz)}</p>` : ""}
-        ${pc.agentUrl ? `<div class="aktionen"><button class="knopf" onclick="pruefeAgent('${pc.id}')">⟳ Verbinden</button><span class="hinweis" style="margin:0">${esc(pc.agentUrl)}</span></div>` : ""}
+        ${pc.agentUrl ? `<div class="aktionen">
+          <button class="knopf" onclick="pruefeAgent('${pc.id}')">⟳ Verbinden</button>
+          <button class="knopf" onclick="checkAgent('${pc.id}')" title="Alle Einrichtungsschritte dieses PCs prüfen">🔍 Prüfen</button>
+          <span class="hinweis" style="margin:0">${esc(pc.agentUrl)}</span></div>
+          ${checkErgebnisHtml(pc.id)}` : ""}
         <p class="hinweis">${apps.length} App(s) zugeordnet${s && s.online ? ` · ${Object.values(s.apps).filter(x => x.laeuft).length} laufen laut Agent` : ""}</p>
         <ul class="appliste">${apps.map(a => {
           const e = s && s.online ? s.apps[a.id] : null;
