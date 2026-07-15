@@ -28,6 +28,7 @@ function ladeZustand() {
       ["umfang", "screenshot", "letzterPush", "visibility", "vercelBestaetigt"].forEach(f => {
         if (seed[f] !== undefined) alt[f] = strukturKopie(seed[f]);
       });
+      if (!alt.bewertung && seed.bewertung) alt.bewertung = strukturKopie(seed.bewertung);
     });
     s.seedVersion = SEED_VERSION;
   }
@@ -110,6 +111,70 @@ async function pruefeApp(app) {
   }
 }
 
+/* ---------- Bewertung (Phase 2) ---------- */
+
+const KRITERIEN = [
+  { key: "nutzen", label: "Nutzen", hilfe: "Wie viel bringt dir die App im Alltag?" },
+  { key: "reifegrad", label: "Reifegrad", hilfe: "Wie fertig/stabil ist sie?" },
+  { key: "wartbarkeit", label: "Wartbarkeit", hilfe: "Wie leicht lässt sie sich ändern/erweitern?" },
+  { key: "techQualitaet", label: "Tech-Qualität", hilfe: "Stack, Code-Struktur, Handwerk" },
+  { key: "zukunft", label: "Zukunftsfähigkeit", hilfe: "Lohnt der Weiterausbau?" },
+];
+
+function appScore(a) {
+  const b = a.bewertung || {};
+  const werte = KRITERIEN.map(k => b[k.key]).filter(v => v >= 1);
+  if (!werte.length) return null;
+  return werte.reduce((summe, v) => summe + v, 0) / werte.length;
+}
+
+function sterne(wert) {
+  if (!wert || wert < 1) return '<span class="leer">–</span>';
+  const voll = Math.round(wert);
+  return `<span class="sterne" title="${wert.toFixed(1)} von 5">${"★".repeat(voll)}${"☆".repeat(5 - voll)}</span>`;
+}
+
+let tempBewertung = null;
+
+function sternZeileHtml(key) {
+  const wert = tempBewertung[key] || 0;
+  return Array.from({ length: 5 }, (_, i) =>
+    `<button type="button" class="stern${i < wert ? " an" : ""}" onclick="setzeStern('${key}',${i + 1})">${i < wert ? "★" : "☆"}</button>`
+  ).join("") + `<span class="hinweis" style="margin:0 0 0 .5rem">${wert ? wert + "/5" : "unbewertet"}</span>`;
+}
+
+function setzeStern(key, wert) {
+  tempBewertung[key] = tempBewertung[key] === wert ? 0 : wert; // nochmal klicken = zurücksetzen
+  document.getElementById("sterne-" + key).innerHTML = sternZeileHtml(key);
+}
+
+function bearbeiteBewertung(id) {
+  const a = state.apps.find(x => x.id === id);
+  if (!a) return;
+  tempBewertung = Object.assign({ nutzen: 0, reifegrad: 0, wartbarkeit: 0, techQualitaet: 0, zukunft: 0 }, a.bewertung || {});
+  zeigeModal(`<h3>★ Bewertung: ${esc(a.name)}</h3>
+  <p class="hinweis">Klick auf die Sterne (nochmal klicken setzt zurück). Der Gesamt-Score ist der Durchschnitt der bewerteten Kriterien.</p>
+  <form onsubmit="speichereBewertung(event,'${id}')">
+    ${KRITERIEN.map(k => `<div class="kriterium">
+      <div><b>${k.label}</b><br><small class="hinweis" style="margin:0">${k.hilfe}</small></div>
+      <div class="sternwahl" id="sterne-${k.key}">${sternZeileHtml(k.key)}</div>
+    </div>`).join("")}
+    <label>Notiz / Begründung<textarea name="notiz" rows="3">${esc((a.bewertung || {}).notiz || "")}</textarea></label>
+    <div class="aktionen">
+      <button class="knopf primär" type="submit">Speichern</button>
+      <button class="knopf" type="button" onclick="schliesseModal()">Abbrechen</button>
+    </div>
+  </form>`);
+}
+
+function speichereBewertung(ev, id) {
+  ev.preventDefault();
+  const a = state.apps.find(x => x.id === id);
+  if (!a) return;
+  a.bewertung = Object.assign({}, tempBewertung, { notiz: ev.target.notiz.value.trim() });
+  speichere(); schliesseModal(); render();
+}
+
 /* ---------- Agent-Anbindung (PCs im WLAN/Heimnetz) ---------- */
 
 const agentStatus = {}; // pcId -> {online, name, plattform, betriebszeitMin, apps:{id:{laeuft}}, fehler, zeit} – nur im Speicher
@@ -184,6 +249,7 @@ function render() {
   document.querySelectorAll(".nav a").forEach(a => a.classList.toggle("aktiv", a.getAttribute("href") === "#" + ansicht));
   const wurzel = $("#inhalt");
   if (ansicht === "werkzeug") wurzel.innerHTML = renderWerkzeug();
+  else if (ansicht === "bewertung") wurzel.innerHTML = renderBewertung();
   else if (ansicht === "rechner") wurzel.innerHTML = renderRechner();
   else if (ansicht === "hosting") wurzel.innerHTML = renderHosting();
   else if (ansicht === "daten") wurzel.innerHTML = renderDaten();
@@ -217,9 +283,12 @@ function appKarte(a) {
     ${a.screenshot ? `<img class="shot" src="${esc(a.screenshot)}" alt="Screenshot ${esc(a.name)}" loading="lazy" onclick="zeigeShot('${a.id}')" title="Klicken zum Vergrößern">` : ""}
     <div class="karte-kopf">
       <h3>${esc(a.name)}</h3>
-      <button class="mini" onclick="bearbeiteApp('${a.id}')" title="Bearbeiten">✎</button>
+      <span style="white-space:nowrap">
+        <button class="mini" onclick="bearbeiteBewertung('${a.id}')" title="Bewerten">★</button>
+        <button class="mini" onclick="bearbeiteApp('${a.id}')" title="Bearbeiten">✎</button>
+      </span>
     </div>
-    <div class="badges">${urspruenge}${(a.status || "aktiv") !== "aktiv" ? `<span class="badge offen">${esc(a.status)}</span>` : ""}</div>
+    <div class="badges">${urspruenge}${appScore(a) != null ? `<span class="badge score-badge" title="Gesamt-Score">★ ${appScore(a).toFixed(1)}</span>` : ""}${(a.status || "aktiv") !== "aktiv" ? `<span class="badge offen">${esc(a.status)}</span>` : ""}</div>
     ${a.beschreibung ? `<p>${esc(a.beschreibung)}</p>` : '<p class="leer">Keine Beschreibung – ✎ klicken und ergänzen.</p>'}
     <div class="meta">
       ${a.rechner ? `<span>🖥 ${esc(pcName(a.rechner))}</span>` : '<span class="leer">Rechner?</span>'}
@@ -342,6 +411,84 @@ function renderHosting() {
     <thead><tr><th>App</th><th>GitHub-Repo</th><th>Letzter Push</th><th>Vercel</th><th>Lokal</th><th></th></tr></thead>
     <tbody>${zeilen}</tbody>
   </table></div>`;
+}
+
+/* ---------- Bewertungs-/Vergleichsansicht ---------- */
+
+const bewertungSort = { feld: "score", auf: false };
+
+function sortiereBewertung(feld) {
+  if (bewertungSort.feld === feld) bewertungSort.auf = !bewertungSort.auf;
+  else { bewertungSort.feld = feld; bewertungSort.auf = feld === "name"; }
+  render();
+}
+
+function renderBewertung() {
+  const wert = (a, feld) => {
+    if (feld === "name") return a.name.toLowerCase();
+    if (feld === "score") return appScore(a) ?? -1;
+    return (a.bewertung || {})[feld] || 0;
+  };
+  const apps = [...state.apps].sort((x, y) => {
+    const a = wert(x, bewertungSort.feld), b = wert(y, bewertungSort.feld);
+    return (a < b ? -1 : a > b ? 1 : 0) * (bewertungSort.auf ? 1 : -1);
+  });
+  const pfeil = feld => bewertungSort.feld === feld ? (bewertungSort.auf ? " ↑" : " ↓") : "";
+  const zeilen = apps.map(a => {
+    const score = appScore(a);
+    const b = a.bewertung || {};
+    return `<tr>
+      <td><b>${esc(a.name)}</b>${b.notiz ? `<br><small class="hinweis" style="margin:0">${esc(b.notiz)}</small>` : ""}</td>
+      ${KRITERIEN.map(k => `<td>${sterne(b[k.key])}</td>`).join("")}
+      <td>${score != null ? `<b class="score">${score.toFixed(1)}</b>` : '<span class="leer">–</span>'}</td>
+      <td><button class="mini" onclick="bearbeiteBewertung('${a.id}')" title="Bewerten">★</button></td>
+    </tr>`;
+  }).join("");
+
+  // Statistik: Apps und Ø-Score je Werkzeug
+  const jeWerkzeug = URSPRUENGE.map(u => {
+    const passend = state.apps.filter(a => (a.ursprung || []).includes(u));
+    const scores = passend.map(appScore).filter(s => s != null);
+    return { u, anzahl: passend.length, schnitt: scores.length ? scores.reduce((s, v) => s + v, 0) / scores.length : null };
+  }).filter(g => g.anzahl);
+  const maxAnzahl = Math.max(1, ...jeWerkzeug.map(g => g.anzahl));
+  const bewertet = state.apps.filter(a => appScore(a) != null);
+  const beste = [...bewertet].sort((x, y) => appScore(y) - appScore(x)).slice(0, 3);
+
+  return `${statistikZeile()}
+  <h2>Bewertung &amp; Vergleich</h2>
+  <p class="hinweis">Spaltenkopf anklicken zum Sortieren · ★ öffnet den Bewertungs-Editor. Die vorbefüllten Werte sind
+  <b>Vorschläge aus der Code-Analyse</b> (siehe Notiz) – „Nutzen" kannst nur du vergeben.</p>
+  <div class="tabellenrahmen"><table class="bewertungstabelle">
+    <thead><tr>
+      <th onclick="sortiereBewertung('name')" style="cursor:pointer">App${pfeil("name")}</th>
+      ${KRITERIEN.map(k => `<th onclick="sortiereBewertung('${k.key}')" style="cursor:pointer" title="${k.hilfe}">${k.label}${pfeil(k.key)}</th>`).join("")}
+      <th onclick="sortiereBewertung('score')" style="cursor:pointer">Score${pfeil("score")}</th>
+      <th></th>
+    </tr></thead>
+    <tbody>${zeilen}</tbody>
+  </table></div>
+
+  <div class="zweispaltig" style="margin-top:1.2rem; align-items:start">
+    <div class="karte">
+      <h3>Apps je Werkzeug</h3>
+      ${jeWerkzeug.map(g => `<div class="balkenzeile">
+        <span class="balkenname">${esc(g.u)}</span>
+        <div class="balkenbahn"><div class="balken" style="width:${Math.round(g.anzahl / maxAnzahl * 100)}%"></div></div>
+        <span class="balkenwert">${g.anzahl}${g.schnitt != null ? ` · Ø ${g.schnitt.toFixed(1)}` : ""}</span>
+      </div>`).join("") || '<p class="leer">noch keine Zuordnungen</p>'}
+      <p class="hinweis">${state.apps.filter(a => !(a.ursprung || []).length).length} App(s) ohne Werkzeug-Zuordnung</p>
+    </div>
+    <div class="karte">
+      <h3>Top 3 (Gesamt-Score)</h3>
+      ${beste.map((a, i) => `<div class="balkenzeile">
+        <span class="balkenname">${["🥇", "🥈", "🥉"][i]} ${esc(a.name)}</span>
+        <div class="balkenbahn"><div class="balken gold" style="width:${Math.round(appScore(a) / 5 * 100)}%"></div></div>
+        <span class="balkenwert">${appScore(a).toFixed(1)}</span>
+      </div>`).join("") || '<p class="leer">noch nichts bewertet</p>'}
+      <p class="hinweis">${bewertet.length} von ${state.apps.length} Apps bewertet</p>
+    </div>
+  </div>`;
 }
 
 function renderDaten() {

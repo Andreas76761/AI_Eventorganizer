@@ -1,4 +1,4 @@
-# HomeLab App-Dashboard (Phase 1)
+# HomeLab App-Dashboard
 
 Grafische Übersicht und Verwaltung aller selbstgebauten Apps im Heimnetz — siehe [Vorgehensplan](../docs/APP_DASHBOARD_VORGEHEN.md).
 
@@ -14,8 +14,11 @@ Dann http://localhost:8950 öffnen. (Direktes Öffnen von `index.html` per Doppe
 
 ## Ansichten
 
-- **Übersicht** – alle Apps als Karten mit Volltextsuche und Filtern (Werkzeug, Rechner, Hosting, Status)
+- **Übersicht** – alle Apps als Karten mit Screenshot, Volltextsuche und Filtern (Werkzeug, Rechner, Hosting, Status)
 - **Nach Werkzeug** – Gruppierung nach Claude, Codex, OpenAI, Perplexity, Lovable, Gemini, Sonstiges
+- **Bewertung** – 5 Kriterien je App (Nutzen, Reifegrad, Wartbarkeit, Tech-Qualität, Zukunftsfähigkeit) mit
+  ★-Editor, sortierbarer Vergleichstabelle, Gesamt-Score, Apps/Ø-Score je Werkzeug und Top 3; die Startwerte
+  sind Vorschläge aus der Code-Analyse (Notiz je App), „Nutzen" bleibt bewusst offen
 - **Rechner** – die 4 PCs im Heimnetz mit ihren zugeordneten Apps (Namen/Details editierbar)
 - **GitHub & Vercel** – Tabelle aller Repos und Deployments mit Live-Erreichbarkeitsprüfung („⟳ Alle prüfen")
 - **Daten** – JSON-Export/-Import, Zurücksetzen auf Startdaten
@@ -38,4 +41,4 @@ unter „Rechner → ✎" ein; „⟳ Alle Rechner verbinden" holt den Live-Stat
 
 ## Nächste Phasen
 
-Phase 2 Bewertung/Vergleich · Phase 3 GitHub-/Vercel-API-Status (siehe Plan).
+Phase 3 GitHub-/Vercel-API-Status (siehe Plan) · optional Wake-on-LAN.

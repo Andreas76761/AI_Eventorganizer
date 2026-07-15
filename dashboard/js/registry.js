@@ -5,7 +5,7 @@
    Alles in der App editierbar; Änderungen liegen im LocalStorage und
    können unter „Daten" als JSON exportiert werden. */
 
-const SEED_VERSION = 2;
+const SEED_VERSION = 3;
 
 const URSPRUENGE = ["Claude", "Codex", "OpenAI", "Perplexity", "Lovable", "Gemini", "Sonstiges"];
 
@@ -34,6 +34,8 @@ const SEED_APPS = [
     screenshot: "screenshots/ai-eventorganizer.png",
     tags: ["produktiv", "events"],
     status: "aktiv",
+    bewertung: { nutzen: 0, reifegrad: 4, wartbarkeit: 3, techQualitaet: 4, zukunft: 4,
+      notiz: "Vorschlag aus Code-Analyse: sehr funktionsreich und produktiv auf Vercel; app.js als ~5.000-Zeilen-Monolith drückt die Wartbarkeit." },
   },
   {
     id: "diagramm-builder",
@@ -51,6 +53,8 @@ const SEED_APPS = [
     screenshot: "screenshots/diagramm-builder.png",
     tags: ["diagramme", "vercel.json vorhanden"],
     status: "aktiv",
+    bewertung: { nutzen: 0, reifegrad: 3, wartbarkeit: 4, techQualitaet: 4, zukunft: 4,
+      notiz: "Vorschlag aus Code-Analyse: moderner React/Vite-Stack, saubere Komponenten; README noch Vite-Standard." },
   },
   {
     id: "servicevertrag-dashboard",
@@ -68,6 +72,8 @@ const SEED_APPS = [
     screenshot: "screenshots/servicevertrag-dashboard.png",
     tags: ["automotive", "größte App"],
     status: "aktiv",
+    bewertung: { nutzen: 0, reifegrad: 4, wartbarkeit: 2, techQualitaet: 3, zukunft: 3,
+      notiz: "Vorschlag aus Code-Analyse: inhaltlich sehr umfangreich (v7.5, 17.000+ Zeilen), aber Vanilla-JS ohne Build/Modulsystem und Chart.js vom CDN – Wartung wird mit der Größe schwer." },
   },
   {
     id: "thumbnail-generator",
@@ -85,6 +91,8 @@ const SEED_APPS = [
     screenshot: "screenshots/thumbnail-generator.png",
     tags: ["präsentationen", "multi-llm", "vercel.json vorhanden"],
     status: "aktiv",
+    bewertung: { nutzen: 0, reifegrad: 3, wartbarkeit: 3, techQualitaet: 4, zukunft: 4,
+      notiz: "Vorschlag aus Code-Analyse: technisch ambitioniert (Web Worker, OCR, virtuelles Scrollen, Multi-LLM); Achtung: Build nutzt GitHub-Pages-Basispfad /Thumnail_Generator/ – ergibt auf Vercel eine weiße Seite." },
   },
   {
     id: "task-hub",
@@ -102,6 +110,8 @@ const SEED_APPS = [
     screenshot: "screenshots/task-hub.png",
     tags: ["organisation", "ai-studio"],
     status: "aktiv",
+    bewertung: { nutzen: 0, reifegrad: 3, wartbarkeit: 3, techQualitaet: 4, zukunft: 4,
+      notiz: "Vorschlag aus Code-Analyse: strukturierter Angular-Stack mit Material und Firebase; Firebase-Konfiguration und Gemini-Key nötig, um alles zu nutzen." },
   },
   {
     id: "ki-hub",
@@ -119,6 +129,8 @@ const SEED_APPS = [
     screenshot: "screenshots/ki-hub.png",
     tags: ["ki", "ai-studio"],
     status: "aktiv",
+    bewertung: { nutzen: 0, reifegrad: 2, wartbarkeit: 3, techQualitaet: 3, zukunft: 3,
+      notiz: "Vorschlag aus Code-Analyse: aufgeräumtes React/TypeScript, aber die App stürzt ohne GEMINI_API_KEY komplett ab (weiße Seite) – Key-Handling sollte abgefangen werden." },
   },
   {
     id: "baudokumentation2026",

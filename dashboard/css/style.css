@@ -207,6 +207,46 @@ table { border-collapse: collapse; width: 100%; font-size: .88rem; }
 th, td { text-align: left; padding: .55rem .8rem; border-bottom: 1px solid var(--rand); white-space: nowrap; }
 th { background: var(--fläche); color: var(--gedämpft); font-weight: 600; }
 tr:hover td { background: var(--fläche); }
+.bewertungstabelle td:first-child { white-space: normal; min-width: 240px; max-width: 380px; }
+.bewertungstabelle .sterne { white-space: nowrap; }
+
+/* Bewertung */
+.sterne { color: var(--gelb); letter-spacing: .06em; }
+.score { color: var(--gelb); font-size: 1.05rem; }
+.badge.score-badge { background: #f2c34e22; color: var(--gelb); }
+.kriterium {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .8rem;
+  align-items: center;
+  padding: .45rem 0;
+  border-bottom: 1px dashed var(--rand);
+}
+.sternwahl { display: flex; align-items: center; }
+.stern {
+  background: none;
+  border: none;
+  color: var(--gedämpft);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 .1rem;
+  line-height: 1;
+}
+.stern.an { color: var(--gelb); }
+.stern:hover { transform: scale(1.15); }
+.balkenzeile {
+  display: grid;
+  grid-template-columns: minmax(90px, 1.2fr) 2fr auto;
+  gap: .6rem;
+  align-items: center;
+  padding: .3rem 0;
+  font-size: .86rem;
+}
+.balkenname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.balkenbahn { background: var(--fläche2); border-radius: 1rem; height: .7rem; overflow: hidden; }
+.balken { background: linear-gradient(90deg, var(--akzent), var(--cyan)); height: 100%; border-radius: 1rem; }
+.balken.gold { background: linear-gradient(90deg, #b8860b, var(--gelb)); }
+.balkenwert { color: var(--gedämpft); white-space: nowrap; }
 
 /* Modal */
 #modal {
