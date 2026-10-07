@@ -59,7 +59,10 @@ function migriereSeeds(s) {
     const neu = SEED_EVENTS.find(x => x.id === e.id);
     if (neu) Object.assign(e, neu);
   });
-  s.seedVersion = SEED_VERSION;
+    if (!s.events.some(e => e.id === "ev_kixhr26")) {
+      s.events.push(JSON.parse(JSON.stringify(SEED_EVENTS.find(e => e.id === "ev_kixhr26"))));
+    }
+    s.seedVersion = SEED_VERSION;
   localStorage.setItem(NS, JSON.stringify(s));
   console.info("Seed-Termine auf Version " + SEED_VERSION + " aktualisiert.");
 }
@@ -782,8 +785,8 @@ function vAuswahl() {
             ${k.venue ? `<div class="ez-sub">${esc(k.venue)}</div>` : ""}
             ${verknuepft ? `<div class="ez-sub">→ <a href="#" onclick="A.openEvent('${S.auswahl[k.id].eventId}');return false">in der App geöffnet</a></div>` : ""}</td>
           <td>${esc(k.ort)}</td>
-          <td><span class="tag ${k.quelle === 'Google-Kalender' ? 'aktiv-tag' : ''}">${k.quelle === 'Google-Kalender' ? `${ikon("kalender",13)} Kalender` : `${ikon("suche",13)} Recherche`}</span></td>
-          <td class="rechts"><input type="number" class="kosten-feld" min="0" step="1" value="${kandidatKosten(k)}" onchange="A.auswahlKosten('${k.id}',this.value)"></td>
+          <td><span class="tag ${k.quelle === 'Google-Kalender' ? 'aktiv-tag' : ''}">${esc(k.quelle)}</span></td>
+          <td class="rechts"><input type="number" class="kosten-feld" min="0" step="1" placeholder="offen" value="${kandidatKosten(k) ?? ''}" onchange="A.auswahlKosten('${k.id}',this.value)">${kandidatKosten(k) == null ? '<div class="ez-sub">Preis offen</div>' : ''}</td>
           <td class="nowrap">
             <button class="btn klein ja-btn ${t === 'ja' ? 'gewaehlt-ja' : ''}" onclick="A.teilnahme('${k.id}','ja')">✓ Ja</button>
             <button class="btn klein vlt-btn ${t === 'vielleicht' ? 'gewaehlt-vlt' : ''}" onclick="A.teilnahme('${k.id}','vielleicht')" title="Noch unentschieden – vormerken">? Vlt</button>
@@ -1847,14 +1850,17 @@ function tabInhalt(e) {
 /* ---- Tab: Übersicht ---- */
 
 // Preisstaffel anzeigen: mehrere Ticketkategorien untereinander, sonst ab-Preis
-function preisStaffel(e) {
-  if (e.preise && e.preise.length) {
-    return `<div class="preis-staffel">${e.preise.map(p => `
+  function preisStaffel(e) {
+    if (e.preisStatus === "offen") return "Preis noch zu prüfen (nicht kostenlos)";
+    const warnung = e.preisStatus === "historisch-unbestätigt"
+      ? '<p class="ez-sub">Historische Preisangaben – nicht bestätigt, kein aktuelles Ticketangebot.</p>' : "";
+    if (e.preise && e.preise.length) {
+      return warnung + `<div class="preis-staffel">${e.preise.map(p => `
       <div class="preis-zeile"><span>${esc(p.typ)}</span>
         <span><b>${p.betrag > 0 ? fmtEUR(p.betrag) : "kostenlos"}</b>${p.hinweis ? ` <span class="ez-sub">(${esc(p.hinweis)})</span>` : ""}</span>
       </div>`).join("")}</div>`;
   }
-  return e.preis > 0 ? "ab " + fmtEUR(e.preis) : "kostenlos";
+    return warnung + (e.preis > 0 ? "ab " + fmtEUR(e.preis) : "kostenlos");
 }
 
 function tUebersicht(e) {

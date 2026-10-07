@@ -4,7 +4,7 @@
 // SEED_VERSION erhöhen, wenn Seed-Termine korrigiert werden – gespeicherte
 // Zustände übernehmen die Korrekturen dann einmalig (siehe migriereSeeds in app.js).
 
-const SEED_VERSION = 3; // v3 (14.07.2026): Preise recherchiert, Preisstaffeln (preise[]) ergänzt
+const SEED_VERSION = 4; // Datenprüfung 07.10.2026
 
 const SEED_EVENTS = [
   {
@@ -20,11 +20,11 @@ const SEED_EVENTS = [
   {
     id: "ev_dup26", name: "data:unplugged 2026", kurz: "d:up",
     ort: "Münster", venue: "MCC Halle Münsterland", land: "DE",
-    start: "2026-03-25", end: "2026-03-27",
+    start: "2026-03-26", end: "2026-03-27",
     kategorie: "Konferenz", preis: 389,
     preise: [
       { typ: "Festival-Pass Early Bird", betrag: 389 },
-      { typ: "Festival-Pass regulär", betrag: 589, hinweis: "499 € zzgl. USt" }
+      { typ: "Festival-Pass regulär (historischer Startwert)", betrag: 589, hinweis: "nicht bestätigt; nicht als aktuelles Angebot verwenden" }
     ],
     url: "https://www.data-unplugged.de",
     beschreibung: "Data- & AI-Konferenz mit Festival-Charakter – Data Engineering, GenAI, MLOps.",
@@ -95,9 +95,11 @@ const SEED_EVENTS = [
     id: "ev_ipai26", name: "AI Festival Heilbronn (IPAI)", kurz: "IPAI",
     ort: "Heilbronn", venue: "Zukunftspark Wohlgelegen", land: "DE",
     start: "2026-07-25", end: "2026-07-26",
-    kategorie: "Festival", preis: 99,
-    preise: [{ typ: "Festival-Ticket", betrag: 99, hinweis: "unbestätigt – Website prüfen" }],
-    url: "https://ip.ai",
+    kategorie: "Festival", preis: 0,
+    preise: [{ typ: "Festivalbesuch", betrag: 0, hinweis: "laut Veranstalter ohne Voranmeldung" }],
+    preisStatus: "bestätigt", datenStand: "2026-10-07",
+    quelleUrl: "https://ipai-foundation.ai/heilbronn-wird-zum-zentrum-der-europaeischen-ki-kultur-das-5-ki-festival-der-ipai-foundation-setzt-neue-massstaebe/",
+    url: "https://ipai-foundation.ai",
     beschreibung: "Festival des Innovation Park Artificial Intelligence – angewandte KI, Start-ups, Forschung.",
     farbe: "#fb923c", seed: true
   },
@@ -126,6 +128,20 @@ const SEED_EVENTS = [
     farbe: "#f87171", seed: true
   }
 ];
+
+SEED_EVENTS.forEach(e => {
+  if (e.preis > 0) e.preisStatus = "historisch-unbestätigt";
+});
+SEED_EVENTS.push({
+  id: "ev_kixhr26", name: "KI-X HR Convention 2026", kurz: "KI-X HR",
+  ort: "Berlin", venue: "Veranstaltungsort beim Veranstalter prüfen", land: "DE",
+  start: "2026-11-18", end: "2026-11-19", kategorie: "Konferenz",
+  preis: null, preisStatus: "offen", datenStand: "2026-10-07",
+  preise: [{ typ: "Ticket", betrag: null, hinweis: "Preis noch zu prüfen" }],
+  url: "https://hr.ki-x.berlin/", quelleUrl: "https://hr.ki-x.berlin/",
+  beschreibung: "KI im Recruiting, HR-Services, Lernen und Workforce Planning; Praxisbeispiele, Governance und verantwortungsvoller Einsatz.",
+  farbe: "#38bdf8", seed: true
+});
 
 const KOSTEN_KATEGORIEN = ["Eintritt", "Fahrtkosten", "Übernachtung", "Verpflegung", "Sonstiges"];
 const VERKEHRSMITTEL = ["Pkw", "Bahn", "Flug", "ÖPNV", "Fernbus", "Mitfahrgelegenheit", "Fahrrad", "Sonstiges"];
