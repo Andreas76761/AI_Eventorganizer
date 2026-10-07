@@ -54,6 +54,7 @@ function loadState() {
 // Überschreibt nur Events mit seed-Flag; eigene Veranstaltungen bleiben unberührt.
 function migriereSeeds(s) {
   if ((s.seedVersion || 1) >= SEED_VERSION) return;
+  const bisherigeVersion = s.seedVersion || 1;
   s.events.forEach(e => {
     if (!e.seed) return;
     const neu = SEED_EVENTS.find(x => x.id === e.id);
@@ -63,6 +64,9 @@ function migriereSeeds(s) {
       s.events.push(JSON.parse(JSON.stringify(SEED_EVENTS.find(e => e.id === "ev_kixhr26"))));
     }
     s.seedVersion = SEED_VERSION;
+    SEED_EVENTS.filter(e => e.eingefuehrtVersion > bisherigeVersion).forEach(e => {
+      if (!s.events.some(x => x.id === e.id)) s.events.push(JSON.parse(JSON.stringify(e)));
+    });
   localStorage.setItem(NS, JSON.stringify(s));
   console.info("Seed-Termine auf Version " + SEED_VERSION + " aktualisiert.");
 }
@@ -762,7 +766,7 @@ function vAuswahl() {
   </div>
   <div class="werkzeuge">
     <div class="filter-gruppe">
-      ${["alle", "2025", "2026"].map(j => `<button class="filter ${auswahlFilter.jahr === j ? 'aktiv' : ''}" onclick="A.setAuswahlFilter('jahr','${j}')">${j === "alle" ? "Alle Jahre" : j}</button>`).join("")}
+      ${["alle", ...new Set(AUSWAHL_KANDIDATEN.map(k => k.start.slice(0, 4)).sort())].map(j => `<button class="filter ${auswahlFilter.jahr === j ? 'aktiv' : ''}" onclick="A.setAuswahlFilter('jahr','${j}')">${j === "alle" ? "Alle Jahre" : j}</button>`).join("")}
       <span style="width:14px"></span>
       ${[["alle", "Alle"], ["offen", "Offen"], ["ja", "Ja"], ["vielleicht", "Vielleicht"], ["nein", "Nein"]].map(([w, l]) => `<button class="filter ${auswahlFilter.status === w ? 'aktiv' : ''}" onclick="A.setAuswahlFilter('status','${w}')">${l}</button>`).join("")}
     </div>

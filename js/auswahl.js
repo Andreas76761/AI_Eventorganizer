@@ -38,3 +38,5 @@ const AUSWAHL_KANDIDATEN = [
   { id: "k_bp26", name: "Bits & Pretzels 2026 (AI Stage)", start: "2026-09-28", end: "2026-09-30", ort: "München", venue: "ICM", kosten: 399, quelle: "Recherche", url: "https://www.bitsandpretzels.com", eventId: "ev_bp26" },
   { id: "k_kixhr26", name: "KI-X HR Convention", start: "2026-11-18", end: "2026-11-19", ort: "Berlin", venue: "", kosten: null, quelle: "Termin geprüft 07.10.2026; Preis offen", url: "https://hr.ki-x.berlin/", eventId: "ev_kixhr26" }
 ];
+
+AUSWAHL_KANDIDATEN.push(...NEUE_TERMINE.map(e => ({ id: "k_" + e.id, name: e.name, start: e.start, end: e.end, ort: e.ort, venue: e.venue, kosten: e.preis, eventId: e.id, url: e.url, quelle: "Veranstalter, geprüft 07.10.2026" + (e.preis == null ? "; Preis offen" : "") })));

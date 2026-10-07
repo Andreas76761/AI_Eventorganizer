@@ -4,7 +4,7 @@
 // SEED_VERSION erhöhen, wenn Seed-Termine korrigiert werden – gespeicherte
 // Zustände übernehmen die Korrekturen dann einmalig (siehe migriereSeeds in app.js).
 
-const SEED_VERSION = 4; // Datenprüfung 07.10.2026
+const SEED_VERSION = 5; // Neue Termine 2026/2027
 
 const SEED_EVENTS = [
   {
@@ -142,6 +142,14 @@ SEED_EVENTS.push({
   beschreibung: "KI im Recruiting, HR-Services, Lernen und Workforce Planning; Praxisbeispiele, Governance und verantwortungsvoller Einsatz.",
   farbe: "#38bdf8", seed: true
 });
+
+const NEUE_TERMINE = [
+  { id: "ev_mlcon26", name: "MLcon Berlin 2026", kurz: "MLcon", ort: "Berlin", venue: "Berlin oder online", start: "2026-11-16", end: "2026-11-20", kategorie: "Konferenz", preis: null, url: "https://mlconference.ai/berlin/program-berlin/", beschreibung: "Machine Learning, KI-Agenten, RAG und MLOps. Konferenz, Bootcamps und Workshops; Umfang abhängig vom Ticket." },
+  { id: "ev_hpi26", name: "AI@HPI Conference 2026", kurz: "AI@HPI", ort: "Potsdam", venue: "Hasso-Plattner-Institut", start: "2026-12-02", end: "2026-12-03", kategorie: "Konferenz", preis: 290, url: "https://hpi.de/en/ai-hpi-conference/", beschreibung: "KI und Wertschöpfung, industrielle Systeme und Mensch-KI-Zusammenarbeit.", preise: [{ typ: "Konferenzticket (beide Tage)", betrag: 290, hinweis: "Veranstalterpreis; steuerliche Behandlung vor Buchung prüfen" }] },
+  { id: "ev_dup27", name: "data:unplugged 2027", kurz: "d:up", ort: "Münster", venue: "Genauen Veranstaltungsort vor Buchung prüfen", start: "2027-04-13", end: "2027-04-14", kategorie: "Festival", preis: null, url: "https://www.data-unplugged.de/en/festival/du27", beschreibung: "Data- und KI-Festival: Wirtschaft, Technologie und Austausch." },
+  { id: "ev_1e9_27", name: "1E9 – Festival der Zukunft 2027", kurz: "1E9", ort: "München", venue: "Deutsches Museum", start: "2027-07-01", end: "2027-07-04", kategorie: "Festival", preis: null, url: "https://festivalderzukunft.com/", beschreibung: "KI, Forschung, Start-ups, Kunst und Zukunftstechnologien. Early Bird angekündigt ab 1. November; 20 % Mitgliederrabatt. Ticketbetrag noch offen." }
+].map(e => ({ ...e, land: "DE", farbe: "#38bdf8", seed: true, eingefuehrtVersion: 5, datenStand: "2026-10-07", quelleUrl: e.url, terminStatus: "bestätigt", preisStatus: e.preis == null ? "offen" : "bestätigt" }));
+SEED_EVENTS.push(...NEUE_TERMINE);
 
 const KOSTEN_KATEGORIEN = ["Eintritt", "Fahrtkosten", "Übernachtung", "Verpflegung", "Sonstiges"];
 const VERKEHRSMITTEL = ["Pkw", "Bahn", "Flug", "ÖPNV", "Fernbus", "Mitfahrgelegenheit", "Fahrrad", "Sonstiges"];

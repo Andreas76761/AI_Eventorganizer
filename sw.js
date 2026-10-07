@@ -3,7 +3,7 @@
 // dem Cache, im Hintergrund wird aktualisiert. CDN-Anfragen (Tesseract, pdf.js,
 // Supabase) laufen normal übers Netz.
 
-const CACHE = "aimg-shell-v3";
+const CACHE = "aimg-shell-v4";
 const KERN = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", e => {
