@@ -263,6 +263,8 @@ tr:hover td { background: var(--fläche); }
   align-items: start;
 }
 .analyse-liste { display: flex; flex-direction: column; gap: .35rem; position: sticky; top: 1rem; }
+.analyse-liste input[type="search"] { margin-bottom: .2rem; }
+.analyse-eintraege { display: flex; flex-direction: column; gap: .35rem; max-height: 72vh; overflow-y: auto; padding-right: .2rem; }
 .analyse-eintrag {
   text-align: left;
   background: var(--fläche);

@@ -74,11 +74,11 @@ function neueId(name) {
 
 /* ---------- Filter-Zustand ---------- */
 
-const filter = { text: "", ursprung: "", rechner: "", hosting: "", status: "" };
+const filter = { text: "", ursprung: "", rechner: "", hosting: "", status: "", sort: "name" };
 
 function gefilterteApps() {
   const t = filter.text.trim().toLowerCase();
-  return state.apps.filter(a => {
+  const liste = state.apps.filter(a => {
     if (t) {
       const heu = [a.name, a.beschreibung, (a.ursprung || []).join(" "), (a.stack || []).join(" "),
         (a.tags || []).join(" "), pcName(a.rechner)].join(" ").toLowerCase();
@@ -92,6 +92,23 @@ function gefilterteApps() {
     if (filter.status && (a.status || "aktiv") !== filter.status) return false;
     return true;
   });
+  const s = filter.sort;
+  liste.sort((x, y) => {
+    if (s === "score") return (appScore(y) ?? -1) - (appScore(x) ?? -1) || x.name.localeCompare(y.name);
+    if (s === "geaendert") return (y.letzterPush || "").localeCompare(x.letzterPush || "") || x.name.localeCompare(y.name);
+    if (s === "werkzeug") return ((x.ursprung || [])[0] || "~").localeCompare((y.ursprung || [])[0] || "~") || x.name.localeCompare(y.name);
+    if (s === "rechner") return pcName(x.rechner).localeCompare(pcName(y.rechner)) || x.name.localeCompare(y.name);
+    return x.name.localeCompare(y.name);
+  });
+  return liste;
+}
+
+function filterAktiv() {
+  return filter.text || filter.ursprung || filter.rechner || filter.hosting || filter.status;
+}
+function filterZuruecksetzen() {
+  Object.assign(filter, { text: "", ursprung: "", rechner: "", hosting: "", status: "" });
+  render();
 }
 
 /* ---------- Erreichbarkeitscheck (läuft im Browser des Nutzers) ---------- */
@@ -448,6 +465,11 @@ function renderUebersicht() {
       <option value="pausiert"${filter.status === "pausiert" ? " selected" : ""}>pausiert</option>
       <option value="archiviert"${filter.status === "archiviert" ? " selected" : ""}>archiviert</option>
     </select>
+    <select onchange="filter.sort=this.value;render()" title="Sortierung">
+      ${[["name", "Name"], ["score", "Score (hoch→niedrig)"], ["geaendert", "zuletzt geändert"], ["werkzeug", "Werkzeug"], ["rechner", "Rechner"]].map(([v, l]) =>
+        `<option value="${v}"${filter.sort === v ? " selected" : ""}>Sortierung: ${l}</option>`).join("")}
+    </select>
+    ${filterAktiv() ? '<button class="knopf" onclick="filterZuruecksetzen()" title="Filter zurücksetzen">✕ Filter</button>' : ""}
     <button class="knopf primär" onclick="bearbeiteApp(null)">＋ App</button>
   </div>
   <p class="hinweis">${apps.length} von ${state.apps.length} Apps</p>
@@ -730,6 +752,7 @@ function architekturDiagramm(a) {
 /* ---------- App-Analyse (Register mit Detailblick je App) ---------- */
 
 let analyseAppId = null;
+let analyseFilter = "";
 const perfLive = {}; // appId -> {laeuft|ms|fehler} – nur im Speicher
 
 function waehleAnalyseApp(id) { analyseAppId = id; render(); }
@@ -857,18 +880,24 @@ function verbesserungFortschritt(a) {
 function renderAnalyse() {
   if (!analyseAppId || !state.apps.some(a => a.id === analyseAppId)) analyseAppId = (state.apps[0] || {}).id;
   const a = state.apps.find(x => x.id === analyseAppId);
+  const q = (analyseFilter || "").trim().toLowerCase();
+  const liste = state.apps.filter(x => !q || (x.name + " " + (x.ursprung || []).join(" ") + " " + (x.tags || []).join(" ")).toLowerCase().includes(q));
   return `${statistikZeile()}
   <h2>App-Analyse</h2>
   <p class="hinweis">Links eine App wählen – rechts Stand, Links, Screenshot, Doku, Analyse, Performance und Vorschläge.</p>
   <div class="analyse-raster">
     <div class="analyse-liste">
-      ${state.apps.map(x => {
+      <input id="analyse-suche" type="search" placeholder="App suchen …" value="${esc(analyseFilter || "")}"
+        oninput="analyseFilter=this.value;render();document.getElementById('analyse-suche').focus();document.getElementById('analyse-suche').setSelectionRange(9999,9999)">
+      <div class="analyse-eintraege">
+      ${liste.map(x => {
         const s = appScore(x);
         return `<button class="analyse-eintrag${x.id === analyseAppId ? " aktiv" : ""}" onclick="waehleAnalyseApp('${x.id}')">
           <b>${esc(x.name)}</b><br>
           <small>${(x.ursprung || []).join(", ") || "Werkzeug?"}${s != null ? ` · ★ ${s.toFixed(1)}` : ""}${x.performance ? "" : " · ⚠ kein Code"}</small>
         </button>`;
-      }).join("")}
+      }).join("") || '<p class="leer" style="padding:.5rem">keine Treffer</p>'}
+      </div>
     </div>
     ${a ? analyseDetail(a) : ""}
   </div>`;
@@ -877,6 +906,25 @@ function renderAnalyse() {
 /* ---------- Bewertungs-/Vergleichsansicht ---------- */
 
 const bewertungSort = { feld: "score", auf: false };
+let bewertungNurOffen = false;
+
+function exportBewertungCsv() {
+  const kopf = ["App", "Werkzeug", "Rechner", ...KRITERIEN.map(k => k.label), "Score", "GitHub", "Vercel", "Datenbank"];
+  const zeile = a => {
+    const b = a.bewertung || {};
+    const d = dbInfo((a.technik || {}).backend).name;
+    return [a.name, (a.ursprung || []).join("/"), pcName(a.rechner), ...KRITERIEN.map(k => b[k.key] || ""),
+      appScore(a) != null ? appScore(a).toFixed(1) : "", a.github ? "ja" : "", a.vercelUrl ? "ja" : "", d];
+  };
+  const csv = [kopf, ...state.apps.map(zeile)]
+    .map(r => r.map(z => `"${String(z).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "app-bewertung.csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 function sortiereBewertung(feld) {
   if (bewertungSort.feld === feld) bewertungSort.auf = !bewertungSort.auf;
@@ -929,7 +977,7 @@ function renderBewertung() {
     if (feld === "score") return appScore(a) ?? -1;
     return (a.bewertung || {})[feld] || 0;
   };
-  const apps = [...state.apps].sort((x, y) => {
+  const apps = [...state.apps].filter(a => !bewertungNurOffen || appScore(a) == null).sort((x, y) => {
     const a = wert(x, bewertungSort.feld), b = wert(y, bewertungSort.feld);
     return (a < b ? -1 : a > b ? 1 : 0) * (bewertungSort.auf ? 1 : -1);
   });
@@ -960,6 +1008,11 @@ function renderBewertung() {
   <h2>Bewertung &amp; Vergleich</h2>
   <p class="hinweis">Spaltenkopf anklicken zum Sortieren · ★ öffnet den Bewertungs-Editor. Die vorbefüllten Werte sind
   <b>Vorschläge aus der Code-Analyse</b> (siehe Notiz) – „Nutzen" kannst nur du vergeben.</p>
+  <div class="aktionen" style="margin-bottom:.6rem">
+    <button class="knopf${bewertungNurOffen ? " primär" : ""}" onclick="bewertungNurOffen=!bewertungNurOffen;render()">${bewertungNurOffen ? "✓ nur unbewertete" : "nur unbewertete zeigen"}</button>
+    <button class="knopf" onclick="exportBewertungCsv()">⬇ Vergleich als CSV</button>
+    <span class="hinweis" style="margin:0">${apps.length} Apps in der Tabelle</span>
+  </div>
   <div class="tabellenrahmen"><table class="bewertungstabelle">
     <thead><tr>
       <th onclick="sortiereBewertung('name')" style="cursor:pointer">App${pfeil("name")}</th>
