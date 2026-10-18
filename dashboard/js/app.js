@@ -394,6 +394,16 @@ function statistikZeile() {
   </div>`;
 }
 
+function oeffneApp(id) {
+  const a = state.apps.find(x => x.id === id);
+  if (!a) return;
+  const url = a.lokalUrl || a.vercelUrl || a.github;
+  if (url) { window.open(url, "app_" + id); return; } // eigenes benanntes Fenster je App
+  // reine lokale App ohne URL: Analyse öffnen
+  analyseAppId = id;
+  location.hash = "#analyse";
+}
+
 function appKarte(a) {
   const urspruenge = (a.ursprung || []).map(u => `<span class="badge u-${esc(u.toLowerCase())}">${esc(u)}</span>`).join("") ||
     '<span class="badge offen">Werkzeug?</span>';
@@ -403,7 +413,7 @@ function appKarte(a) {
   if (a.vercelUrl) links.push(`<a class="knopf" href="${esc(a.vercelUrl)}" target="_blank" rel="noopener">▶ Öffnen ${checkBadge(a, "vercel")}${a.vercelBestaetigt || (state.checks[a.id + ":vercel"] || {}).status === "ok" ? "" : " <small>(URL vermutet)</small>"}</a>`);
   if (a.lokalUrl) links.push(`<a class="knopf" href="${esc(a.lokalUrl)}" target="_blank" rel="noopener">🖥 Lokal ${checkBadge(a, "lokal")}</a>`);
   if (a.github) links.push(`<a class="knopf" href="${esc(a.github)}" target="_blank" rel="noopener">GitHub${a.visibility === "private" ? " 🔒" : ""}</a>`);
-  return `<div class="karte${(a.status || "aktiv") !== "aktiv" ? " inaktiv" : ""}">
+  return `<div class="karte${(a.status || "aktiv") !== "aktiv" ? " inaktiv" : ""}" ondblclick="oeffneApp('${a.id}')" title="Doppelklick: App in eigenem Fenster öffnen">
     ${a.screenshot ? `<img class="shot" src="${esc(a.screenshot)}" alt="Screenshot ${esc(a.name)}" loading="lazy" onclick="zeigeShot('${a.id}')" title="Klicken zum Vergrößern">` : ""}
     <div class="karte-kopf">
       <h3>${esc(a.name)}</h3>
