@@ -1,5 +1,11 @@
 # Release-Notes · AI Messe Guide
 
+## Daten-Update · 21. November 2026 (Seed v6)
+
+- **2027er-Termine ergänzt** (werden per Migration automatisch in bestehende Stände übernommen): DLD München 14.–16.01. *(geschätzt, invite-only)*, Rise of AI Berlin 12.05., Big Data & AI World Frankfurt 19.–20.05., NUEdigital Nürnberg 14.–24.06., WeAreDevelopers 14.–16.07. (neuer Ort: **Messe Berlin**, 5 Preisstufen ab 299 €), AIDAQ Berlin 21.–22.09. *(geschätzt)*, Bits & Pretzels München 27.–29.09.
+- Zusammen mit den im Oktober ergänzten Terminen (MLcon, AI@HPI, KI-X HR, data:unplugged 2027, 1E9 2027) enthält die App jetzt **22 Seed-Events**; die Auswahlliste zeigt 2027 als eigenes Jahr mit 9 Kandidaten
+- Geschätzte Termine sind in App und Auswahlliste als „Termin geschätzt" gekennzeichnet
+
 ## Version 1.1 · 8. Juli 2026
 
 **🌐 Die App ist live: https://ai-messe-guide.vercel.app** (GitHub → Vercel gekoppelt, jeder Push deployt automatisch)
