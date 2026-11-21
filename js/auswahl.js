@@ -40,3 +40,5 @@ const AUSWAHL_KANDIDATEN = [
 ];
 
 AUSWAHL_KANDIDATEN.push(...NEUE_TERMINE.map(e => ({ id: "k_" + e.id, name: e.name, start: e.start, end: e.end, ort: e.ort, venue: e.venue, kosten: e.preis, eventId: e.id, url: e.url, quelle: "Veranstalter, geprüft 07.10.2026" + (e.preis == null ? "; Preis offen" : "") })));
+
+AUSWAHL_KANDIDATEN.push(...NEUE_TERMINE_V6.map(e => ({ id: "k_" + e.id, name: e.name, start: e.start, end: e.end, ort: e.ort, venue: e.venue, kosten: e.preis, eventId: e.id, url: e.url, quelle: (e.terminStatus === "unbestätigt" ? "Termin geschätzt (21.11.2026)" : "Veranstalter, geprüft 21.11.2026") + (e.preis == null ? "; Preis offen" : "") })));

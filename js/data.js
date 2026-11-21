@@ -4,7 +4,7 @@
 // SEED_VERSION erhöhen, wenn Seed-Termine korrigiert werden – gespeicherte
 // Zustände übernehmen die Korrekturen dann einmalig (siehe migriereSeeds in app.js).
 
-const SEED_VERSION = 5; // Neue Termine 2026/2027
+const SEED_VERSION = 6; // v6 (21.11.2026): restliche 2027er-Ausgaben der wiederkehrenden Events
 
 const SEED_EVENTS = [
   {
@@ -150,6 +150,25 @@ const NEUE_TERMINE = [
   { id: "ev_1e9_27", name: "1E9 – Festival der Zukunft 2027", kurz: "1E9", ort: "München", venue: "Deutsches Museum", start: "2027-07-01", end: "2027-07-04", kategorie: "Festival", preis: null, url: "https://festivalderzukunft.com/", beschreibung: "KI, Forschung, Start-ups, Kunst und Zukunftstechnologien. Early Bird angekündigt ab 1. November; 20 % Mitgliederrabatt. Ticketbetrag noch offen." }
 ].map(e => ({ ...e, land: "DE", farbe: "#38bdf8", seed: true, eingefuehrtVersion: 5, datenStand: "2026-10-07", quelleUrl: e.url, terminStatus: "bestätigt", preisStatus: e.preis == null ? "offen" : "bestätigt" }));
 SEED_EVENTS.push(...NEUE_TERMINE);
+
+// v6 (Recherche 21.11.2026): 2027er-Ausgaben der übrigen wiederkehrenden Events.
+// terminStatus "unbestätigt" = vom Veranstalter noch nicht angekündigt, Termin geschätzt.
+const NEUE_TERMINE_V6 = [
+  { id: "ev_dld27", name: "DLD Munich 2027", kurz: "DLD", ort: "München", venue: "wird angekündigt", start: "2027-01-14", end: "2027-01-16", kategorie: "Konferenz", preis: 0, terminStatus: "unbestätigt", farbe: "#e879f9", url: "https://dld-conference.com", preise: [{ typ: "Nur auf Einladung (invite-only)", betrag: 0, hinweis: "kein freier Ticketverkauf" }], beschreibung: "Innovationskonferenz mit KI-Schwerpunkt. Termin geschätzt (Mitte Januar, Muster der Vorjahre)." },
+  { id: "ev_roai27", name: "Rise of AI Conference 2027", kurz: "RoAI", ort: "Berlin", venue: "Berlin & Virtual", start: "2027-05-12", end: "2027-05-12", kategorie: "Konferenz", preis: null, farbe: "#f472b6", url: "https://riseof.ai/conference-2027/", beschreibung: "Eine der ältesten deutschen KI-Konferenzen. Termin vom Veranstalter angekündigt; Ticketpreis noch offen (2026: 790 €)." },
+  { id: "ev_bdaiw27", name: "Big Data & AI World Frankfurt 2027", kurz: "BDAIW", ort: "Frankfurt am Main", venue: "Messe Frankfurt, Halle 3", start: "2027-05-19", end: "2027-05-20", kategorie: "Messe", preis: 0, farbe: "#f87171", url: "https://www.techshowfrankfurt.de/big-data-ai-world", preise: [{ typ: "Messebesuch", betrag: 0, hinweis: "kostenlos nach Registrierung (wie Vorjahre)" }], beschreibung: "Fachmesse für Big Data & KI im Rahmen der TechShow Frankfurt." },
+  { id: "ev_ndf27", name: "Nürnberg Digital Festival 2027", kurz: "NUEdigital", ort: "Nürnberg", venue: "verteilt (ganze Stadt)", start: "2027-06-14", end: "2027-06-24", kategorie: "Festival", preis: 0, farbe: "#fbbf24", url: "https://nuernberg.digital", preise: [{ typ: "Großteil der Sessions", betrag: 0, hinweis: "einzelne Formate kostenpflichtig" }], beschreibung: "Dezentrales Digitalfestival mit vielen KI-Sessions – Termin von IHK und Veranstalter bestätigt." },
+  { id: "ev_wad27", name: "WeAreDevelopers World Congress 2027", kurz: "WAD", ort: "Berlin", venue: "Messe Berlin (Südeingang & CityCube)", start: "2027-07-14", end: "2027-07-16", kategorie: "Kongress", preis: 299, farbe: "#60a5fa", url: "https://www.wearedevelopers.com/world-congress", preise: [
+      { typ: "Congress Pass (Super Early Bird)", betrag: 299, hinweis: "regulär 799 €" },
+      { typ: "Congress Pass Plus", betrag: 599, hinweis: "regulär 1.199 €" },
+      { typ: "VIP Pass", betrag: 1000, hinweis: "regulär 2.499 €" },
+      { typ: "Startup Pass", betrag: 299 },
+      { typ: "Studierende", betrag: 120 }
+    ], beschreibung: "Größter Entwicklerkongress Europas mit starkem AI-Track – Vorverkauf läuft bereits." },
+  { id: "ev_aidaq27", name: "AIDAQ – AI, Data & Quantum Summit 2027", kurz: "AIDAQ", ort: "Berlin", venue: "wird angekündigt", start: "2027-09-21", end: "2027-09-22", kategorie: "Summit", preis: null, terminStatus: "unbestätigt", farbe: "#34d399", url: "https://aidaq.berlin", beschreibung: "Bitkom-Summit zu KI, Daten & Quantencomputing. Termin geschätzt (Ende September, Muster 2026); 2026: 600–700 €." },
+  { id: "ev_bp27", name: "Bits & Pretzels 2027", kurz: "B&P", ort: "München", venue: "wird angekündigt", start: "2027-09-27", end: "2027-09-29", kategorie: "Konferenz", preis: null, farbe: "#4ade80", url: "https://www.bitsandpretzels.com", beschreibung: "Founders-Festival zur Wiesn-Zeit. Termin vom Veranstalter bestätigt; Tickets noch offen (2026: ab 399 €)." }
+].map(e => ({ ...e, land: "DE", farbe: e.farbe || "#38bdf8", seed: true, eingefuehrtVersion: 6, datenStand: "2026-11-21", quelleUrl: e.url, terminStatus: e.terminStatus || "bestätigt", preisStatus: e.preis == null ? "offen" : "bestätigt" }));
+SEED_EVENTS.push(...NEUE_TERMINE_V6);
 
 const KOSTEN_KATEGORIEN = ["Eintritt", "Fahrtkosten", "Übernachtung", "Verpflegung", "Sonstiges"];
 const VERKEHRSMITTEL = ["Pkw", "Bahn", "Flug", "ÖPNV", "Fernbus", "Mitfahrgelegenheit", "Fahrrad", "Sonstiges"];
