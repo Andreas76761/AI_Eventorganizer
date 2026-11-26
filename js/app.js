@@ -500,6 +500,7 @@ function render() {
     case "community": main.innerHTML = vCommunity(); break;
     case "nachrichten": main.innerHTML = vNachrichten(); break;
     case "posts": main.innerHTML = vPosts(); nachladenPostBilder(); break;
+    case "insight": main.innerHTML = '<div class="ir" id="ir-wrap"></div>'; RADAR.init(); break;
     case "event": main.innerHTML = vEventDetail(); nachladenMaterialien(); break;
     default: main.innerHTML = vDashboard();
   }

@@ -9,6 +9,7 @@
   <meta name="theme-color" content="#0b0e17">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/style.css?v=20">
+  <link rel="stylesheet" href="css/radar.css?v=24">
   <link rel="stylesheet" href="css/theme-neon.css" id="theme-css">
   <script>
     // Theme vor dem ersten Rendern anwenden (kein Aufblitzen des Standard-Designs)
@@ -32,6 +33,7 @@
     <div class="navlink" data-view="community" data-ico="community">Community</div>
     <div class="navlink" data-view="nachrichten" data-ico="nachrichten">Nachrichten<span id="dm-badge"></span></div>
     <div class="navlink" data-view="posts" data-ico="posts">Posts</div>
+    <div class="navlink" data-view="insight" data-ico="radar">Insight Radar</div>
     <div id="login-bereich" class="login-bereich"></div>
     <div class="theme-leiste">
       <button class="theme-knopf" data-theme="neon" data-ico="theme-neon" onclick="A.theme('neon')" title="Design: Neon Deep"></button>
@@ -49,13 +51,14 @@
 
   <!-- ?v= beim Ändern der Dateien hochzählen: erzwingt frische Skripte statt Browser-Cache -->
   <script src="js/config.js?v=20" onerror="console.info('Kein config.js – lokaler Modus.')"></script>
-  <script src="js/icons.js?v=20"></script>
+  <script src="js/icons.js?v=24"></script>
   <script src="js/data.js?v=23"></script>
   <script src="js/karte.js?v=20"></script>
   <script src="js/auswahl.js?v=23"></script>
   <script src="js/db.js?v=20"></script>
+  <script src="js/radar.js?v=24"></script>
   <script src="js/cloud.js?v=20"></script>
-  <script src="js/app.js?v=23"></script>
+  <script src="js/app.js?v=24"></script>
   <script>
     // PWA: Service Worker registrieren (Offline-Betrieb, "Zum Startbildschirm hinzufügen")
     if ("serviceWorker" in navigator) {
