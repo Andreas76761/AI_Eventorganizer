@@ -2,6 +2,14 @@
 
 ## Version 1.2 · 26. November 2026
 
+- **Vollbackup:** Der JSON-Export unter „Konto & Daten“ sichert jetzt auch alle Dateien, Bilder und Projekteinträge (IndexedDB) und stellt sie beim Import wieder her (Format `aimg-export/2`, alte Exporte bleiben lesbar)
+- **Cloud-Modus live:** ai-messe-guide.vercel.app läuft jetzt mit Supabase-Anbindung (Login, MFA, Sync) – die Zugangsdaten werden beim Vercel-Build aus Umgebungsvariablen erzeugt (`scripts/make-config.js`), der anon-Key bleibt durch RLS-Policies abgesichert
+- **Offline-Transkripte:** 115 Vortrags-Mitschriften der AI Week Frankfurt 2026 sind lokal gesichert (`data/aiw-transkripte-2026.json`) und direkt im Programm lesbar („📖 Transkript lesen“) – unabhängig von phont.ai
+- **Projekt-Export/-Import:** jedes Event-Projekt lässt sich komplett als JSON exportieren und (zusammenführend) in ein anderes Gerät/Projekt importieren
+- **Sechs weitere Archive:** DLD Munich, NUEdigital, KI Festival Heilbronn (IPAI), MLcon, AI@HPI und KI-X HR Convention (je 2025/2026)
+- **Bits & Pretzels 2027:** Ticketshop offen – Preisstaffel ab 270 € erfasst (Seed v7)
+- **Präsentation:** Folie 11 „Neu im November 2026“ ergänzt (PPTX + PDF)
+
 - **Neues Register „Insight Radar“** – Trend-Radar je Veranstaltung (Format `trendradar-export/1`):
   - Start mit **Event-Auswahl**; mitgeliefert: **AI Week Frankfurt 2026** (115 Sessions, 1.053 belegte Aussagen, 13 Makro-/91 Mikrotrends)
   - Interaktives **SVG-Radar** mit Makro→Mikro-Zoom, Sektoren **Dimensionen/STEEP**, Ringen **Belegstärke/Momentum**, Punktgröße = Sessions, Tooltips und nummerierter Legende
