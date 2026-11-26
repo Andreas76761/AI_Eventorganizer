@@ -2,6 +2,7 @@
 
 ## Version 1.2 · 26. November 2026
 
+- **Insight Radar für die großen Events:** Trend-Radare jetzt auch für den **WeAreDevelopers World Congress 2026** (234 Sessions · 225 Signale · 7 Makro-/26 Mikrotrends) und das **1E9 Festival der Zukunft 2026** (272 Programmpunkte · 219 Signale · 5 Makro-/18 Mikrotrends) – mit allen Radar-Features (SVG-Radar mit Zoom, Trendkarten, Alle-Trends-Tabelle, Suche, Sessions & Firmen, Methodenblatt). Datengrundlage sind die veröffentlichten Programme (keine Transkripte) – das Methodenblatt deklariert das transparent; Generator: `scripts/radar-generator.py` (wiederverwendbar für 2027-Ausgaben). Die kleineren Events haben nur Kurz-Archive und geben noch kein Radar her
 - **Hell/Dunkel-Schalter:** fester Knopf oben rechts wechselt zwischen dunklem (Neon Deep) und hellem Hintergrund (zuletzt genutztes helles Design; Sonne-/Mond-Icon zeigt die jeweils nächste Aktion)
 - **Schnellfilter Veranstaltungen:** vier Auswahlfelder (Ort, Jahr, Monat, Thema) über der Eventliste – wirken auf Übersicht, Deutschlandkarte, Zeitleiste, Merkliste und Statistik; „Zurücksetzen"-Knopf erscheint bei aktivem Filter
 - **Seed v8 – 7 weitere Events 2027:** OMR Festival Hamburg 3.–5.5. *(Veranstalter)*, re:publica Berlin 10.–12.5. *(Eventkalender, unbestätigt)*, KI-X Konferenz Berlin 2.–3.3., AI:CAN Berlin 2.6. (ab 399 €), DIKITALE Düsseldorf 16.–17.6. (149–499 €), Accelerate Tomorrow AI Summit Berlin 15.–16.7. *(visitBerlin)*, AI Week Frankfurt ~25.–29.10. *(geschätzt)* – damit 29 Seed-Events

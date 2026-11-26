@@ -653,7 +653,7 @@ function ladeRadarModul() {
   if (window.RADAR) return Promise.resolve();
   if (!radarLadePromise) radarLadePromise = new Promise((res, rej) => {
     const s = document.createElement("script");
-    s.src = "js/radar.js?v=31"; // Beim Ändern von radar.js hier hochzählen (Cache-Busting)
+    s.src = "js/radar.js?v=35"; // Beim Ändern von radar.js hier hochzählen (Cache-Busting)
     s.onload = res;
     s.onerror = () => { radarLadePromise = null; rej(new Error("radar.js nicht ladbar")); };
     document.head.appendChild(s);

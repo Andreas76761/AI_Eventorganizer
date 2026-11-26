@@ -4,7 +4,9 @@
 // per Import (JSON-Export oder generierte Viewer-HTML); Importe liegen in IndexedDB.
 
 const RADAR_QUELLEN = [
-  { id: "aiw26", url: "data/radar-aiw26.json", name: "AI Week Frankfurt 2026", termin: "26.–30.10.2026", ort: "Frankfurt", info: "115 Sessions · 1.053 Signale · 13 Makro- / 91 Mikrotrends", stand: "06.11.2026" }
+  { id: "aiw26", url: "data/radar-aiw26.json", name: "AI Week Frankfurt 2026", termin: "26.–30.10.2026", ort: "Frankfurt", info: "115 Sessions · 1.053 Signale · 13 Makro- / 91 Mikrotrends (aus Transkripten)", stand: "06.11.2026" },
+  { id: "wad26", url: "data/radar-wad26.json", name: "WeAreDevelopers World Congress 2026", termin: "8.–10.7.2026", ort: "Berlin", info: "234 Sessions · 225 Signale · 7 Makro- / 26 Mikrotrends (aus dem Programm)", stand: "26.11.2026" },
+  { id: "e9-26", url: "data/radar-e9-26.json", name: "1E9 – Festival der Zukunft 2026", termin: "2.–5.7.2026", ort: "München", info: "272 Programmpunkte · 219 Signale · 5 Makro- / 18 Mikrotrends (aus dem Programm)", stand: "26.11.2026" }
 ];
 
 
