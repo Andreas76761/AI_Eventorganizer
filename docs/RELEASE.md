@@ -12,6 +12,7 @@
 - **Event-Archive im Insight Radar** (26.11.2026) – je Event nach Jahren getrennt (2024 · 2025 · 2026), mit Jahres-Tabs, Bereichs-Filter und Live-Suche:
   - **AI Week Frankfurt:** 2026 mit vollem Programm (188 Punkte, **124 Vorträge mit Transkript- & Summary-Link** auf phont.ai), 178 Speakern, 22 Ausstellern mit Standnummern und Websites sowie 31 Workshops; 2025/2024 mit Eckdaten, Highlights und Quellen-Links (Recap, Aftermovie, Fotos)
   - **WeAreDevelopers World Congress:** 2026 mit 241 Sessions und 270 Speakern aus der Agenda (Keynote Thomas Dohmke), 2025/2024 mit Eckdaten (15.000 Teilnehmer, ~500 Talks), After-Movies und Recaps
+  - **Sechs weitere Messe-Archive 2025/2026** (je mit „Meine Teilnahme“-Status aus der App): **1E9 Festival der Zukunft** (2026 komplett: 284 Programmpunkte mit Inhaltsbeschreibung je Vortrag/Workshop, 313 Speaker mit Bio, 254 Firmen), **data:unplugged** (10.000+ Teilnehmende, Hoeneß/Lanz/DeepL), **Rise of AI** (10. Ausgabe), **Big Data & AI World Frankfurt** (Tech Show, BARC), **AIDAQ/Bitkom** (220 Speaker, Keynote Bär) und **Bits & Pretzels** („Human after all“, Trevor Noah/Steven Bartlett) – jeweils mit Eckdaten, Schlüssel-Personen/-Firmen und Quellen-Links
 
 ## Daten-Update · 21. November 2026 (Seed v6)
 

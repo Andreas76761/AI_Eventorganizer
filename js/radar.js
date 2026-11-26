@@ -10,7 +10,13 @@ const RADAR_QUELLEN = [
 // Event-Archive: Programm, Transkripte, Speaker, Aussteller – nach Jahren getrennt (recherchiert 26.11.2026)
 const ARCHIV_QUELLEN = [
   { id: "aiw", url: "data/aiw-archiv.json", name: "AI Week Frankfurt – Archiv", zeitraum: "2024 · 2025 · 2026", info: "Programm mit Transkript-Links (124 Talks 2026), 178 Speaker, 22 Aussteller mit Ständen, Workshops, Fotos & Recaps" },
-  { id: "wad", url: "data/wad-archiv.json", name: "WeAreDevelopers World Congress – Archiv", zeitraum: "2024 · 2025 · 2026", info: "241 Sessions und 270 Speaker (2026) aus der Agenda, Keynotes, After-Movies & Recaps der Vorjahre" }
+  { id: "wad", url: "data/wad-archiv.json", name: "WeAreDevelopers World Congress – Archiv", zeitraum: "2024 · 2025 · 2026", info: "241 Sessions und 270 Speaker (2026) aus der Agenda, Keynotes, After-Movies & Recaps der Vorjahre", eventIds: { 2026: "ev_wad26" } },
+  { id: "e9", url: "data/e9-archiv.json", name: "1E9 – Festival der Zukunft – Archiv", zeitraum: "2025 · 2026", info: "284 Programmpunkte mit Inhaltsbeschreibung, 313 Speaker mit Bio und 254 Firmen (2026); Motto, Speaker & Quellen 2025", eventIds: { 2026: "ev_1e9_26" } },
+  { id: "dup", url: "data/dup-archiv.json", name: "data:unplugged – Archiv", zeitraum: "2025 · 2026", info: "2026: 10.000+ Teilnehmende, 200+ Speaker (u. a. Hoeneß, Lanz, DeepL), 150+ Aussteller; 2025 im Skaters Palace", eventIds: { 2026: "ev_dup26" } },
+  { id: "roai", url: "data/roai-archiv.json", name: "Rise of AI Conference – Archiv", zeitraum: "2025 · 2026", info: "10. Ausgabe 2026 im Humboldt Carré (Meta + Applied AI Stage); 2025 „Good news from Europe“ mit Wissing", eventIds: { 2026: "ev_roai26" } },
+  { id: "bdaiw", url: "data/bdaiw-archiv.json", name: "Big Data & AI World Frankfurt – Archiv", zeitraum: "2025 · 2026", info: "Tech Show Frankfurt: 150+ Sessions auf 7 Bühnen, BARC-Keynotes, Speaker-Verzeichnis; 2025 mit 7.000+ Besuchern", eventIds: { 2026: "ev_bdaiw26" } },
+  { id: "aidaq", url: "data/aidaq-archiv.json", name: "AIDAQ (Bitkom) – Archiv", zeitraum: "2025 · 2026", info: "2026: 2.500+ Teilnehmer, 220 Speaker, 140 Sessions, Keynote Dorothee Bär, Schirmherrschaft BMFTR", eventIds: { 2026: "ev_bdai26" } },
+  { id: "bp", url: "data/bp-archiv.json", name: "Bits & Pretzels – Archiv", zeitraum: "2025 · 2026", info: "2026 „Human after all“ mit Trevor Noah & Steven Bartlett; 2025 „Connecting Europe“ mit 21.000 Investorengesprächen", eventIds: { 2026: "ev_bp26" } }
 ];
 
 const RADAR = (function () {
@@ -38,6 +44,19 @@ const RADAR = (function () {
   function istDunkel() {
     const t = localStorage.getItem("aimg2026_theme") || "neon";
     return t === "neon";
+  }
+  // Teilnahme-Status aus der App (Anmeldungen), z. B. "Besucht" = teilgenommen
+  function teilnahmeChip(eventIds, jahr) {
+    try {
+      if (!eventIds || typeof statusVon !== "function" || typeof S === "undefined") return "";
+      const eintraege = Object.entries(eventIds).filter(([j]) => !jahr || String(j) === String(jahr));
+      return eintraege.map(([j, id]) => {
+        if (!S.events.some(e => e.id === id)) return "";
+        const st = statusVon(id);
+        const txt = st === "Besucht" ? "teilgenommen ✓" : st === "Abgesagt" ? "nicht teilgenommen" : st;
+        return `<span class="chip">${esc(j)}: ${esc(txt)}</span>`;
+      }).join("");
+    } catch (e) { return ""; }
   }
 
   /* ================= Startbildschirm: Event wählen ================= */
@@ -68,6 +87,7 @@ const RADAR = (function () {
           <h3>${esc(q.name)}</h3>
           <div class="meta">${esc(q.zeitraum)}</div>
           <p>${esc(q.info)}</p>
+          ${teilnahmeChip(q.eventIds) ? `<div class="chipline">${teilnahmeChip(q.eventIds)}</div>` : ""}
           <div class="aktion"><button class="btn" data-archiv="${esc(q.id)}">Archiv öffnen</button></div>
         </div>`).join("")}
         ${importe.map(r => `<div class="startkarte">
@@ -155,7 +175,7 @@ const RADAR = (function () {
       }
       ARCHIV = cacheQuellen["archiv_" + id]; aktiveQuelle = q.name;
       const jahre = ARCHIV.jahre.map(j => j.jahr).sort((a, b) => b - a);
-      archivZustand.jahr = jahre[0]; archivZustand.bereich = "programm"; archivZustand.q = "";
+      archivZustand.jahr = jahre[0]; archivZustand.bereich = "programm"; archivZustand.q = ""; archivZustand.quelleId = id;
       zeichneArchiv();
     } catch (e) { irToast("Archiv konnte nicht geladen werden: " + e.message); }
   }
@@ -172,7 +192,7 @@ const RADAR = (function () {
     const ws = filt(J.workshops || [], ["titel", "untertitel", "raum", "tag"]);
     const bereiche = [["programm", `Programm (${prog.length})`, (J.programm || []).length],
       ["speaker", `Speaker (${spk.length})`, (J.speaker || []).length],
-      ["aussteller", `Aussteller (${aus.length})`, (J.aussteller || []).length],
+      ["aussteller", `Firmen & Aussteller (${aus.length})`, (J.aussteller || []).length],
       ["workshops", `Workshops (${ws.length})`, (J.workshops || []).length]].filter(b => b[2] > 0);
     if (bereiche.length && !bereiche.some(b => b[0] === z.bereich)) z.bereich = bereiche[0][0];
     const nTr = (J.programm || []).filter(p => p.transkript).length;
@@ -181,6 +201,7 @@ const RADAR = (function () {
       <div class="t">${esc(p.titel)}</div>
       <div class="meta">${p.tag ? `<span class="chip">${esc(p.tag)}${p.start ? " · " + esc(p.start) + (p.ende ? "–" + esc(p.ende) : "") : ""}</span>` : ""}${p.buehne ? `<span>${esc(p.buehne)}</span>` : ""}${p.track ? `<span>${esc(p.track)}</span>` : ""}${p.format ? `<span class="flag">${esc(p.format)}</span>` : ""}</div>
       ${p.speaker ? `<div class="meta"><span>${esc(p.speaker)}</span></div>` : ""}
+      ${p.inhalt ? `<div class="meta"><span>${esc(p.inhalt)}</span></div>` : ""}
       ${p.transkript ? `<div class="meta"><a class="chip" href="${esc(p.transkript)}" target="_blank" rel="noopener">▶ Transkript &amp; Summary ↗</a></div>` : ""}
     </div>`).join("") || `<p class="empty">Keine Treffer.</p>`}</div>`;
 
@@ -208,6 +229,7 @@ const RADAR = (function () {
         <div class="brand">Event-Archiv</div>
         <h1>${esc(J.titel)}</h1>
         <div class="eyebrow"><span>${esc(J.termin)}</span><span>${esc(J.ort)}</span><span>${esc(J.veranstalter || "")}</span>${nTr ? `<span>${nTr} Vorträge mit Transkript</span>` : ""}</div>
+        ${(() => { const qd = ARCHIV_QUELLEN.find(x => x.id === z.quelleId); const c = qd ? teilnahmeChip(qd.eventIds, J.jahr) : ""; return c ? `<div class="chipline" style="margin-top:6px"><span>Meine Teilnahme:</span>${c}</div>` : ""; })()}
       </div></header>
       <nav class="views" aria-label="Jahre">${jahre.map(j => `<button class="btn${j.jahr === z.jahr ? " on" : ""}" data-jahr="${j.jahr}">${j.jahr}</button>`).join("")}</nav>
       <div class="card" style="margin-bottom:18px">
