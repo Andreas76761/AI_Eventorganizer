@@ -4,7 +4,7 @@
 // SEED_VERSION erhöhen, wenn Seed-Termine korrigiert werden – gespeicherte
 // Zustände übernehmen die Korrekturen dann einmalig (siehe migriereSeeds in app.js).
 
-const SEED_VERSION = 7; // v7 (26.11.2026): B&P-2027-Preise (Ticketshop offen, ab 270 €)
+const SEED_VERSION = 8; // v8 (26.11.2026): 7 weitere Events 2027 (OMR, re:publica, KI-X, AI:CAN, DIKITALE, Accelerate Tomorrow, AI Week FFM)
 
 const SEED_EVENTS = [
   {
@@ -174,6 +174,20 @@ const NEUE_TERMINE_V6 = [
   ], beschreibung: "Founders-Festival zur Wiesn-Zeit. Ticketshop offen (geprüft 26.11.2026); Preise je nach Teilnehmerkategorie." }
 ].map(e => ({ ...e, land: "DE", farbe: e.farbe || "#38bdf8", seed: true, eingefuehrtVersion: 6, datenStand: "2026-11-21", quelleUrl: e.url, terminStatus: e.terminStatus || "bestätigt", preisStatus: e.preis == null ? "offen" : "bestätigt" }));
 SEED_EVENTS.push(...NEUE_TERMINE_V6);
+
+// v8 (Recherche 26.11.2026): weitere KI-/Digital-Events 2027.
+// Quellen: Veranstalter (OMR, AI Week FFM), visitBerlin (Accelerate Tomorrow),
+// CAMPIXX-Eventkalender (re:publica, KI-X, AI:CAN, DIKITALE) – vor Buchung beim Veranstalter prüfen.
+const NEUE_TERMINE_V8 = [
+  { id: "ev_omr27", name: "OMR Festival 2027", kurz: "OMR", ort: "Hamburg", venue: "Hamburg Messe", start: "2027-05-03", end: "2027-05-05", kategorie: "Festival", preis: null, farbe: "#f59e0b", url: "https://omr.com/festival/", beschreibung: "Digital- & Marketing-Festival mit großem KI-Programm (Tag 1: Masterclasses & Side Events, danach Hauptprogramm). Termin vom Veranstalter bestätigt; Tickets noch offen." },
+  { id: "ev_republica27", name: "re:publica 2027", kurz: "re:publica", ort: "Berlin", venue: "wird angekündigt", start: "2027-05-10", end: "2027-05-12", kategorie: "Festival", preis: null, terminStatus: "unbestätigt", farbe: "#ef4444", url: "https://re-publica.com", quelleUrl: "https://www.campixx.de/events/ai-ki/", beschreibung: "Gesellschafts- & Digitalfestival mit starkem KI-Schwerpunkt. Termin laut Eventkalender, vom Veranstalter noch nicht bestätigt." },
+  { id: "ev_kix27", name: "KI-X Konferenz 2027", kurz: "KI-X", ort: "Berlin", venue: "wird angekündigt", start: "2027-03-02", end: "2027-03-03", kategorie: "Konferenz", preis: null, farbe: "#38bdf8", url: "https://ki-x.berlin/", quelleUrl: "https://www.campixx.de/events/ai-ki/", beschreibung: "KI-Konferenz für Verwaltung und Wirtschaft (Hauptausgabe; die HR-Ausgabe ist separat erfasst). Termin laut Eventkalender." },
+  { id: "ev_aican27", name: "AI:CAN 2027", kurz: "AI:CAN", ort: "Berlin", venue: "wird angekündigt (Vortag der CAMPIXX)", start: "2027-06-02", end: "2027-06-02", kategorie: "Konferenz", preis: 399, farbe: "#c084fc", url: "https://www.campixx.de/events/ai-ki/", beschreibung: "Eintägige KI-Anwenderkonferenz der CAMPIXX-Familie – ab 399 €. Veranstalter-Website vor Buchung prüfen." },
+  { id: "ev_dikitale27", name: "DIKITALE 2027", kurz: "DIKITALE", ort: "Düsseldorf", venue: "wird angekündigt", start: "2027-06-16", end: "2027-06-17", kategorie: "Konferenz", preis: 149, farbe: "#2dd4bf", url: "https://www.campixx.de/events/ai-ki/", beschreibung: "Digital- & KI-Konferenz in Düsseldorf – Tickets laut Eventkalender 149–499 €. Veranstalter-Website vor Buchung prüfen.", preise: [{ typ: "Ticket (Spanne lt. Eventkalender)", betrag: 149, hinweis: "bis 499 € je nach Kategorie" }] },
+  { id: "ev_acctom27", name: "Accelerate Tomorrow AI Summit 2027", kurz: "AccTom", ort: "Berlin", venue: "wird angekündigt", start: "2027-07-15", end: "2027-07-16", kategorie: "Summit", preis: null, farbe: "#818cf8", url: "https://www.visitberlin.de/en/event/accelerate-tomorrow-ai-summit-2027", beschreibung: "Zweitägiger AI-Summit in Berlin. Termin über visitBerlin gelistet; Tickets noch offen." },
+  { id: "ev_aiw27", name: "AI Week Frankfurt 2027", kurz: "AIW", ort: "Frankfurt am Main", venue: "The Squaire (wie 2026, unbestätigt)", start: "2027-10-25", end: "2027-10-29", kategorie: "Festival", preis: null, terminStatus: "unbestätigt", farbe: "#fb7185", url: "https://ai-week-frankfurt.com", beschreibung: "KI-Eventwoche am Frankfurter Flughafen – 2026er-Programm & Transkripte sind im Archiv der App. Termin geschätzt (Ende Oktober, Muster 2026)." }
+].map(e => ({ ...e, land: "DE", seed: true, eingefuehrtVersion: 8, datenStand: "2026-11-26", quelleUrl: e.quelleUrl || e.url, terminStatus: e.terminStatus || "bestätigt", preisStatus: e.preis == null ? "offen" : "bestätigt" }));
+SEED_EVENTS.push(...NEUE_TERMINE_V8);
 
 const KOSTEN_KATEGORIEN = ["Eintritt", "Fahrtkosten", "Übernachtung", "Verpflegung", "Sonstiges"];
 const VERKEHRSMITTEL = ["Pkw", "Bahn", "Flug", "ÖPNV", "Fernbus", "Mitfahrgelegenheit", "Fahrrad", "Sonstiges"];

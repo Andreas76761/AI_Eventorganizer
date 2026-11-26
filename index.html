@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0b0e17">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="css/style.css?v=20">
+  <link rel="stylesheet" href="css/style.css?v=34">
   <link rel="stylesheet" href="css/radar.css?v=31">
   <link rel="stylesheet" href="css/theme-neon.css" id="theme-css">
   <script>
@@ -46,6 +46,7 @@
     </div>
   </nav>
 
+  <button id="modus-knopf" class="modus-knopf" onclick="A.modusWechsel()" title="Hintergrund hell/dunkel"></button>
   <main id="main"></main>
   <div id="modal-wrap"></div>
 
@@ -53,13 +54,13 @@
   <!-- defer: Seite rendert, ohne auf die Skripte zu warten; Reihenfolge bleibt erhalten.
        radar.js (Insight Radar) wird erst beim Öffnen des Registers nachgeladen (app.js). -->
   <script defer src="js/config.js?v=20" onerror="console.info('Kein config.js – lokaler Modus.')"></script>
-  <script defer src="js/icons.js?v=24"></script>
-  <script defer src="js/data.js?v=31"></script>
+  <script defer src="js/icons.js?v=34"></script>
+  <script defer src="js/data.js?v=34"></script>
   <script defer src="js/karte.js?v=20"></script>
   <script defer src="js/auswahl.js?v=23"></script>
   <script defer src="js/db.js?v=28"></script>
   <script defer src="js/cloud.js?v=32"></script>
-  <script defer src="js/app.js?v=33"></script>
+  <script defer src="js/app.js?v=34"></script>
   <script>
     // PWA: Service Worker registrieren (Offline-Betrieb, "Zum Startbildschirm hinzufügen")
     if ("serviceWorker" in navigator) {

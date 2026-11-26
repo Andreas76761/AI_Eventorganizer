@@ -2,6 +2,9 @@
 
 ## Version 1.2 · 26. November 2026
 
+- **Hell/Dunkel-Schalter:** fester Knopf oben rechts wechselt zwischen dunklem (Neon Deep) und hellem Hintergrund (zuletzt genutztes helles Design; Sonne-/Mond-Icon zeigt die jeweils nächste Aktion)
+- **Schnellfilter Veranstaltungen:** vier Auswahlfelder (Ort, Jahr, Monat, Thema) über der Eventliste – wirken auf Übersicht, Deutschlandkarte, Zeitleiste, Merkliste und Statistik; „Zurücksetzen"-Knopf erscheint bei aktivem Filter
+- **Seed v8 – 7 weitere Events 2027:** OMR Festival Hamburg 3.–5.5. *(Veranstalter)*, re:publica Berlin 10.–12.5. *(Eventkalender, unbestätigt)*, KI-X Konferenz Berlin 2.–3.3., AI:CAN Berlin 2.6. (ab 399 €), DIKITALE Düsseldorf 16.–17.6. (149–499 €), Accelerate Tomorrow AI Summit Berlin 15.–16.7. *(visitBerlin)*, AI Week Frankfurt ~25.–29.10. *(geschätzt)* – damit 29 Seed-Events
 - **Jahresfilter:** Dashboard und „Kosten & Budget" lassen sich per Chip auf ein Jahr umschalten (Alle Jahre / 2026 / 2027 …); Kennzahlen, Kostenaufteilung je Veranstaltung und CSV-Export (Dateiname inklusive) folgen der Auswahl. Titel und Oberfläche sind nicht mehr auf 2026 festgelegt – die App läuft jahresübergreifend
 - **Vollbackup:** Der JSON-Export unter „Konto & Daten“ sichert jetzt auch alle Dateien, Bilder und Projekteinträge (IndexedDB) und stellt sie beim Import wieder her (Format `aimg-export/2`, alte Exporte bleiben lesbar); zusätzlich **ZIP-Backup** (deutlich kompakter, Dateien nativ statt Base64) mit Export und Import
 - **Cloud-Datei-Backup:** angemeldete Nutzer sichern Dateien, Bilder und Projekteinträge per Knopf in ihren privaten Supabase-Storage-Ordner und stellen sie auf jedem Gerät wieder her (RLS: nur der eigene Ordner)

@@ -597,6 +597,23 @@ A.theme = function (t) {
   const link = document.getElementById("theme-css");
   if (link) link.href = "css/theme-" + t + ".css";
   document.querySelectorAll(".theme-knopf").forEach(b => b.classList.toggle("aktiv", b.dataset.theme === t));
+  const mk = document.getElementById("modus-knopf");
+  if (mk) {
+    const dunkel = t === "neon";
+    mk.innerHTML = ikon(dunkel ? "sonne" : "theme-neon", 18);
+    mk.title = dunkel ? "Heller Hintergrund (weiß)" : "Dunkler Hintergrund (schwarz)";
+  }
+};
+
+// Schalter oben rechts: schwarz (Neon Deep) <-> weiß (zuletzt genutztes helles Design)
+A.modusWechsel = function () {
+  const aktuell = localStorage.getItem("aimg2026_theme") || "neon";
+  if (aktuell === "neon") {
+    A.theme(localStorage.getItem("aimg2026_theme_hell") || "clean");
+  } else {
+    localStorage.setItem("aimg2026_theme_hell", aktuell);
+    A.theme("neon");
+  }
 };
 
 /* ---------------- Routing & Rendering ---------------- */
@@ -1086,10 +1103,19 @@ A.eventsBereich = function (sub) {
   render();
 };
 
+// Schnellfilter (Ort/Jahr/Monat/Thema) – wirken auf alle Bereiche des Registers
+let schnellFilter = { ort: "", jahr: "", monat: "", thema: "" };
+A.schnellFilter = function (feld, wert) { schnellFilter[feld] = wert; render(); };
+A.schnellFilterReset = function () { schnellFilter = { ort: "", jahr: "", monat: "", thema: "" }; render(); };
+
 function gefilterteEvents() {
   let liste = [...S.events].sort((a, b) => a.start.localeCompare(b.start));
   if (eventFilter === "kommend") liste = liste.filter(e => e.end >= heute());
   else if (eventFilter !== "alle") liste = liste.filter(e => statusVon(e.id) === eventFilter);
+  if (schnellFilter.ort) liste = liste.filter(e => e.ort === schnellFilter.ort);
+  if (schnellFilter.jahr) liste = liste.filter(e => String(e.start || "").startsWith(schnellFilter.jahr));
+  if (schnellFilter.monat) liste = liste.filter(e => String(e.start || "").slice(5, 7) === schnellFilter.monat);
+  if (schnellFilter.thema) liste = liste.filter(e => e.kategorie === schnellFilter.thema);
   const q = eventSuche.trim().toLowerCase();
   if (q) liste = liste.filter(e => passtZurSuche(e, q));
   return liste;
@@ -1103,6 +1129,30 @@ function eventWerkzeuge() {
     <div class="filter-gruppe">${filter.map(f => `<button class="filter ${eventFilter === f ? 'aktiv' : ''}" onclick="A.setEventFilter('${f}')">${f === "alle" ? "Alle" : f === "kommend" ? "Anstehend" : f}</button>`).join("")}</div>
     <button class="btn primaer" onclick="A.eventFormular()">+ Neue Veranstaltung</button>
     <label class="btn datei-btn" title="Event-Paket eines Kollegen zusammenführen">${ikon("paket",14)} Paket-Import<input type="file" accept=".json,application/json" onchange="A.paketImport(this)"></label>
+  </div>
+  ${schnellFilterLeiste()}`;
+}
+
+const MONATE_LANG = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+
+function schnellFilterLeiste() {
+  const werte = (fn) => [...new Set(S.events.map(fn).filter(Boolean))].sort();
+  const orte = werte(e => e.ort);
+  const jahre = werte(e => String(e.start || "").slice(0, 4)).filter(j => /^\d{4}$/.test(j));
+  const themen = werte(e => e.kategorie);
+  const aktiv = schnellFilter.ort || schnellFilter.jahr || schnellFilter.monat || schnellFilter.thema;
+  const sel = (feld, leer, opts) => `
+    <select class="schnell-select" onchange="A.schnellFilter('${feld}', this.value)">
+      <option value="">${leer}</option>
+      ${opts.map(([w, l]) => `<option value="${esc(w)}" ${schnellFilter[feld] === w ? "selected" : ""}>${esc(l)}</option>`).join("")}
+    </select>`;
+  return `
+  <div class="werkzeuge schnellfilter" style="margin-top:-8px">
+    ${sel("ort", "Ort: alle", orte.map(o => [o, o]))}
+    ${sel("jahr", "Jahr: alle", jahre.map(j => [j, j]))}
+    ${sel("monat", "Monat: alle", MONATE_LANG.map((m, i) => [String(i + 1).padStart(2, "0"), m]))}
+    ${sel("thema", "Thema: alle", themen.map(t => [t, t]))}
+    ${aktiv ? `<button class="btn klein" onclick="A.schnellFilterReset()">${ikon("x",12)} Zurücksetzen</button>` : ""}
   </div>`;
 }
 
