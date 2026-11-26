@@ -180,20 +180,106 @@ const RADAR = (function () {
     } catch (e) { irToast("Archiv konnte nicht geladen werden: " + e.message); }
   }
 
-  function zeichneArchiv() {
+  // ---------- Projekt je Event+Jahr: eigene Datenhaltung (IndexedDB) ----------
+  const projKey = () => "__projekt_" + archivZustand.quelleId + "_" + archivZustand.jahr;
+  const projErfasser = () => {
+    try { const a = typeof angemeldeter === "function" && angemeldeter(); if (a && a.name) return a.name; } catch (e) { }
+    try { if (typeof S !== "undefined" && S.users && S.users[0]) return S.users[0].name; } catch (e) { }
+    return "";
+  };
+  const fmtZeit = iso => { try { return new Date(iso).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (e) { return iso || ""; } };
+  function projFelder() {
+    return { label: ($("#pjLabel") || {}).value || "", erfasser: ($("#pjErfasser") || {}).value || "", notiz: ($("#pjNotiz") || {}).value || "" };
+  }
+  async function projSpeichern(teil) {
+    const f = projFelder();
+    const rec = Object.assign({
+      id: "pj" + Date.now() + Math.random().toString(36).slice(2, 7),
+      eventId: projKey(), typ: "projekt", datum: new Date().toISOString(),
+      label: f.label.trim(), erfasser: f.erfasser.trim(), notiz: f.notiz.trim()
+    }, teil);
+    await dbPutFile(rec);
+  }
+  async function projDateien(files, quelle) {
+    const liste = [...files].filter(Boolean);
+    if (!liste.length) return 0;
+    for (const file of liste) {
+      let inhalt = file;
+      if (typeof bildVerkleinern === "function" && file.type && file.type.startsWith("image/")) {
+        try { inhalt = await bildVerkleinern(file); } catch (e) { inhalt = file; }
+      }
+      await projSpeichern({
+        art: file.type && file.type.startsWith("image/") ? "foto" : "datei",
+        name: file.name || (file.type && file.type.startsWith("image/") ? "Zwischenablage-Bild.png" : "Datei"),
+        mime: inhalt.type || file.type || "", blob: inhalt, quelle: quelle || "upload",
+        originalGroesse: inhalt !== file ? file.size : undefined
+      });
+    }
+    return liste.length;
+  }
+  async function projZwischenablage() {
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.read) throw new Error("API nicht verfügbar");
+      const items = await navigator.clipboard.read();
+      let bilder = 0, text = "";
+      for (const it of items) {
+        const bildTyp = it.types.find(t => t.startsWith("image/"));
+        if (bildTyp) { const b = await it.getType(bildTyp); b.name = "Zwischenablage-" + Date.now() + "." + (bildTyp.split("/")[1] || "png"); bilder += await projDateien([new File([b], b.name, { type: bildTyp })], "zwischenablage"); }
+        else if (it.types.includes("text/plain") && !text) { text = await (await it.getType("text/plain")).text(); }
+      }
+      if (!bilder && text.trim()) { await projSpeichern({ art: "text", name: "Zwischenablage-Text", text: text.trim(), quelle: "zwischenablage" }); irToast("Text aus Zwischenablage gespeichert"); }
+      else if (bilder) irToast(bilder + " Bild(er) aus Zwischenablage gespeichert");
+      else { irToast("Zwischenablage leer – alternativ Strg+V im Projektbereich drücken"); return; }
+      zeichneArchiv();
+    } catch (e) { irToast("Zwischenablage nicht lesbar (" + e.message + ") – alternativ Strg+V im Projektbereich drücken"); }
+  }
+  async function projEinfuegeEvent(e) {
+    const dt = e.clipboardData; if (!dt) return;
+    const files = [...(dt.files || [])];
+    if (files.length) { e.preventDefault(); const n = await projDateien(files, "zwischenablage"); irToast(n + " Datei(en) eingefügt"); zeichneArchiv(); return; }
+    const txt = dt.getData("text/plain");
+    if (txt && txt.trim() && e.target && e.target.id !== "pjNotiz" && e.target.id !== "pjLabel" && e.target.id !== "pjErfasser" && e.target.id !== "archivSuche") {
+      e.preventDefault();
+      await projSpeichern({ art: "text", name: "Zwischenablage-Text", text: txt.trim(), quelle: "zwischenablage" });
+      irToast("Text eingefügt"); zeichneArchiv();
+    }
+  }
+  async function projBearbeiten(id) {
+    const r = await dbGetFile(id); if (!r) return;
+    const neuLabel = prompt("Label:", r.label || ""); if (neuLabel === null) return;
+    const neuErfasser = prompt("Erfasser:", r.erfasser || ""); if (neuErfasser === null) return;
+    const neuNotiz = prompt("Notiz:", r.notiz || ""); if (neuNotiz === null) return;
+    r.label = neuLabel.trim(); r.erfasser = neuErfasser.trim(); r.notiz = neuNotiz.trim();
+    await dbPutFile(r); irToast("Gespeichert"); zeichneArchiv();
+  }
+  async function projLoeschen(id) {
+    if (!confirm("Diesen Projekt-Eintrag löschen?")) return;
+    await dbDeleteFile(id); irToast("Eintrag gelöscht"); zeichneArchiv();
+  }
+  async function projHerunterladen(id) {
+    const r = await dbGetFile(id); if (!r) return;
+    if (r.blob) { const a = document.createElement("a"); a.href = URL.createObjectURL(r.blob); a.download = r.name || "datei"; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
+    else if (r.text) { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([r.text], { type: "text/plain" })); a.download = (r.label || r.name || "notiz") + ".txt"; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
+  }
+
+  async function zeichneArchiv() {
     const z = archivZustand;
     const jahre = ARCHIV.jahre.slice().sort((a, b) => b.jahr - a.jahr);
     const J = jahre.find(j => j.jahr === z.jahr) || jahre[0]; z.jahr = J.jahr;
+    let projekte = [];
+    try { projekte = await dbFilesForEvent(projKey(), "projekt"); } catch (e) { }
     const q = z.q.trim().toLowerCase();
     const filt = (arr, felder) => !q ? arr : arr.filter(x => felder.some(f => String(x[f] || "").toLowerCase().includes(q)));
     const prog = filt(J.programm || [], ["titel", "speaker", "buehne", "track", "tag"]);
     const spk = filt(J.speaker || [], ["name", "firma", "position"]);
     const aus = filt(J.aussteller || [], ["name", "branche", "stand", "beschreibung"]);
     const ws = filt(J.workshops || [], ["titel", "untertitel", "raum", "tag"]);
+    const pj = filt(projekte, ["label", "name", "notiz", "erfasser", "text"]);
     const bereiche = [["programm", `Programm (${prog.length})`, (J.programm || []).length],
       ["speaker", `Speaker (${spk.length})`, (J.speaker || []).length],
       ["aussteller", `Firmen & Aussteller (${aus.length})`, (J.aussteller || []).length],
-      ["workshops", `Workshops (${ws.length})`, (J.workshops || []).length]].filter(b => b[2] > 0);
+      ["workshops", `Workshops (${ws.length})`, (J.workshops || []).length],
+      ["projekt", `Mein Projekt (${pj.length})`, 1]].filter(b => b[2] > 0);
     if (bereiche.length && !bereiche.some(b => b[0] === z.bereich)) z.bereich = bereiche[0][0];
     const nTr = (J.programm || []).filter(p => p.transkript).length;
 
@@ -223,6 +309,31 @@ const RADAR = (function () {
       ${w.untertitel ? `<div class="meta"><span>${esc(w.untertitel)}</span></div>` : ""}
     </div>`).join("") || `<p class="empty">Keine Treffer.</p>`}</div>`;
 
+    const ART_LABEL = { foto: "Foto/Bild", datei: "Datei", text: "Information/Text" };
+    const pjHtml = () => `
+      <div class="sessrow" id="pjFormular">
+        <div class="t">Neu erfassen</div>
+        <div class="meta"><span>Eigene Fotos, Bilder, Dateien und Informationen zu diesem Event – per Datei-Upload, Zwischenablage (Button oder Strg+V hier im Bereich) oder als Text. Alles wird mit Datum, Erfasser, Label und Notiz lokal gespeichert (IndexedDB dieses Browsers).</span></div>
+        <div class="meta" style="gap:8px">
+          <label>Label <input type="text" id="pjLabel" placeholder="z. B. Standfoto, Ticket, Idee" style="font:inherit;font-size:13px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 7px"></label>
+          <label>Erfasser <input type="text" id="pjErfasser" value="${esc(projErfasser())}" style="font:inherit;font-size:13px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 7px;max-width:140px"></label>
+        </div>
+        <div><textarea id="pjNotiz" rows="2" placeholder="Eigene Notiz / Information …" style="width:100%;font:inherit;font-size:13px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 8px"></textarea></div>
+        <div class="actions">
+          <label class="btn small">Datei(en)/Fotos wählen<input type="file" id="pjDatei" multiple style="display:none"></label>
+          <button class="btn small" id="pjClip">Aus Zwischenablage einfügen</button>
+          <button class="btn small" id="pjText">Nur Notiz/Text speichern</button>
+        </div>
+      </div>
+      <div class="sess" style="margin-top:12px">${pj.map(r => `<div class="sessrow">
+        ${r.mime && r.mime.startsWith("image/") ? `<img class="projbild" id="pjimg-${esc(r.id)}" alt="${esc(r.label || r.name || "")}">` : ""}
+        <div class="t">${esc(r.label || r.name || "(ohne Label)")}</div>
+        <div class="meta"><span class="chip">${esc(ART_LABEL[r.art] || r.art || "Eintrag")}</span><span>${esc(fmtZeit(r.datum))}</span>${r.erfasser ? `<span>Erfasser: ${esc(r.erfasser)}</span>` : ""}${r.name && r.name !== r.label ? `<span>${esc(r.name)}</span>` : ""}${r.quelle === "zwischenablage" ? `<span class="flag">Zwischenablage</span>` : ""}</div>
+        ${r.text ? `<div class="meta"><span style="white-space:pre-wrap">${esc(r.text.slice(0, 600))}${r.text.length > 600 ? " …" : ""}</span></div>` : ""}
+        ${r.notiz ? `<div class="meta"><span>📝 ${esc(r.notiz)}</span></div>` : ""}
+        <div class="actions"><button class="btn small" data-pj-dl="${esc(r.id)}">Herunterladen</button><button class="btn small" data-pj-edit="${esc(r.id)}">Bearbeiten</button><button class="btn small" data-pj-del="${esc(r.id)}">Löschen</button></div>
+      </div>`).join("") || `<p class="empty">Noch keine Einträge in diesem Projekt${q ? " (im aktuellen Suchfilter)" : ""}.</p>`}</div>`;
+
     ROOT.innerHTML = `<div class="wrap">
       <div class="chipline" style="margin-bottom:10px"><button class="btn small" id="irZurueck">← Anderes Event wählen</button><span class="chip">${esc(aktiveQuelle)}</span><span class="chip">Stand ${esc(ARCHIV.stand || "")}</span></div>
       <header class="top"><div>
@@ -238,7 +349,7 @@ const RADAR = (function () {
       </div>
       ${bereiche.length ? `<div class="bar"><span class="chipline">${bereiche.map(b => `<button class="btn small${z.bereich === b[0] ? " on" : ""}" data-bereich="${b[0]}">${esc(b[1])}</button>`).join("")}</span>
         <div class="grow"><input type="search" id="archivSuche" placeholder="Suchen (Titel, Speaker, Firma, Bühne) …" value="${esc(z.q)}"></div></div>
-      <div class="card">${z.bereich === "programm" ? progHtml() : z.bereich === "speaker" ? spkHtml() : z.bereich === "aussteller" ? ausHtml() : wsHtml()}</div>` :
+      <div class="card">${z.bereich === "programm" ? progHtml() : z.bereich === "speaker" ? spkHtml() : z.bereich === "aussteller" ? ausHtml() : z.bereich === "projekt" ? pjHtml() : wsHtml()}</div>` :
       `<div class="card"><p class="empty">Für ${esc(String(J.jahr))} ist kein detailliertes Programm mehr öffentlich verfügbar – die Eckdaten und Quellen oben fassen zusammen, was dokumentiert ist.</p></div>`}
       <footer class="irfoot"><p><b>Quelle:</b> ${esc(ARCHIV.quelle || "")}</p></footer>
     </div>`;
@@ -246,7 +357,23 @@ const RADAR = (function () {
     $$("[data-jahr]").forEach(b => b.addEventListener("click", () => { z.jahr = parseInt(b.dataset.jahr, 10); z.q = ""; zeichneArchiv(); }));
     $$("[data-bereich]").forEach(b => b.addEventListener("click", () => { z.bereich = b.dataset.bereich; zeichneArchiv(); }));
     const su = $("#archivSuche");
-    if (su) su.addEventListener("input", () => { z.q = su.value; const pos = su.selectionStart; zeichneArchiv(); const su2 = $("#archivSuche"); if (su2) { su2.focus(); su2.setSelectionRange(pos, pos); } });
+    if (su) su.addEventListener("input", () => { z.q = su.value; const pos = su.selectionStart; zeichneArchiv().then(() => { const su2 = $("#archivSuche"); if (su2) { su2.focus(); su2.setSelectionRange(pos, pos); } }); });
+    // Projekt: Upload, Zwischenablage, Text, Bearbeiten/Löschen/Herunterladen, Bildvorschauen
+    const pjDatei = $("#pjDatei");
+    if (pjDatei) pjDatei.addEventListener("change", async () => { const n = await projDateien(pjDatei.files, "upload"); if (n) { irToast(n + " Datei(en) gespeichert"); zeichneArchiv(); } });
+    const pjClip = $("#pjClip"); if (pjClip) pjClip.addEventListener("click", projZwischenablage);
+    const pjText = $("#pjText");
+    if (pjText) pjText.addEventListener("click", async () => {
+      const f = projFelder();
+      if (!f.notiz.trim() && !f.label.trim()) { irToast("Bitte Notiz oder Label eingeben"); return; }
+      await projSpeichern({ art: "text", name: f.label.trim() || "Notiz", text: f.notiz.trim(), notiz: "" });
+      irToast("Information gespeichert"); zeichneArchiv();
+    });
+    const pjForm = $("#pjFormular"); if (pjForm) pjForm.addEventListener("paste", projEinfuegeEvent);
+    $$("[data-pj-dl]").forEach(b => b.addEventListener("click", () => projHerunterladen(b.dataset.pjDl)));
+    $$("[data-pj-edit]").forEach(b => b.addEventListener("click", () => projBearbeiten(b.dataset.pjEdit)));
+    $$("[data-pj-del]").forEach(b => b.addEventListener("click", () => projLoeschen(b.dataset.pjDel)));
+    pj.forEach(r => { if (r.blob && r.mime && r.mime.startsWith("image/")) { const img = document.getElementById("pjimg-" + r.id); if (img) { const u = URL.createObjectURL(r.blob); img.src = u; img.onload = () => setTimeout(() => URL.revokeObjectURL(u), 30000); } } });
   }
 
   /* ================= Viewer (Port des Event Insight Radar) ================= */

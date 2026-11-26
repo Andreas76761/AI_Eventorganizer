@@ -170,6 +170,11 @@ Das Register **Insight Radar** zeigt, welche Themen auf einer Veranstaltung wirk
 - **WeAreDevelopers World Congress – Archiv:** 2026 mit allen 241 Sessions (Tag 0–2, Bühnen, Tracks) und 270 Speakern; 2025 und 2024 mit Eckdaten, After-Movies und Recaps
 - **Weitere Messe-Archive 2025/2026:** 1E9 Festival der Zukunft (2026 vollständig – jeder Vortrag/Workshop mit Inhaltsbeschreibung, 313 Speaker mit Bio, 254 Firmen), data:unplugged, Rise of AI, Big Data & AI World Frankfurt, AIDAQ (Bitkom) und Bits & Pretzels – mit Eckdaten, Schlüssel-Personen und Quellen. Jede Archiv-Karte zeigt deinen **Teilnahme-Status** aus der App („teilgenommen ✓“ bei Status Besucht), sofern das Event in deiner Veranstaltungsliste verknüpft ist
 
+**Mein Projekt (je Event und Jahr):** Jedes Archiv hat den Bereich **„Mein Projekt“** – eine eigene, lokale Datenhaltung pro Event und Jahr (IndexedDB dieses Browsers). Dort sammelst du eigene Fotos, Bilder, Dateien und Informationen:
+- **Hinzufügen:** per Datei-Upload (mehrere auf einmal; Fotos werden automatisch verkleinert), per **Zwischenablage** (Button „Aus Zwischenablage einfügen“ oder einfach **Strg+V** im Projektbereich – Bilder und Text) oder als reiner Notiz-/Texteintrag
+- **Jeder Eintrag speichert:** Datum/Uhrzeit, **Erfasser** (vorbelegt mit deinem Namen), **Label** und deine **Notiz**; Einträge lassen sich bearbeiten, herunterladen und löschen, die Suche filtert auch den Projektbereich
+- Projekte sind strikt getrennt: 1E9 2026 hat eine andere Ablage als 1E9 2025 oder Bits & Pretzels 2026
+
 ## 9. Konto, Datenschutz & Sicherheit
 
 Über **⚙ Konto & Daten** (Seitenleiste):
