@@ -11,8 +11,33 @@
 create table if not exists public.app_state (
   user_id    uuid primary key references auth.users (id) on delete cascade,
   state      jsonb not null,
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  rev        bigint not null default 0,  -- Sync-Konfliktschutz: Versionszähler
+  geraet     text                        -- Gerätekennung des letzten Schreibers
 );
+
+-- Bestandsinstallationen nachziehen (Spalten für den Konfliktschutz, 26.11.2026)
+alter table public.app_state
+  add column if not exists rev bigint not null default 0,
+  add column if not exists geraet text;
+
+-- Datei-Backup: privater Storage-Bucket, jeder Nutzer nur im eigenen Ordner <uid>/...
+insert into storage.buckets (id, name, public) values ('dateien', 'dateien', false)
+on conflict (id) do nothing;
+
+drop policy if exists "dateien_eigene_lesen" on storage.objects;
+create policy "dateien_eigene_lesen" on storage.objects for select to authenticated
+  using (bucket_id = 'dateien' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "dateien_eigene_schreiben" on storage.objects;
+create policy "dateien_eigene_schreiben" on storage.objects for insert to authenticated
+  with check (bucket_id = 'dateien' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "dateien_eigene_aendern" on storage.objects;
+create policy "dateien_eigene_aendern" on storage.objects for update to authenticated
+  using (bucket_id = 'dateien' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id = 'dateien' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "dateien_eigene_loeschen" on storage.objects;
+create policy "dateien_eigene_loeschen" on storage.objects for delete to authenticated
+  using (bucket_id = 'dateien' and (storage.foldername(name))[1] = auth.uid()::text);
 
 alter table public.app_state enable row level security;
 

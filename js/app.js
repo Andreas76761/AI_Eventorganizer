@@ -380,11 +380,15 @@ A.kontoDialog = function () {
     <div class="knopf-reihe" style="flex-direction:column;align-items:stretch">
       <button class="btn" onclick="A.datenExport()">${ikon("download",15)} Alle Daten als JSON exportieren – inkl. Dateien, Bilder &amp; Projekte (Art. 20 DSGVO)</button>
       <label class="btn datei-btn" style="text-align:center">${ikon("upload",15)} Daten aus JSON-Export importieren<input type="file" accept=".json,application/json" onchange="A.datenImport(this)"></label>
+      <button class="btn" onclick="A.zipExport()">${ikon("paket",15)} Backup als ZIP (kompakter, inkl. Dateien)</button>
+      <label class="btn datei-btn" style="text-align:center">${ikon("paket",15)} ZIP-Backup importieren<input type="file" accept=".zip,application/zip" onchange="A.zipImport(this)"></label>
+      ${cloud && u ? `<button class="btn" onclick="A.cloudDateienSichern()">${ikon("upload",15)} Dateien &amp; Projekte in die Cloud sichern</button>
+      <button class="btn" onclick="A.cloudDateienWiederherstellen()">${ikon("download",15)} Dateien &amp; Projekte aus der Cloud wiederherstellen</button>` : ""}
       ${cloud && u ? `<button class="btn" onclick="A.mfaEinrichtenDialog()">${ikon("schloss",15)} Zwei-Faktor-Authentifizierung (MFA) einrichten</button>` : ""}
       ${u ? `<button class="btn gefahr" onclick="A.kontoLoeschen()">${ikon("loeschen",15)} Mein Konto und meine Inhalte löschen (Art. 17 DSGVO)</button>` : ""}
       <button class="btn gefahr" onclick="A.allesLoeschen()">⚠️ Alle lokalen App-Daten dieses Browsers löschen</button>
     </div>
-    <p class="hinweis">Der Cloud-Sync (Supabase) überträgt nur den App-Zustand – Dateien, Bilder und Projekteinträge sichert der JSON-Export.</p>
+    <p class="hinweis">Der automatische Cloud-Sync überträgt den App-Zustand; Dateien, Bilder und Projekteinträge sicherst du per Knopf in die Cloud (angemeldet) oder per JSON-/ZIP-Backup.</p>
     <p class="hinweis">Rechtliches: <a href="datenschutz.html" target="_blank">Datenschutz</a> · <a href="rechtliches.html" target="_blank">Impressum &amp; EU AI Act</a></p>`);
 };
 
@@ -452,6 +456,95 @@ A.datenImport = function (input) {
     }
   };
   leser.readAsText(datei);
+};
+
+/* ---------- ZIP-Backup (fflate, lazy geladen) & Cloud-Datei-Backup ---------- */
+
+let fflateLadePromise = null;
+function ladeFflate() {
+  if (window.fflate) return Promise.resolve();
+  if (!fflateLadePromise) fflateLadePromise = new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js";
+    s.onload = res;
+    s.onerror = () => { fflateLadePromise = null; rej(new Error("fflate (ZIP-Bibliothek) nicht ladbar – offline?")); };
+    document.head.appendChild(s);
+  });
+  return fflateLadePromise;
+}
+
+A.zipExport = async function () {
+  try {
+    await ladeFflate();
+    const alle = await dbAlleDateien();
+    const eintraege = { "stand.json": fflate.strToU8(JSON.stringify(S)) };
+    const meta = [];
+    for (const r of alle) {
+      const kopie = Object.assign({}, r); delete kopie.blob;
+      kopie.__hatBlob = !!r.blob;
+      meta.push(kopie);
+      // Bilder/Binärdaten unkomprimiert einlegen (JPEG/PNG sind schon komprimiert)
+      if (r.blob) eintraege["dateien/" + r.id] = [new Uint8Array(await r.blob.arrayBuffer()), { level: 0 }];
+    }
+    eintraege["dateien.json"] = fflate.strToU8(JSON.stringify(meta));
+    const zip = fflate.zipSync(eintraege, { level: 6 });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([zip], { type: "application/zip" }));
+    a.download = "ai-messe-guide-backup-" + new Date().toISOString().slice(0, 10) + ".zip";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch (e) { alert("ZIP-Export fehlgeschlagen: " + e.message); }
+};
+
+A.zipImport = function (input) {
+  const datei = input.files[0];
+  if (!datei) return;
+  const leser = new FileReader();
+  leser.onload = async () => {
+    input.value = "";
+    try {
+      await ladeFflate();
+      const entpackt = fflate.unzipSync(new Uint8Array(leser.result));
+      if (!entpackt["stand.json"]) throw new Error("stand.json fehlt – kein AI-Messe-Guide-Backup.");
+      const daten = JSON.parse(fflate.strFromU8(entpackt["stand.json"]));
+      if (!Array.isArray(daten.events) || !Array.isArray(daten.users)) throw new Error("Ungültiger App-Zustand im ZIP.");
+      const meta = entpackt["dateien.json"] ? JSON.parse(fflate.strFromU8(entpackt["dateien.json"])) : [];
+      if (!confirm(`ZIP-Import ersetzt die aktuellen Daten durch den Backup-Stand (${daten.events.length} Veranstaltungen, ${daten.users.length} Mitglieder, ${meta.length} Dateien/Projekteinträge). Fortfahren?`)) return;
+      localStorage.setItem(NS, JSON.stringify(daten));
+      S = loadState();
+      let n = 0, fehler = 0;
+      for (const m of meta) {
+        try {
+          const rec = Object.assign({}, m);
+          const hatBlob = rec.__hatBlob; delete rec.__hatBlob;
+          if (hatBlob && entpackt["dateien/" + rec.id]) rec.blob = new Blob([entpackt["dateien/" + rec.id]], { type: rec.mime || "application/octet-stream" });
+          await dbPutFile(rec); n++;
+        } catch (e) { fehler++; }
+      }
+      closeModal(); render();
+      alert(`ZIP-Import abgeschlossen: Zustand übernommen, ${n} Dateien/Projekteinträge wiederhergestellt${fehler ? ", " + fehler + " Fehler" : ""}.`);
+    } catch (e) { alert("ZIP-Import fehlgeschlagen: " + e.message); }
+  };
+  leser.readAsArrayBuffer(datei);
+};
+
+A.cloudDateienSichern = async function () {
+  if (typeof CLOUD === "undefined" || !CLOUD.aktiv() || !CLOUD.nutzer) { alert("Dafür musst du im Cloud-Modus angemeldet sein."); return; }
+  if (!confirm("Alle Dateien, Bilder und Projekteinträge dieses Browsers in deinen Cloud-Speicher hochladen (vorhandenes Cloud-Datei-Backup wird ersetzt)?")) return;
+  try {
+    const erg = await CLOUD.dateienSichern(() => { });
+    alert(`Cloud-Datei-Backup fertig: ${erg.eintraege} Einträge, davon ${erg.blobs} mit Datei-Inhalt.`);
+  } catch (e) { alert("Cloud-Datei-Backup fehlgeschlagen: " + e.message); }
+};
+
+A.cloudDateienWiederherstellen = async function () {
+  if (typeof CLOUD === "undefined" || !CLOUD.aktiv() || !CLOUD.nutzer) { alert("Dafür musst du im Cloud-Modus angemeldet sein."); return; }
+  if (!confirm("Dateien, Bilder und Projekteinträge aus deinem Cloud-Speicher in diesen Browser übernehmen (gleiche Einträge werden überschrieben, andere bleiben)?")) return;
+  try {
+    const erg = await CLOUD.dateienWiederherstellen(() => { });
+    render();
+    alert(`Wiederhergestellt: ${erg.n} Einträge (Cloud-Stand ${erg.stand ? new Date(erg.stand).toLocaleString("de-DE") : "unbekannt"})${erg.fehler ? ", " + erg.fehler + " Fehler" : ""}.`);
+  } catch (e) { alert("Wiederherstellung fehlgeschlagen: " + e.message); }
 };
 
 A.kontoLoeschen = async function () {

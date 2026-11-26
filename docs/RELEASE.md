@@ -2,7 +2,10 @@
 
 ## Version 1.2 · 26. November 2026
 
-- **Vollbackup:** Der JSON-Export unter „Konto & Daten“ sichert jetzt auch alle Dateien, Bilder und Projekteinträge (IndexedDB) und stellt sie beim Import wieder her (Format `aimg-export/2`, alte Exporte bleiben lesbar)
+- **Vollbackup:** Der JSON-Export unter „Konto & Daten“ sichert jetzt auch alle Dateien, Bilder und Projekteinträge (IndexedDB) und stellt sie beim Import wieder her (Format `aimg-export/2`, alte Exporte bleiben lesbar); zusätzlich **ZIP-Backup** (deutlich kompakter, Dateien nativ statt Base64) mit Export und Import
+- **Cloud-Datei-Backup:** angemeldete Nutzer sichern Dateien, Bilder und Projekteinträge per Knopf in ihren privaten Supabase-Storage-Ordner und stellen sie auf jedem Gerät wieder her (RLS: nur der eigene Ordner)
+- **Sync-Konfliktschutz:** der Zustands-Sync erkennt, wenn ein anderes Gerät zwischenzeitlich gespeichert hat (Versionszähler + Gerätekennung), und fragt nach statt still zu überschreiben
+- **Schneller & runder:** Skripte laden mit `defer`, das Insight-Radar-Modul erst beim Öffnen; Archiv-Suche tippt flüssig (Teil-Rendering) und zeigt **Fundstellen-Snippets** aus Transkripten mit Hervorhebung und Sprung zur Stelle; Event-Auswahl gruppiert (Meine Events zuerst) mit Suchfeld; Veranstaltung ↔ Archiv sind gegenseitig verlinkt; Mobile-Darstellung der Archive korrigiert; `/data/*` wird auf Vercel gecacht
 - **Cloud-Modus live:** ai-messe-guide.vercel.app läuft jetzt mit Supabase-Anbindung (Login, MFA, Sync) – die Zugangsdaten werden beim Vercel-Build aus Umgebungsvariablen erzeugt (`scripts/make-config.js`), der anon-Key bleibt durch RLS-Policies abgesichert
 - **Offline-Transkripte:** 115 Vortrags-Mitschriften der AI Week Frankfurt 2026 sind lokal gesichert (`data/aiw-transkripte-2026.json`) und direkt im Programm lesbar („📖 Transkript lesen“) – unabhängig von phont.ai
 - **Projekt-Export/-Import:** jedes Event-Projekt lässt sich komplett als JSON exportieren und (zusammenführend) in ein anderes Gerät/Projekt importieren
