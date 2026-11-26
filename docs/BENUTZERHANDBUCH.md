@@ -1,6 +1,6 @@
 # AI Messe Guide – Benutzerhandbuch
 
-Version 1.1 · Stand: 8. Juli 2026 · Live: https://ai-messe-guide.vercel.app
+Version 1.2 · Stand: 26. November 2026 · Live: https://ai-messe-guide.vercel.app
 
 Der AI Messe Guide verwaltet deine AI-Messen, -Konferenzen und -Veranstaltungen: vom Entdecken über Anmeldung, Reise- und Kostenplanung bis zu Community, Nachrichten und Materialien. Dieses Handbuch führt durch alle Funktionen.
 
@@ -142,6 +142,28 @@ Das Register **📣 Posts** erzeugt je Veranstaltung drei fertige LinkedIn-Beitr
 - **✅ Nach dem Termin** („Recap“): Zahlen (Sessions/Speaker/Erkenntnisse), deine Top-Trends nummeriert, das Zitat des Events, Dank + Frage an die Community
 
 Zu jedem Post wird ein **Share-Bild im LinkedIn-Format (1200×627)** im Design der Veranstaltung generiert (Phase-Badge, Titel, Datum, Ort). Die Texte sind **direkt editierbar** (Änderungen werden gespeichert, ↺ setzt auf den generierten Text zurück), „📋 Text kopieren“ legt sie in die Zwischenablage, „⬇ Bild (PNG)“ lädt die Grafik herunter. Faustregel: Je besser Programm, Speaker und Trends & Nuggets gepflegt sind, desto konkreter die Posts.
+
+## 8c. Insight Radar (Trend-Radar je Event)
+
+Das Register **Insight Radar** zeigt, welche Themen auf einer Veranstaltung wirklich belegt waren: Makro- und Mikrotrends, abgeleitet aus wörtlich zitierten Aussagen der Vorträge – keine redaktionelle Auswahl, sondern feste Schwellen (z. B. Mikrotrend ab 6 Sessions und 2 Absenderrollen).
+
+**Event auswählen:** Beim Öffnen erscheint die Event-Auswahl. Mitgeliefert ist die **AI Week Frankfurt 2026** (115 Sessions, 1.053 Signale). Über **„Export importieren“** lädst du weitere Events: eine JSON-Datei im Format `trendradar-export/1` oder direkt eine generierte Radar-HTML-Seite – die App zieht die Daten selbst heraus. Importe bleiben lokal in deinem Browser (IndexedDB) und lassen sich auf der Startseite wieder entfernen.
+
+**Das Radar lesen:**
+- **Farbe/Sektor** = Themenfeld; oben rechts umschaltbar zwischen inhaltlichen **Dimensionen** (A–E) und **STEEP** (Social/Technological/Economic/Environmental/Political)
+- **Ringe** = Belegstärke: innen stark belegt (oberes Score-Terzil), außen schwach; gestrichelt = unter Schwelle. Bei Exporten mit mehreren Events ist zusätzlich **Momentum** wählbar (neu/steigend/stabil/fallend)
+- **Punktgröße** = Anzahl Sessions; **Klick** auf einen Makrotrend zoomt in seine Mikrotrends, Klick auf einen Mikrotrend zeigt die Belegzitate
+
+**Trendkarte (rechts):** Definition, Kennzahlen (Signale/Sessions/Rollen/Score), **Absender-Mix** als Balken (wer trägt den Trend: Anwender, Anbieter, Forschung …), Belegzitate mit wörtlichem Zitat, Fundstelle und Quellen-Link, Gegenstimmen, verwandte Trends. **„Trendkarte kopieren“** legt die Karte als Markdown + HTML in die Zwischenablage, fürs Radar gibt es **PNG kopieren/speichern** (mit Titel und nummerierter Legende – fertig für Folien oder LinkedIn).
+
+**Die fünf Ansichten:**
+- **Radar** – das Diagramm mit Legende und Trendkarte
+- **Sessions & Firmen** – alle Vorträge/Panels/Workshops mit Speakern sowie das Firmen-/Ausstellerverzeichnis; „→ Signale“ springt zu den belegten Aussagen
+- **Alle Trends** – sortierbare Gesamttabelle aller Makro- und Mikrotrends mit Kennzahlen
+- **Suche** – Volltext über Aussage, Zitat, Session-Titel, Speaker und Firma, gruppiert nach Trend
+- **Methodenblatt** – Quellenlage, Codierung, Schwellen und Parameter des Exports
+
+**Filter** (Absenderrolle, Beitragsart, Evidenzgrad, Tag, Track) wirken live auf Zählung, Score und Ringe – so siehst du z. B., welche Trends übrig bleiben, wenn nur **Anwender**-Sessions zählen. ⚠-Markierungen kennzeichnen unsichere Zuordnungen, „Paraphrase“ nicht wörtlich auffindbare Zitate.
 
 ## 9. Konto, Datenschutz & Sicherheit
 

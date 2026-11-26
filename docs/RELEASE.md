@@ -1,5 +1,15 @@
 # Release-Notes · AI Messe Guide
 
+## Version 1.2 · 26. November 2026
+
+- **Neues Register „Insight Radar“** – Trend-Radar je Veranstaltung (Format `trendradar-export/1`):
+  - Start mit **Event-Auswahl**; mitgeliefert: **AI Week Frankfurt 2026** (115 Sessions, 1.053 belegte Aussagen, 13 Makro-/91 Mikrotrends)
+  - Interaktives **SVG-Radar** mit Makro→Mikro-Zoom, Sektoren **Dimensionen/STEEP**, Ringen **Belegstärke/Momentum**, Punktgröße = Sessions, Tooltips und nummerierter Legende
+  - **Trendkarten** mit Definition, Kennzahlen, Absender-Mix, Belegzitaten (Zitat + Fundstelle + Quellen-Link), Gegenstimmen und verwandten Trends; Kopieren als Markdown/HTML, Radar-Export als **PNG**
+  - Ansichten **Sessions & Firmen** (Vortrags- und Ausstellerverzeichnis), **Alle Trends** (Tabelle), **Suche** (Volltext über Aussagen, Zitate, Speaker, Firmen), **Methodenblatt**
+  - **Live-Filter** (Absenderrolle, Beitragsart, Evidenz, Tag, Track) rechnen Score und Ringe neu
+  - **Import** weiterer Events als JSON-Export oder generierte Radar-HTML; Datensätze bleiben lokal (IndexedDB)
+
 ## Daten-Update · 21. November 2026 (Seed v6)
 
 - **2027er-Termine ergänzt** (werden per Migration automatisch in bestehende Stände übernommen): DLD München 14.–16.01. *(geschätzt, invite-only)*, Rise of AI Berlin 12.05., Big Data & AI World Frankfurt 19.–20.05., NUEdigital Nürnberg 14.–24.06., WeAreDevelopers 14.–16.07. (neuer Ort: **Messe Berlin**, 5 Preisstufen ab 299 €), AIDAQ Berlin 21.–22.09. *(geschätzt)*, Bits & Pretzels München 27.–29.09.

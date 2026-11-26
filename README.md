@@ -41,6 +41,7 @@ Verwaltungs-App für AI-Messen, -Konferenzen und -Veranstaltungen in Deutschland
 - **Materialien** – Notizen mit **🎤 Diktierfunktion**, Präsentationen mit Sharing-Runde und **📖 In-App-Foliengalerie** (PDF), Bilder mit **🔎 OCR-Texterkennung**, Volltextsuche und automatischer Verkleinerung beim Upload
 - **Auswahlliste** – 29 kuratierte AI-Veranstaltungen 2025/2026 (Quellen: Web-Recherche + eigener Google-Kalender); Teilnahme **Ja / Vielleicht / Nein**, Kosten editierbar, 👥-Anzeige der Community-Teilnehmer; „Ja“ übernimmt das Event in die App
 - **Google-Kalender-Anbindung** – pro Veranstaltung/Kandidat „In Google Kalender eintragen“ (Direktlink) sowie .ics-Export (einzeln oder alle Zusagen gesammelt) zum Import in beliebige Kalender
+- **Insight Radar** – Trend-Radar je Veranstaltung (Format `trendradar-export/1`): Event-Auswahl beim Start (AI Week Frankfurt 2026 mit 115 Sessions und 1.053 belegten Aussagen liegt bei), interaktives SVG-Radar mit Makro→Mikro-Zoom, Sektoren Dimensionen/STEEP, Ringen Belegstärke/Momentum, Live-Filtern (Rolle, Beitragsart, Evidenz, Tag, Track), Trendkarten mit Belegzitaten + Absender-Mix, Ansichten Sessions & Firmen / Alle Trends / Suche / Methodenblatt, PNG-Export; weitere Events per JSON/HTML-Import (lokal in IndexedDB)
 - **Nachrichten** – Direktnachrichten zwischen Mitgliedern (💬 in der Navigation, ✉ bei jedem Mitglied): Unterhaltungen mit Chat-Blasen, Ungelesen-Zähler in der Seitenleiste, Gelesen-Bestätigung (✓/✓✓); nur für angemeldete Nutzer
 - **E-Mail-Anmeldung & Sharing** – Login per E-Mail + Bestätigungscode (lokaler Demo-Modus: Code wird angezeigt, kein Mailserver); neue E-Mail-Adressen registrieren sich als Mitglied. Angemeldete Nutzer können: Beiträge schreiben, sich zu Treffen an-/abmelden, bei Mitfahrgelegenheiten ein-/aussteigen, Präsentationen hochladen und die **Sharing-Runde** je Veranstaltung abonnieren (geteilte Dateien sehen nur Sharing-Mitglieder; 🔒/🔗 pro Datei umschaltbar). Messe-Suche über Name/Ort/Thema inkl. Treffern in der Auswahlliste.
 
@@ -54,6 +55,9 @@ js/data.js        – Seed-Daten (10 AI-Events 2026, editierbar) + Konstanten
 js/karte.js       – Deutschlandkarte (16 Bundesländer als SVG-Pfade) + 36 Städte-Koordinaten
 js/auswahl.js     – Auswahlliste: 29 Kandidaten 2025/2026 (Recherche + Google-Kalender)
 js/db.js          – IndexedDB-Helfer für Dateien & Bilder
+js/radar.js       – Insight Radar: Trend-Radar-Viewer (trendradar-export/1) mit Event-Auswahl und Import
+css/radar.css     – Stile des Insight Radars (hell/dunkel, gekapselt unter .ir)
+data/radar-aiw26.json – Radar-Datensatz AI Week Frankfurt 2026 (wird bei Bedarf geladen)
 js/cloud.js       – Supabase: Auth (MFA), Zustands-Sync, Konto-Löschung
 js/config.example.js – Vorlage für Supabase-Zugangsdaten (echte config.js in .gitignore)
 js/app.js         – Zustand, Routing, alle Ansichten und Formulare
