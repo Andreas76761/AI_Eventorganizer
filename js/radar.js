@@ -1,4 +1,4 @@
-// Insight Radar: Trend-Radar je Veranstaltung (Format trendradar-export/1).
+﻿// Insight Radar: Trend-Radar je Veranstaltung (Format trendradar-export/1).
 // Portiert aus dem "Event Insight Radar"-Viewer (playground-2.aicelerator.io, 21.11.2026)
 // und in die App integriert: Start mit Event-Auswahl, Datensätze aus data/ oder
 // per Import (JSON-Export oder generierte Viewer-HTML); Importe liegen in IndexedDB.
@@ -7,23 +7,6 @@ const RADAR_QUELLEN = [
   { id: "aiw26", url: "data/radar-aiw26.json", name: "AI Week Frankfurt 2026", termin: "26.–30.10.2026", ort: "Frankfurt", info: "115 Sessions · 1.053 Signale · 13 Makro- / 91 Mikrotrends", stand: "06.11.2026" }
 ];
 
-// Event-Archive: Programm, Transkripte, Speaker, Aussteller – nach Jahren getrennt (recherchiert 26.11.2026)
-const ARCHIV_QUELLEN = [
-  { id: "aiw", url: "data/aiw-archiv.json", name: "AI Week Frankfurt – Archiv", zeitraum: "2024 · 2025 · 2026", info: "Programm mit Transkript-Links (124 Talks 2026), 178 Speaker, 22 Aussteller mit Ständen, Workshops, Fotos & Recaps" },
-  { id: "wad", url: "data/wad-archiv.json", name: "WeAreDevelopers World Congress – Archiv", zeitraum: "2024 · 2025 · 2026", info: "241 Sessions und 270 Speaker (2026) aus der Agenda, Keynotes, After-Movies & Recaps der Vorjahre", eventIds: { 2026: "ev_wad26" } },
-  { id: "e9", url: "data/e9-archiv.json", name: "1E9 – Festival der Zukunft – Archiv", zeitraum: "2025 · 2026", info: "284 Programmpunkte mit Inhaltsbeschreibung, 313 Speaker mit Bio und 254 Firmen (2026); Motto, Speaker & Quellen 2025", eventIds: { 2026: "ev_1e9_26" } },
-  { id: "dup", url: "data/dup-archiv.json", name: "data:unplugged – Archiv", zeitraum: "2025 · 2026", info: "2026: 10.000+ Teilnehmende, 200+ Speaker (u. a. Hoeneß, Lanz, DeepL), 150+ Aussteller; 2025 im Skaters Palace", eventIds: { 2026: "ev_dup26" } },
-  { id: "roai", url: "data/roai-archiv.json", name: "Rise of AI Conference – Archiv", zeitraum: "2025 · 2026", info: "10. Ausgabe 2026 im Humboldt Carré (Meta + Applied AI Stage); 2025 „Good news from Europe“ mit Wissing", eventIds: { 2026: "ev_roai26" } },
-  { id: "bdaiw", url: "data/bdaiw-archiv.json", name: "Big Data & AI World Frankfurt – Archiv", zeitraum: "2025 · 2026", info: "Tech Show Frankfurt: 150+ Sessions auf 7 Bühnen, BARC-Keynotes, Speaker-Verzeichnis; 2025 mit 7.000+ Besuchern", eventIds: { 2026: "ev_bdaiw26" } },
-  { id: "aidaq", url: "data/aidaq-archiv.json", name: "AIDAQ (Bitkom) – Archiv", zeitraum: "2025 · 2026", info: "2026: 2.500+ Teilnehmer, 220 Speaker, 140 Sessions, Keynote Dorothee Bär, Schirmherrschaft BMFTR", eventIds: { 2026: "ev_bdai26" } },
-  { id: "bp", url: "data/bp-archiv.json", name: "Bits & Pretzels – Archiv", zeitraum: "2025 · 2026", info: "2026 „Human after all“ mit Trevor Noah & Steven Bartlett; 2025 „Connecting Europe“ mit 21.000 Investorengesprächen", eventIds: { 2026: "ev_bp26" } },
-  { id: "dld", url: "data/dld-archiv.json", name: "DLD Munich – Archiv", zeitraum: "2025 · 2026", info: "2026: 200+ Speaker (Whittaker, Russell, Vestager …), alle Talks als Video; 2025: 20-Jahre-Jubiläum", eventIds: { 2026: "ev_dld26" } },
-  { id: "nue", url: "data/nue-archiv.json", name: "NUEdigital – Archiv", zeitraum: "2025 · 2026", info: "2026 „Recode the Future“: 240+ Events von 260 Partnern inkl. Bayerischer Digitalgipfel; dezentral in Nürnberg & Region", eventIds: { 2026: "ev_ndf26" } },
-  { id: "ipai", url: "data/ipai-archiv.json", name: "KI Festival Heilbronn (IPAI) – Archiv", zeitraum: "2025 · 2026", info: "5. Ausgabe 2026: 50+ Speaker, 20+ Workshops, Eintritt frei, bis 13.500 Besucher; 2025 mit 10.000+", eventIds: { 2026: "ev_ipai26" } },
-  { id: "mlcon", url: "data/mlcon-archiv.json", name: "MLcon – Archiv", zeitraum: "2025 · 2026", info: "GenAI- & ML-Konferenz (Berlin Nov. + München Juni): Bootcamps, Workshops, RAG/MLOps/Agenten", eventIds: { 2026: "ev_mlcon26" } },
-  { id: "hpi", url: "data/hpi-archiv.json", name: "AI@HPI Conference – Archiv", zeitraum: "2025 · 2026", info: "2026 (2.–3.12., Potsdam): Keynote Scheiter, Panel mit BMFTR; 2025 „Shaping AI Sovereignty“ mit allen Videos", eventIds: { 2026: "ev_hpi26" } },
-  { id: "kix", url: "data/kix-archiv.json", name: "KI-X HR Convention – Archiv", zeitraum: "2025 · 2026", info: "KI für HR im Colosseum Berlin: Keynotes, Hands-on-Workshops, Ethik-Schwerpunkt", eventIds: { 2026: "ev_kixhr26" } }
-];
 
 const RADAR = (function () {
   "use strict";
@@ -34,6 +17,8 @@ const RADAR = (function () {
   let aktiveQuelle = "";  // Beschriftung der Quelle (für Zurück-Leiste)
   const cacheQuellen = {}; // gefetchte Built-in-Datensätze
   const archivZustand = { jahr: null, bereich: "programm", q: "" };
+  let startFilter = ""; // Suchfeld auf der Event-Auswahl
+  let ladendeArchivId = ""; // Deep-Link: verhindert, dass init() die Auswahl über ein ladendes Archiv rendert
 
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const fmt = n => Number(n).toLocaleString("de-DE", { maximumFractionDigits: 1 });
@@ -75,41 +60,61 @@ const RADAR = (function () {
     if (ARCHIV) { zeichneArchiv(); return; }
     let importe = [];
     try { importe = await dbFilesForEvent("__radar__", "radar"); } catch (e) { /* IDB nicht verfügbar */ }
-    if (!ROOT.isConnected) return;
+    if (!ROOT.isConnected || DATA || ARCHIV || ladendeArchivId) return;
+    // Gruppierung: Archive mit eigener Teilnahme (Status ≠ Geplant) zuerst
+    const statusAktiv = q => {
+      try {
+        if (!q.eventIds || typeof statusVon !== "function" || typeof S === "undefined") return false;
+        return Object.values(q.eventIds).some(id => S.events.some(e => e.id === id) && statusVon(id) !== "Geplant");
+      } catch (e) { return false; }
+    };
+    const sucheQ = (startFilter || "").toLowerCase();
+    const passt = q => !sucheQ || (q.name + " " + (q.info || "")).toLowerCase().includes(sucheQ);
+    const meine = ARCHIV_QUELLEN.filter(q => statusAktiv(q) && passt(q));
+    const weitere = ARCHIV_QUELLEN.filter(q => !statusAktiv(q) && passt(q));
+    const radare = RADAR_QUELLEN.filter(passt);
+    const archivKarte = q => `<div class="startkarte">
+      <h3>${esc(q.name)}</h3>
+      <div class="meta">${esc(q.zeitraum)}</div>
+      <p>${esc(q.info)}</p>
+      ${teilnahmeChip(q.eventIds) ? `<div class="chipline">${teilnahmeChip(q.eventIds)}</div>` : ""}
+      <div class="aktion"><button class="btn" data-archiv="${esc(q.id)}">Archiv öffnen</button></div>
+    </div>`;
+    const abschnitt = (titel, inhalt) => inhalt ? `<h2 class="startabschnitt">${esc(titel)}</h2><div class="startgrid">${inhalt}</div>` : "";
     ROOT.innerHTML = `<div class="wrap">
       <header class="top"><div>
         <div class="brand">Insight Radar</div>
         <h1>Event auswählen</h1>
-        <p class="lede">Trend-Radar je Veranstaltung: Makro- und Mikrotrends, abgeleitet aus belegten Aussagen der Vorträge. Jede Aussage trägt Zitat, Fundstelle und Absender – inkl. Sessions, Speakern und Firmen/Ausstellern.</p>
-      </div></header>
-      <div class="startgrid">
-        ${RADAR_QUELLEN.map(q => `<div class="startkarte">
+        <p class="lede">Trend-Radar und Archive je Veranstaltung: Programm, Speaker, Firmen & Aussteller, Transkripte – plus dein eigenes Projekt pro Event.</p>
+      </div>
+      <div class="tools"><input type="search" id="startSuche" placeholder="Event suchen …" value="${esc(startFilter || "")}" style="font:inherit;font-size:13.5px;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 11px;min-width:200px"></div>
+      </header>
+      ${abschnitt("Trend-Radar", radare.map(q => `<div class="startkarte">
           <h3>${esc(q.name)}</h3>
           <div class="meta">${esc(q.termin)} · ${esc(q.ort)} · Stand ${esc(q.stand)}</div>
           <p>${esc(q.info)}</p>
           <div class="aktion"><button class="btn" data-quelle="${esc(q.id)}">Radar öffnen</button></div>
-        </div>`).join("")}
-        ${ARCHIV_QUELLEN.map(q => `<div class="startkarte">
-          <h3>${esc(q.name)}</h3>
-          <div class="meta">${esc(q.zeitraum)}</div>
-          <p>${esc(q.info)}</p>
-          ${teilnahmeChip(q.eventIds) ? `<div class="chipline">${teilnahmeChip(q.eventIds)}</div>` : ""}
-          <div class="aktion"><button class="btn" data-archiv="${esc(q.id)}">Archiv öffnen</button></div>
-        </div>`).join("")}
-        ${importe.map(r => `<div class="startkarte">
+        </div>`).join("") + importe.filter(r => !sucheQ || String(r.name || "").toLowerCase().includes(sucheQ)).map(r => `<div class="startkarte">
           <h3>${esc(r.name || r.id)}</h3>
           <div class="meta">Import · Stand ${esc((r.datum || "").slice(0, 10))}</div>
           <p>${esc(r.info || "Importierter Trendradar-Export")}</p>
           <div class="aktion"><button class="btn" data-import="${esc(r.id)}">Radar öffnen</button><button class="btn small" data-loesch="${esc(r.id)}">Entfernen</button></div>
-        </div>`).join("")}
-        <div class="startkarte">
+        </div>`).join(""))}
+      ${abschnitt("Meine Events (Teilnahme geplant oder besucht)", meine.map(archivKarte).join(""))}
+      ${abschnitt(meine.length ? "Weitere Archive" : "Archive", weitere.map(archivKarte).join(""))}
+      ${abschnitt("Import", sucheQ ? "" : `<div class="startkarte">
           <h3>Export importieren</h3>
           <div class="meta">trendradar-export/1</div>
           <p>JSON-Export oder generierte Radar-HTML-Datei eines weiteren Events laden. Der Datensatz bleibt lokal in diesem Browser (IndexedDB).</p>
           <div class="aktion"><label class="btn">Datei wählen<input type="file" accept=".json,.html,.htm,application/json,text/html" style="display:none" id="irImportDatei"></label></div>
-        </div>
-      </div>
+        </div>`)}
+      ${sucheQ && !radare.length && !meine.length && !weitere.length ? `<p class="empty">Kein Event passt zu „${esc(startFilter)}“.</p>` : ""}
     </div>`;
+    const ss = ROOT.querySelector("#startSuche");
+    if (ss) ss.addEventListener("input", () => {
+      clearTimeout(init.suchTimer);
+      init.suchTimer = setTimeout(() => { startFilter = ss.value; const pos = ss.selectionStart; init().then(() => { const s2 = ROOT.querySelector("#startSuche"); if (s2) { s2.focus(); s2.setSelectionRange(pos, pos); } }); }, 150);
+    });
     $$("[data-quelle]").forEach(b => b.addEventListener("click", () => oeffneQuelle(b.dataset.quelle)));
     $$("[data-archiv]").forEach(b => b.addEventListener("click", () => oeffneArchiv(b.dataset.archiv)));
     $$("[data-import]").forEach(b => b.addEventListener("click", () => oeffneImport(b.dataset.import)));
@@ -170,8 +175,9 @@ const RADAR = (function () {
 
   /* ================= Event-Archiv (Programm, Transkripte, Speaker, Aussteller) ================= */
 
-  async function oeffneArchiv(id) {
+  async function oeffneArchiv(id, jahr) {
     const q = ARCHIV_QUELLEN.find(x => x.id === id); if (!q) return;
+    ladendeArchivId = id;
     try {
       if (!cacheQuellen["archiv_" + id]) {
         irToast("Lade Archiv …");
@@ -181,9 +187,11 @@ const RADAR = (function () {
       }
       ARCHIV = cacheQuellen["archiv_" + id]; aktiveQuelle = q.name;
       const jahre = ARCHIV.jahre.map(j => j.jahr).sort((a, b) => b - a);
-      archivZustand.jahr = jahre[0]; archivZustand.bereich = "programm"; archivZustand.q = ""; archivZustand.quelleId = id;
+      archivZustand.jahr = (jahr && jahre.includes(jahr)) ? jahr : jahre[0];
+      archivZustand.bereich = "programm"; archivZustand.q = ""; archivZustand.quelleId = id;
       zeichneArchiv();
     } catch (e) { irToast("Archiv konnte nicht geladen werden: " + e.message); }
+    finally { ladendeArchivId = ""; }
   }
 
   // ---------- Projekt je Event+Jahr: eigene Datenhaltung (IndexedDB) ----------
@@ -236,18 +244,18 @@ const RADAR = (function () {
       if (!bilder && text.trim()) { await projSpeichern({ art: "text", name: "Zwischenablage-Text", text: text.trim(), quelle: "zwischenablage" }); irToast("Text aus Zwischenablage gespeichert"); }
       else if (bilder) irToast(bilder + " Bild(er) aus Zwischenablage gespeichert");
       else { irToast("Zwischenablage leer – alternativ Strg+V im Projektbereich drücken"); return; }
-      zeichneArchiv();
+      zeichneArchivInhalt();
     } catch (e) { irToast("Zwischenablage nicht lesbar (" + e.message + ") – alternativ Strg+V im Projektbereich drücken"); }
   }
   async function projEinfuegeEvent(e) {
     const dt = e.clipboardData; if (!dt) return;
     const files = [...(dt.files || [])];
-    if (files.length) { e.preventDefault(); const n = await projDateien(files, "zwischenablage"); irToast(n + " Datei(en) eingefügt"); zeichneArchiv(); return; }
+    if (files.length) { e.preventDefault(); const n = await projDateien(files, "zwischenablage"); irToast(n + " Datei(en) eingefügt"); zeichneArchivInhalt(); return; }
     const txt = dt.getData("text/plain");
     if (txt && txt.trim() && e.target && e.target.id !== "pjNotiz" && e.target.id !== "pjLabel" && e.target.id !== "pjErfasser" && e.target.id !== "archivSuche") {
       e.preventDefault();
       await projSpeichern({ art: "text", name: "Zwischenablage-Text", text: txt.trim(), quelle: "zwischenablage" });
-      irToast("Text eingefügt"); zeichneArchiv();
+      irToast("Text eingefügt"); zeichneArchivInhalt();
     }
   }
   async function projBearbeiten(id) {
@@ -256,11 +264,11 @@ const RADAR = (function () {
     const neuErfasser = prompt("Erfasser:", r.erfasser || ""); if (neuErfasser === null) return;
     const neuNotiz = prompt("Notiz:", r.notiz || ""); if (neuNotiz === null) return;
     r.label = neuLabel.trim(); r.erfasser = neuErfasser.trim(); r.notiz = neuNotiz.trim();
-    await dbPutFile(r); irToast("Gespeichert"); zeichneArchiv();
+    await dbPutFile(r); irToast("Gespeichert"); zeichneArchivInhalt();
   }
   async function projLoeschen(id) {
     if (!confirm("Diesen Projekt-Eintrag löschen?")) return;
-    await dbDeleteFile(id); irToast("Eintrag gelöscht"); zeichneArchiv();
+    await dbDeleteFile(id); irToast("Eintrag gelöscht"); zeichneArchivInhalt();
   }
   // ---------- Offline-Transkripte (AI Week Frankfurt 2026) ----------
   async function ladeTranskripte() {
@@ -282,14 +290,22 @@ const RADAR = (function () {
         const t = T.talks[label];
         if (!t) { panel.innerHTML = `<p class="empty">Für diesen Programmpunkt liegt kein Offline-Transkript vor.</p>`; }
         else {
-          panel.innerHTML = `${t.summary ? `<h4 style="margin:0 0 6px">Zusammenfassung</h4><div style="white-space:pre-wrap;margin-bottom:10px">${esc(t.summary)}</div>` : ""}
-          <h4 style="margin:0 0 6px">Transkript (automatische Mitschrift${t.summary ? "" : ", ohne Summary"})</h4><div style="white-space:pre-wrap">${esc(t.transkript)}</div>
+          // Aktiven Suchbegriff im Transkript markieren
+          const qq = (archivZustand.q || "").trim();
+          const hl = s => { const e = esc(s); return qq.length >= 2 ? e.replace(new RegExp(escRegex(esc(qq)), "gi"), m => `<mark>${m}</mark>`) : e; };
+          panel.innerHTML = `${t.summary ? `<h4 style="margin:0 0 6px">Zusammenfassung</h4><div style="white-space:pre-wrap;margin-bottom:10px">${hl(t.summary)}</div>` : ""}
+          <h4 style="margin:0 0 6px">Transkript (automatische Mitschrift${t.summary ? "" : ", ohne Summary"})</h4><div style="white-space:pre-wrap">${hl(t.transkript)}</div>
           <p class="abgr" style="margin-top:8px">Quelle: speech.phont.ai · lokal gesichert am ${esc((T.stand || "").slice(0, 10))} · Spracherkennung, kann Fehler enthalten</p>`;
         }
         panel.dataset.geladen = "1";
       } catch (e) { panel.innerHTML = `<p class="empty">Offline-Transkripte konnten nicht geladen werden: ${esc(e.message)}</p>`; }
     }
     panel.hidden = false; knopf.textContent = "Transkript schließen";
+    // Zur ersten Fundstelle scrollen
+    requestAnimationFrame(() => {
+      const m = panel.querySelector("mark");
+      if (m) panel.scrollTop = Math.max(0, m.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop - 80);
+    });
   }
 
   // ---------- Projekt gesamt exportieren / importieren ----------
@@ -329,7 +345,7 @@ const RADAR = (function () {
         await dbPutFile(rec); n++;
       }
       irToast(n + " Einträge in dieses Projekt importiert (zusammengeführt)");
-      zeichneArchiv();
+      zeichneArchivInhalt();
     } catch (e) { irToast("Projekt-Import fehlgeschlagen: " + e.message); }
   }
 
@@ -339,7 +355,11 @@ const RADAR = (function () {
     else if (r.text) { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([r.text], { type: "text/plain" })); a.download = (r.label || r.name || "notiz") + ".txt"; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
   }
 
-  async function zeichneArchiv() {
+  // Regex-Sonderzeichen für die Hervorhebung entschärfen
+  const escRegex = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // Gefilterte Daten der aktuellen Archiv-Ansicht berechnen (inkl. Transkript-Snippets)
+  async function archivDaten() {
     const z = archivZustand;
     const jahre = ARCHIV.jahre.slice().sort((a, b) => b.jahr - a.jahr);
     const J = jahre.find(j => j.jahr === z.jahr) || jahre[0]; z.jahr = J.jahr;
@@ -350,16 +370,19 @@ const RADAR = (function () {
     // Volltextsuche in Offline-Transkripten (falls aktiviert und geladen)
     const hatTranskripte = (J.programm || []).some(p => p.transkript);
     const T = z.inTranskripten && hatTranskripte ? (cacheQuellen.__transkripte || null) : null;
-    const trVolltext = p => { if (!T || !p.transkript) return ""; const t = T.talks[p.transkript.split("/").pop()]; return t ? ((t.transkript || "") + " " + (t.summary || "")).toLowerCase() : ""; };
+    const trVoll = p => { if (!T || !p.transkript) return ""; const t = T.talks[p.transkript.split("/").pop()]; return t ? ((t.transkript || "") + " " + (t.summary || "")) : ""; };
     const PROG_FELDER = ["titel", "speaker", "buehne", "track", "tag"];
-    const nurTrTreffer = new Set();
+    const nurTrTreffer = new Set(); const trSnippets = {};
     let prog;
     if (q && T) {
       prog = (J.programm || []).filter(p => {
         const normal = PROG_FELDER.some(f => String(p[f] || "").toLowerCase().includes(q));
-        const tr = !normal && trVolltext(p).includes(q);
-        if (tr) nurTrTreffer.add(p.transkript);
-        return normal || tr;
+        if (normal) return true;
+        const voll = trVoll(p); const idx = voll.toLowerCase().indexOf(q);
+        if (idx < 0) return false;
+        nurTrTreffer.add(p.transkript);
+        trSnippets[p.transkript] = { vor: voll.slice(Math.max(0, idx - 100), idx).replace(/\s+/g, " "), treff: voll.slice(idx, idx + z.q.trim().length), nach: voll.slice(idx + z.q.trim().length, idx + z.q.trim().length + 100).replace(/\s+/g, " ") };
+        return true;
       });
     } else prog = filt(J.programm || [], PROG_FELDER);
     const spk = filt(J.speaker || [], ["name", "firma", "position"]);
@@ -373,12 +396,18 @@ const RADAR = (function () {
       ["projekt", `Mein Projekt (${pj.length})`, 1]].filter(b => b[2] > 0);
     if (bereiche.length && !bereiche.some(b => b[0] === z.bereich)) z.bereich = bereiche[0][0];
     const nTr = (J.programm || []).filter(p => p.transkript).length;
+    return { z, jahre, J, q, hatTranskripte, prog, spk, aus, ws, pj, bereiche, nTr, nurTrTreffer, trSnippets };
+  }
+
+  function inhaltHtml(D) {
+    const { z, q, prog, spk, aus, ws, pj, nurTrTreffer, trSnippets } = D;
 
     const progHtml = () => `<div class="sess">${prog.map(p => `<div class="sessrow">
       <div class="t">${esc(p.titel)}</div>
       <div class="meta">${p.tag ? `<span class="chip">${esc(p.tag)}${p.start ? " · " + esc(p.start) + (p.ende ? "–" + esc(p.ende) : "") : ""}</span>` : ""}${p.buehne ? `<span>${esc(p.buehne)}</span>` : ""}${p.track ? `<span>${esc(p.track)}</span>` : ""}${p.format ? `<span class="flag">${esc(p.format)}</span>` : ""}</div>
       ${p.speaker ? `<div class="meta"><span>${esc(p.speaker)}</span></div>` : ""}
       ${p.inhalt ? `<div class="meta"><span>${esc(p.inhalt)}</span></div>` : ""}
+      ${nurTrTreffer.has(p.transkript) && trSnippets[p.transkript] ? (() => { const s = trSnippets[p.transkript]; return `<div class="meta"><span>… ${esc(s.vor)}<mark>${esc(s.treff)}</mark>${esc(s.nach)} …</span></div>`; })() : ""}
       ${p.transkript ? (() => { const lbl = p.transkript.split("/").pop(); return `<div class="meta"><button class="chip" data-tr-lesen="${esc(lbl)}" style="cursor:pointer">📖 Transkript lesen (offline)</button><a class="chip" href="${esc(p.transkript)}" target="_blank" rel="noopener">▶ Online öffnen ↗</a>${nurTrTreffer.has(p.transkript) ? `<span class="flag">Treffer im Transkript</span>` : ""}</div><div class="trpanel" id="tr-${esc(lbl)}" hidden></div>`; })() : ""}
     </div>`).join("") || `<p class="empty">Keine Treffer.</p>`}</div>`;
 
@@ -427,13 +456,58 @@ const RADAR = (function () {
         <div class="actions"><button class="btn small" data-pj-dl="${esc(r.id)}">Herunterladen</button><button class="btn small" data-pj-edit="${esc(r.id)}">Bearbeiten</button><button class="btn small" data-pj-del="${esc(r.id)}">Löschen</button></div>
       </div>`).join("") || `<p class="empty">Noch keine Einträge in diesem Projekt${q ? " (im aktuellen Suchfilter)" : ""}.</p>`}</div>`;
 
+    return z.bereich === "programm" ? progHtml() : z.bereich === "speaker" ? spkHtml() : z.bereich === "aussteller" ? ausHtml() : z.bereich === "projekt" ? pjHtml() : wsHtml();
+  }
+
+  // Bindings nur für den Inhaltsbereich (wird bei Suche/Bereichswechsel neu aufgebaut)
+  function bindInhalt(D) {
+    const z = D.z;
+    const pjDatei = $("#pjDatei");
+    if (pjDatei) pjDatei.addEventListener("change", async () => { const n = await projDateien(pjDatei.files, "upload"); if (n) { irToast(n + " Datei(en) gespeichert"); zeichneArchivInhalt(); } });
+    const pjClip = $("#pjClip"); if (pjClip) pjClip.addEventListener("click", projZwischenablage);
+    const pjText = $("#pjText");
+    if (pjText) pjText.addEventListener("click", async () => {
+      const f = projFelder();
+      if (!f.notiz.trim() && !f.label.trim()) { irToast("Bitte Notiz oder Label eingeben"); return; }
+      await projSpeichern({ art: "text", name: f.label.trim() || "Notiz", text: f.notiz.trim(), notiz: "" });
+      irToast("Information gespeichert"); zeichneArchivInhalt();
+    });
+    const pjForm = $("#pjFormular"); if (pjForm) pjForm.addEventListener("paste", projEinfuegeEvent);
+    const pjEx = $("#pjExport"); if (pjEx) pjEx.addEventListener("click", projExport);
+    const pjIm = $("#pjImport"); if (pjIm) pjIm.addEventListener("change", () => projImport(pjIm.files[0]));
+    $$("#archivInhalt [data-tr-lesen]").forEach(b => b.addEventListener("click", () => transkriptToggle(b.dataset.trLesen, b)));
+    $$("#archivInhalt [data-pj-dl]").forEach(b => b.addEventListener("click", () => projHerunterladen(b.dataset.pjDl)));
+    $$("#archivInhalt [data-pj-edit]").forEach(b => b.addEventListener("click", () => projBearbeiten(b.dataset.pjEdit)));
+    $$("#archivInhalt [data-pj-del]").forEach(b => b.addEventListener("click", () => projLoeschen(b.dataset.pjDel)));
+    D.pj.forEach(r => { if (r.blob && r.mime && r.mime.startsWith("image/")) { const img = document.getElementById("pjimg-" + r.id); if (img) { const u = URL.createObjectURL(r.blob); img.src = u; img.onload = () => setTimeout(() => URL.revokeObjectURL(u), 30000); } } });
+  }
+
+  // Teil-Rendering: nur Inhalt + Bereichs-Zähler aktualisieren (Suchfeld bleibt unberührt → kein Fokusverlust)
+  async function zeichneArchivInhalt() {
+    const D = await archivDaten();
+    const ziel = $("#archivInhalt"); if (!ziel) return;
+    ziel.innerHTML = inhaltHtml(D);
+    $$("[data-bereich]").forEach(b => {
+      const eintrag = D.bereiche.find(x => x[0] === b.dataset.bereich);
+      if (eintrag) b.textContent = eintrag[1];
+      b.classList.toggle("on", b.dataset.bereich === D.z.bereich);
+    });
+    bindInhalt(D);
+  }
+
+  async function zeichneArchiv() {
+    const D = await archivDaten();
+    const { z, jahre, J, hatTranskripte, bereiche, nTr } = D;
+    const qd = ARCHIV_QUELLEN.find(x => x.id === z.quelleId);
+    const evId = qd && qd.eventIds ? qd.eventIds[J.jahr] : null;
+    const evInApp = evId && typeof S !== "undefined" && S.events.some(e => e.id === evId);
     ROOT.innerHTML = `<div class="wrap">
       <div class="chipline" style="margin-bottom:10px"><button class="btn small" id="irZurueck">← Anderes Event wählen</button><span class="chip">${esc(aktiveQuelle)}</span><span class="chip">Stand ${esc(ARCHIV.stand || "")}</span></div>
       <header class="top"><div>
         <div class="brand">Event-Archiv</div>
         <h1>${esc(J.titel)}</h1>
         <div class="eyebrow"><span>${esc(J.termin)}</span><span>${esc(J.ort)}</span><span>${esc(J.veranstalter || "")}</span>${nTr ? `<span>${nTr} Vorträge mit Transkript</span>` : ""}</div>
-        ${(() => { const qd = ARCHIV_QUELLEN.find(x => x.id === z.quelleId); const c = qd ? teilnahmeChip(qd.eventIds, J.jahr) : ""; return c ? `<div class="chipline" style="margin-top:6px"><span>Meine Teilnahme:</span>${c}</div>` : ""; })()}
+        <div class="chipline" style="margin-top:6px">${qd ? teilnahmeChip(qd.eventIds, J.jahr) : ""}${evInApp ? `<button class="btn small" id="irEventOeffnen">📅 Als Veranstaltung öffnen</button>` : ""}</div>
       </div></header>
       <nav class="views" aria-label="Jahre">${jahre.map(j => `<button class="btn${j.jahr === z.jahr ? " on" : ""}" data-jahr="${j.jahr}">${j.jahr}</button>`).join("")}</nav>
       <div class="card" style="margin-bottom:18px">
@@ -443,43 +517,29 @@ const RADAR = (function () {
       ${bereiche.length ? `<div class="bar"><span class="chipline">${bereiche.map(b => `<button class="btn small${z.bereich === b[0] ? " on" : ""}" data-bereich="${b[0]}">${esc(b[1])}</button>`).join("")}</span>
         <div class="grow"><input type="search" id="archivSuche" placeholder="Suchen (Titel, Speaker, Firma, Bühne) …" value="${esc(z.q)}"></div>
         ${hatTranskripte ? `<label title="Volltextsuche über alle offline gesicherten Vortrags-Mitschriften"><input type="checkbox" id="trSuche" ${z.inTranskripten ? "checked" : ""}> auch in Transkripten</label>` : ""}</div>
-      <div class="card">${z.bereich === "programm" ? progHtml() : z.bereich === "speaker" ? spkHtml() : z.bereich === "aussteller" ? ausHtml() : z.bereich === "projekt" ? pjHtml() : wsHtml()}</div>` :
+      <div class="card" id="archivInhalt">${inhaltHtml(D)}</div>` :
       `<div class="card"><p class="empty">Für ${esc(String(J.jahr))} ist kein detailliertes Programm mehr öffentlich verfügbar – die Eckdaten und Quellen oben fassen zusammen, was dokumentiert ist.</p></div>`}
       <footer class="irfoot"><p><b>Quelle:</b> ${esc(ARCHIV.quelle || "")}</p></footer>
     </div>`;
     $("#irZurueck").addEventListener("click", schliessen);
+    const evBtn = $("#irEventOeffnen"); if (evBtn) evBtn.addEventListener("click", () => { if (typeof A !== "undefined" && A.openEvent) A.openEvent(evId); });
     $$("[data-jahr]").forEach(b => b.addEventListener("click", () => { z.jahr = parseInt(b.dataset.jahr, 10); z.q = ""; zeichneArchiv(); }));
-    $$("[data-bereich]").forEach(b => b.addEventListener("click", () => { z.bereich = b.dataset.bereich; zeichneArchiv(); }));
+    $$("[data-bereich]").forEach(b => b.addEventListener("click", () => { z.bereich = b.dataset.bereich; zeichneArchivInhalt(); }));
     const su = $("#archivSuche");
-    if (su) su.addEventListener("input", () => { z.q = su.value; const pos = su.selectionStart; zeichneArchiv().then(() => { const su2 = $("#archivSuche"); if (su2) { su2.focus(); su2.setSelectionRange(pos, pos); } }); });
-    // Projekt: Upload, Zwischenablage, Text, Bearbeiten/Löschen/Herunterladen, Bildvorschauen
-    const pjDatei = $("#pjDatei");
-    if (pjDatei) pjDatei.addEventListener("change", async () => { const n = await projDateien(pjDatei.files, "upload"); if (n) { irToast(n + " Datei(en) gespeichert"); zeichneArchiv(); } });
-    const pjClip = $("#pjClip"); if (pjClip) pjClip.addEventListener("click", projZwischenablage);
-    const pjText = $("#pjText");
-    if (pjText) pjText.addEventListener("click", async () => {
-      const f = projFelder();
-      if (!f.notiz.trim() && !f.label.trim()) { irToast("Bitte Notiz oder Label eingeben"); return; }
-      await projSpeichern({ art: "text", name: f.label.trim() || "Notiz", text: f.notiz.trim(), notiz: "" });
-      irToast("Information gespeichert"); zeichneArchiv();
+    if (su) su.addEventListener("input", () => {
+      clearTimeout(zeichneArchiv.suchTimer);
+      zeichneArchiv.suchTimer = setTimeout(() => { z.q = su.value; zeichneArchivInhalt(); }, 150);
     });
-    const pjForm = $("#pjFormular"); if (pjForm) pjForm.addEventListener("paste", projEinfuegeEvent);
     const trS = $("#trSuche");
     if (trS) trS.addEventListener("change", async () => {
       z.inTranskripten = trS.checked;
       if (trS.checked && !cacheQuellen.__transkripte) {
         irToast("Lade Transkripte für die Volltextsuche …");
-        try { await ladeTranskripte(); } catch (e) { irToast("Transkripte nicht ladbar: " + e.message); z.inTranskripten = false; }
+        try { await ladeTranskripte(); } catch (e) { irToast("Transkripte nicht ladbar: " + e.message); z.inTranskripten = false; trS.checked = false; }
       }
-      zeichneArchiv();
+      zeichneArchivInhalt();
     });
-    const pjEx = $("#pjExport"); if (pjEx) pjEx.addEventListener("click", projExport);
-    const pjIm = $("#pjImport"); if (pjIm) pjIm.addEventListener("change", () => projImport(pjIm.files[0]));
-    $$("[data-tr-lesen]").forEach(b => b.addEventListener("click", () => transkriptToggle(b.dataset.trLesen, b)));
-    $$("[data-pj-dl]").forEach(b => b.addEventListener("click", () => projHerunterladen(b.dataset.pjDl)));
-    $$("[data-pj-edit]").forEach(b => b.addEventListener("click", () => projBearbeiten(b.dataset.pjEdit)));
-    $$("[data-pj-del]").forEach(b => b.addEventListener("click", () => projLoeschen(b.dataset.pjDel)));
-    pj.forEach(r => { if (r.blob && r.mime && r.mime.startsWith("image/")) { const img = document.getElementById("pjimg-" + r.id); if (img) { const u = URL.createObjectURL(r.blob); img.src = u; img.onload = () => setTimeout(() => URL.revokeObjectURL(u), 30000); } } });
+    bindInhalt(D);
   }
 
   /* ================= Viewer (Port des Event Insight Radar) ================= */

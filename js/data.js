@@ -189,3 +189,21 @@ const WAEHRUNGEN = {
   SEK: 0.089, DKK: 0.134, PLN: 0.235, CZK: 0.041
 };
 const UST_SAETZE = [19, 7, 0];
+
+// Event-Archive: Programm, Transkripte, Speaker, Aussteller – nach Jahren getrennt (recherchiert 26.11.2026)
+const ARCHIV_QUELLEN = [
+  { id: "aiw", url: "data/aiw-archiv.json", name: "AI Week Frankfurt – Archiv", zeitraum: "2024 · 2025 · 2026", info: "Programm mit Transkript-Links (124 Talks 2026), 178 Speaker, 22 Aussteller mit Ständen, Workshops, Fotos & Recaps" },
+  { id: "wad", url: "data/wad-archiv.json", name: "WeAreDevelopers World Congress – Archiv", zeitraum: "2024 · 2025 · 2026", info: "241 Sessions und 270 Speaker (2026) aus der Agenda, Keynotes, After-Movies & Recaps der Vorjahre", eventIds: { 2026: "ev_wad26" } },
+  { id: "e9", url: "data/e9-archiv.json", name: "1E9 – Festival der Zukunft – Archiv", zeitraum: "2025 · 2026", info: "284 Programmpunkte mit Inhaltsbeschreibung, 313 Speaker mit Bio und 254 Firmen (2026); Motto, Speaker & Quellen 2025", eventIds: { 2026: "ev_1e9_26" } },
+  { id: "dup", url: "data/dup-archiv.json", name: "data:unplugged – Archiv", zeitraum: "2025 · 2026", info: "2026: 10.000+ Teilnehmende, 200+ Speaker (u. a. Hoeneß, Lanz, DeepL), 150+ Aussteller; 2025 im Skaters Palace", eventIds: { 2026: "ev_dup26" } },
+  { id: "roai", url: "data/roai-archiv.json", name: "Rise of AI Conference – Archiv", zeitraum: "2025 · 2026", info: "10. Ausgabe 2026 im Humboldt Carré (Meta + Applied AI Stage); 2025 „Good news from Europe“ mit Wissing", eventIds: { 2026: "ev_roai26" } },
+  { id: "bdaiw", url: "data/bdaiw-archiv.json", name: "Big Data & AI World Frankfurt – Archiv", zeitraum: "2025 · 2026", info: "Tech Show Frankfurt: 150+ Sessions auf 7 Bühnen, BARC-Keynotes, Speaker-Verzeichnis; 2025 mit 7.000+ Besuchern", eventIds: { 2026: "ev_bdaiw26" } },
+  { id: "aidaq", url: "data/aidaq-archiv.json", name: "AIDAQ (Bitkom) – Archiv", zeitraum: "2025 · 2026", info: "2026: 2.500+ Teilnehmer, 220 Speaker, 140 Sessions, Keynote Dorothee Bär, Schirmherrschaft BMFTR", eventIds: { 2026: "ev_bdai26" } },
+  { id: "bp", url: "data/bp-archiv.json", name: "Bits & Pretzels – Archiv", zeitraum: "2025 · 2026", info: "2026 „Human after all“ mit Trevor Noah & Steven Bartlett; 2025 „Connecting Europe“ mit 21.000 Investorengesprächen", eventIds: { 2026: "ev_bp26" } },
+  { id: "dld", url: "data/dld-archiv.json", name: "DLD Munich – Archiv", zeitraum: "2025 · 2026", info: "2026: 200+ Speaker (Whittaker, Russell, Vestager …), alle Talks als Video; 2025: 20-Jahre-Jubiläum", eventIds: { 2026: "ev_dld26" } },
+  { id: "nue", url: "data/nue-archiv.json", name: "NUEdigital – Archiv", zeitraum: "2025 · 2026", info: "2026 „Recode the Future“: 240+ Events von 260 Partnern inkl. Bayerischer Digitalgipfel; dezentral in Nürnberg & Region", eventIds: { 2026: "ev_ndf26" } },
+  { id: "ipai", url: "data/ipai-archiv.json", name: "KI Festival Heilbronn (IPAI) – Archiv", zeitraum: "2025 · 2026", info: "5. Ausgabe 2026: 50+ Speaker, 20+ Workshops, Eintritt frei, bis 13.500 Besucher; 2025 mit 10.000+", eventIds: { 2026: "ev_ipai26" } },
+  { id: "mlcon", url: "data/mlcon-archiv.json", name: "MLcon – Archiv", zeitraum: "2025 · 2026", info: "GenAI- & ML-Konferenz (Berlin Nov. + München Juni): Bootcamps, Workshops, RAG/MLOps/Agenten", eventIds: { 2026: "ev_mlcon26" } },
+  { id: "hpi", url: "data/hpi-archiv.json", name: "AI@HPI Conference – Archiv", zeitraum: "2025 · 2026", info: "2026 (2.–3.12., Potsdam): Keynote Scheiter, Panel mit BMFTR; 2025 „Shaping AI Sovereignty“ mit allen Videos", eventIds: { 2026: "ev_hpi26" } },
+  { id: "kix", url: "data/kix-archiv.json", name: "KI-X HR Convention – Archiv", zeitraum: "2025 · 2026", info: "KI für HR im Colosseum Berlin: Keynotes, Hands-on-Workshops, Ethik-Schwerpunkt", eventIds: { 2026: "ev_kixhr26" } }
+];

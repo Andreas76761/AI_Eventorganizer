@@ -521,6 +521,36 @@ A.openEvent = function (evId, tab) {
 };
 A.tab = function (tab) { route.tab = tab; render(); };
 
+// Verknüpfung Veranstaltung → Event-Archiv (ARCHIV_QUELLEN liegt in data.js): [quelleId, jahr] oder null
+function archivFuerEvent(evId) {
+  if (typeof ARCHIV_QUELLEN === "undefined") return null;
+  for (const q of ARCHIV_QUELLEN) {
+    for (const [jahr, id] of Object.entries(q.eventIds || {})) {
+      if (id === evId) return [q.id, parseInt(jahr, 10)];
+    }
+  }
+  return null;
+}
+A.openArchiv = function (quelleId, jahr) {
+  route = { view: "insight", evId: null, tab: "uebersicht" };
+  render();
+  ladeRadarModul().then(() => RADAR.oeffneArchiv(quelleId, jahr)).catch(() => { });
+};
+
+// Insight Radar (js/radar.js) wird erst beim ersten Öffnen des Registers geladen (spart Startzeit).
+let radarLadePromise = null;
+function ladeRadarModul() {
+  if (window.RADAR) return Promise.resolve();
+  if (!radarLadePromise) radarLadePromise = new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "js/radar.js?v=31"; // Beim Ändern von radar.js hier hochzählen (Cache-Busting)
+    s.onload = res;
+    s.onerror = () => { radarLadePromise = null; rej(new Error("radar.js nicht ladbar")); };
+    document.head.appendChild(s);
+  });
+  return radarLadePromise;
+}
+
 function render() {
   document.querySelectorAll(".navlink").forEach(el => {
     el.classList.toggle("aktiv", el.dataset.view === route.view || (route.view === "event" && el.dataset.view === "events"));
@@ -535,7 +565,10 @@ function render() {
     case "community": main.innerHTML = vCommunity(); break;
     case "nachrichten": main.innerHTML = vNachrichten(); break;
     case "posts": main.innerHTML = vPosts(); nachladenPostBilder(); break;
-    case "insight": main.innerHTML = '<div class="ir" id="ir-wrap"></div>'; RADAR.init(); break;
+    case "insight":
+      main.innerHTML = '<div class="ir" id="ir-wrap"><p class="hinweis" style="padding:20px">Lade Insight Radar …</p></div>';
+      ladeRadarModul().then(() => RADAR.init()).catch(e => { const w = document.getElementById("ir-wrap"); if (w) w.innerHTML = '<p class="hinweis" style="padding:20px">Insight Radar konnte nicht geladen werden: ' + esc(e.message) + "</p>"; });
+      break;
     case "event": main.innerHTML = vEventDetail(); nachladenMaterialien(); break;
     default: main.innerHTML = vDashboard();
   }
@@ -1866,6 +1899,7 @@ function vEventDetail() {
       <h1>${esc(e.name)}</h1>
       <div class="ez-sub">📅 ${eventZeitraum(e)} · 📍 ${esc(e.ort)}${e.venue ? " · " + esc(e.venue) : ""} · <span class="status ${STATUS_KLASSE[st]}">${st}</span></div>
     </div>
+    ${archivFuerEvent(e.id) ? `<button class="btn" onclick="A.openArchiv('${archivFuerEvent(e.id)[0]}', ${archivFuerEvent(e.id)[1]})">${ikon("radar", 14)} Archiv &amp; Transkripte</button>` : ""}
     <button class="btn" onclick="A.eventFormular('${e.id}')">${ikon("stift",14)} Bearbeiten</button>
   </div>
   <div class="tabs">${TABS.map(([id, label]) => `<button class="tab ${route.tab === id ? 'aktiv' : ''}" onclick="A.tab('${id}')">${label}</button>`).join("")}</div>
