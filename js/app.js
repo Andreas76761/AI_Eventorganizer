@@ -653,7 +653,7 @@ function ladeRadarModul() {
   if (window.RADAR) return Promise.resolve();
   if (!radarLadePromise) radarLadePromise = new Promise((res, rej) => {
     const s = document.createElement("script");
-    s.src = "js/radar.js?v=35"; // Beim Ändern von radar.js hier hochzählen (Cache-Busting)
+    s.src = "js/radar.js?v=36"; // Beim Ändern von radar.js hier hochzählen (Cache-Busting)
     s.onload = res;
     s.onerror = () => { radarLadePromise = null; rej(new Error("radar.js nicht ladbar")); };
     document.head.appendChild(s);
@@ -1338,10 +1338,12 @@ function eBereichUebersicht() {
     <span>${ikon("suche",14)} <b>${kandidatenTreffer.length} Treffer</b> in der Auswahlliste: ${kandidatenTreffer.slice(0, 3).map(k => esc(k.name)).join(", ")}${kandidatenTreffer.length > 3 ? "…" : ""}</span>
     <button class="btn klein" onclick="A.nav('auswahl')">Zur Auswahlliste →</button>
   </div>` : ""}
-  <div class="event-gitter">
-    ${liste.map(e => {
+  ${(() => {
+    // Nach Jahren gruppiert (Liste ist bereits nach Startdatum sortiert)
+    const karte = e => {
       const st = statusVon(e.id);
       const teiln = (S.teilnehmer[e.id] || []).length;
+      const domain = e.url ? String(e.url).replace(/^https?:\/\/(www\.)?/, "").split("/")[0] : "";
       return `
       <div class="event-karte" onclick="A.openEvent('${e.id}')">
         <div class="ek-band" style="background:${e.farbe}"></div>
@@ -1350,14 +1352,22 @@ function eBereichUebersicht() {
           <h3>${esc(e.name)}</h3>
           <div class="ek-meta">📅 ${eventZeitraum(e)}</div>
           <div class="ek-meta">📍 ${esc(e.ort)}${e.venue ? " · " + esc(e.venue) : ""}</div>
+          ${e.url ? `<div class="ek-meta">🔗 <a href="${esc(e.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Website öffnen: ${esc(e.url)}">${esc(domain)}</a></div>` : ""}
           <div class="ek-fuss">
             <span>${kostenSumme(e.id) > 0 ? fmtEUR(kostenSumme(e.id)) : (e.preis > 0 ? "ab " + fmtEUR(e.preis) : "kostenlos")}</span>
             <span>${S.merker[e.id] ? ikon("merkliste",13) + " " : ""}${S.bewertungen[e.id] ? '<span class="sterne-mini">' + "★".repeat(S.bewertungen[e.id]) + "</span> " : ""}${teiln > 0 ? ikon("community",13) + " " + teiln : ""}</span>
           </div>
         </div>
       </div>`;
-    }).join("") || '<p class="leer">Keine Veranstaltungen für diesen Filter.</p>'}
-  </div>`;
+    };
+    const jahre = [...new Set(liste.map(e => String(e.start || "").slice(0, 4)))].filter(Boolean).sort();
+    if (!liste.length) return '<div class="event-gitter"><p class="leer">Keine Veranstaltungen für diesen Filter.</p></div>';
+    return jahre.map(j => {
+      const evs = liste.filter(e => String(e.start || "").startsWith(j));
+      return `<h2 class="jahr-titel">${j} <span class="jahr-anzahl">${evs.length} Veranstaltung${evs.length === 1 ? "" : "en"}</span></h2>
+      <div class="event-gitter">${evs.map(karte).join("")}</div>`;
+    }).join("");
+  })()}`;
 }
 
 /* ---- Veranstaltung anlegen/bearbeiten ---- */

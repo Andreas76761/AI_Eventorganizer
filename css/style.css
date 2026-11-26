@@ -77,6 +77,12 @@ a:hover { text-decoration: underline; }
   border-radius: 10px; padding: 8px 10px; font-size: 13px; font-family: inherit; cursor: pointer;
 }
 .schnell-select:focus { outline: none; border-color: var(--akzent); }
+/* Jahres-Gruppierung in der Veranstaltungs-Übersicht */
+.jahr-titel { font-size: 17px; margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--rand); display: flex; align-items: baseline; gap: 10px; }
+.jahr-titel:first-of-type { margin-top: 4px; }
+.jahr-anzahl { font-size: 12px; color: var(--text2); font-weight: 400; }
+.ek-meta a { color: var(--akzent2); text-decoration: none; }
+.ek-meta a:hover { text-decoration: underline; }
 .login-bereich { margin-top: auto; padding: 0 4px 12px; }
 .theme-leiste { display: flex; gap: 6px; padding: 0 4px 10px; }
 .theme-knopf { flex: 1; background: var(--karte2); border: 1px solid var(--rand); border-radius: 8px; padding: 6px 0; font-size: 15px; cursor: pointer; }

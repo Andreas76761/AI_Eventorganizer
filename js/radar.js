@@ -18,7 +18,8 @@ const RADAR = (function () {
   let ARCHIV = null;      // geöffnetes Event-Archiv
   let aktiveQuelle = "";  // Beschriftung der Quelle (für Zurück-Leiste)
   const cacheQuellen = {}; // gefetchte Built-in-Datensätze
-  const archivZustand = { jahr: null, bereich: "programm", q: "" };
+  const archivZustand = { jahr: null, bereich: "programm", q: "", trThema: "", trKat: "", trTag: "", trSort: "zeit" };
+  const themaMapCache = {}; // Archiv-Titel -> Map(normTitel -> Makrotrend-Name) aus dem zugehörigen Radar
   let startFilter = ""; // Suchfeld auf der Event-Auswahl
   let ladendeArchivId = ""; // Deep-Link: verhindert, dass init() die Auswahl über ein ladendes Archiv rendert
 
@@ -360,6 +361,32 @@ const RADAR = (function () {
   // Regex-Sonderzeichen für die Hervorhebung entschärfen
   const escRegex = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+  // Thema (Makrotrend) je Session aus dem passenden Radar-Datensatz ableiten (Join über den Titel)
+  async function ladeThemaMap(J) {
+    const schluessel = String(J.titel || "");
+    if (themaMapCache[schluessel]) return themaMapCache[schluessel];
+    const map = new Map();
+    themaMapCache[schluessel] = map;
+    const quelle = RADAR_QUELLEN.find(r => (r.name || "").toLowerCase() === schluessel.toLowerCase());
+    if (!quelle) return map;
+    try {
+      if (!cacheQuellen[quelle.id]) { const r = await fetch(quelle.url); if (!r.ok) return map; cacheQuellen[quelle.id] = await r.json(); }
+      const d = cacheQuellen[quelle.id];
+      const makro = {}; (d.makro || []).forEach(k => makro[k.code_id] = k.name);
+      const mikroParent = {}; (d.mikro || []).forEach(m => mikroParent[m.code_id] = m.parent_id);
+      const sessThema = {};
+      (d.signale || []).forEach(g => {
+        const c = (g.codes || []).find(x => x.gewicht === "primaer") || (g.codes || [])[0];
+        if (!c) return;
+        const kId = makro[c.id] ? c.id : mikroParent[c.id];
+        if (makro[kId] && !sessThema[g.session]) sessThema[g.session] = makro[kId];
+      });
+      const norm = s => String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
+      (d.sessions || []).forEach(s => { const n = norm(s.titel); if (sessThema[s.id] && !map.has(n)) map.set(n, sessThema[s.id]); });
+    } catch (e) { }
+    return map;
+  }
+
   // Gefilterte Daten der aktuellen Archiv-Ansicht berechnen (inkl. Transkript-Snippets)
   async function archivDaten() {
     const z = archivZustand;
@@ -391,18 +418,72 @@ const RADAR = (function () {
     const aus = filt(J.aussteller || [], ["name", "branche", "stand", "beschreibung"]);
     const ws = filt(J.workshops || [], ["titel", "untertitel", "raum", "tag"]);
     const pj = filt(projekte, ["label", "name", "notiz", "erfasser", "text"]);
+    // Bereich "Transkripte": alle Mitschriften mit Thema (aus dem Radar), Kategorie (Format), Tag
+    const norm = s => String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
+    const tMap = (hatTranskripte && z.bereich === "transkripte") ? await ladeThemaMap(J) : (themaMapCache[String(J.titel || "")] || new Map());
+    let TK = null;
+    if (hatTranskripte && z.bereich === "transkripte") { try { TK = await ladeTranskripte(); } catch (e) { } }
+    let trs = prog.filter(p => p.transkript).map(p => {
+      const key = String(p.transkript).split("/").pop();
+      return { p, key, thema: tMap.get(norm(p.titel)) || "", kat: p.format || "Sonstiges",
+               offline: !TK || !!(TK.talks && TK.talks[key]) };
+    });
+    if (z.trThema) trs = trs.filter(x => (x.thema || "– ohne Zuordnung") === z.trThema);
+    if (z.trKat) trs = trs.filter(x => x.kat === z.trKat);
+    if (z.trTag) trs = trs.filter(x => (x.p.tag || "") === z.trTag);
+    const zeitVon = x => (x.p.datum || "") + " " + (x.p.start || "");
+    const sortierer = {
+      zeit: (a, b) => zeitVon(a).localeCompare(zeitVon(b)),
+      titel: (a, b) => a.p.titel.localeCompare(b.p.titel, "de"),
+      thema: (a, b) => (a.thema || "￿").localeCompare(b.thema || "￿", "de") || zeitVon(a).localeCompare(zeitVon(b)),
+      kategorie: (a, b) => a.kat.localeCompare(b.kat, "de") || zeitVon(a).localeCompare(zeitVon(b))
+    };
+    trs.sort(sortierer[z.trSort] || sortierer.zeit);
+    const alleTr = (J.programm || []).filter(p => p.transkript);
+    const trThemen = [...new Set(alleTr.map(p => tMap.get(norm(p.titel)) || "– ohne Zuordnung"))].sort((a, b) => a.localeCompare(b, "de"));
+    const trKats = [...new Set(alleTr.map(p => p.format || "Sonstiges"))].sort((a, b) => a.localeCompare(b, "de"));
+    const trTags = [...new Set(alleTr.map(p => p.tag || ""))].filter(Boolean);
     const bereiche = [["programm", `Programm (${prog.length})`, (J.programm || []).length],
+      ["transkripte", `Transkripte (${trs.length})`, alleTr.length],
       ["speaker", `Speaker (${spk.length})`, (J.speaker || []).length],
       ["aussteller", `Firmen & Aussteller (${aus.length})`, (J.aussteller || []).length],
       ["workshops", `Workshops (${ws.length})`, (J.workshops || []).length],
       ["projekt", `Mein Projekt (${pj.length})`, 1]].filter(b => b[2] > 0);
     if (bereiche.length && !bereiche.some(b => b[0] === z.bereich)) z.bereich = bereiche[0][0];
-    const nTr = (J.programm || []).filter(p => p.transkript).length;
-    return { z, jahre, J, q, hatTranskripte, prog, spk, aus, ws, pj, bereiche, nTr, nurTrTreffer, trSnippets };
+    const nTr = alleTr.length;
+    return { z, jahre, J, q, hatTranskripte, prog, spk, aus, ws, pj, bereiche, nTr, nurTrTreffer, trSnippets, trs, trThemen, trKats, trTags };
   }
 
   function inhaltHtml(D) {
-    const { z, q, prog, spk, aus, ws, pj, nurTrTreffer, trSnippets } = D;
+    const { z, q, prog, spk, aus, ws, pj, nurTrTreffer, trSnippets, trs, trThemen, trKats, trTags } = D;
+
+    // Bereich "Transkripte": alle Mitschriften, filter- und sortierbar nach Thema/Kategorie/Tag
+    const trSel = (feld, label, wert, opts) => `<label style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px">${label}
+      <select data-trf="${feld}" style="font:inherit;font-size:12.5px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 6px;max-width:230px">
+        <option value="">alle</option>${opts.map(o => `<option value="${esc(o)}" ${wert === o ? "selected" : ""}>${esc(o)}</option>`).join("")}
+      </select></label>`;
+    const trHtml = () => `
+      <div class="sessrow" style="margin-bottom:10px">
+        <div class="meta" style="gap:10px;flex-wrap:wrap">
+          ${trSel("trThema", "Thema", z.trThema, trThemen)}
+          ${trSel("trKat", "Kategorie", z.trKat, trKats)}
+          ${trSel("trTag", "Tag", z.trTag, trTags)}
+          <label style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px">Sortierung
+            <select data-trf="trSort" style="font:inherit;font-size:12.5px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 6px">
+              ${[["zeit", "Zeitlich"], ["thema", "Thema"], ["kategorie", "Kategorie"], ["titel", "Titel A–Z"]].map(([w, l]) => `<option value="${w}" ${z.trSort === w ? "selected" : ""}>${l}</option>`).join("")}
+            </select></label>
+          ${(z.trThema || z.trKat || z.trTag) ? `<button class="btn small" data-trf-reset>Filter zurücksetzen</button>` : ""}
+        </div>
+        <div class="meta"><span>Thema = Makrotrend aus dem Insight Radar (Zuordnung über den Sessiontitel) · Kategorie = Programmformat. Das Suchfeld oben durchsucht auch die Transkript-Volltexte.</span></div>
+      </div>
+      <div class="sess">${trs.map(({ p, key, thema, kat, offline }) => `<div class="sessrow">
+        <div class="t">${esc(p.titel)}</div>
+        <div class="meta">${p.tag ? `<span class="chip">${esc(p.tag)}${p.start ? " · " + esc(p.start) : ""}</span>` : ""}${p.buehne ? `<span>${esc(p.buehne)}</span>` : ""}<span class="flag">${esc(kat)}</span>${thema ? `<span class="flag">🧭 ${esc(thema)}</span>` : `<span>– ohne Themen-Zuordnung</span>`}</div>
+        ${p.speaker ? `<div class="meta"><span>${esc(p.speaker)}</span></div>` : ""}
+        ${nurTrTreffer.has(p.transkript) && trSnippets[p.transkript] ? (() => { const s = trSnippets[p.transkript]; return `<div class="meta"><span>… ${esc(s.vor)}<mark>${esc(s.treff)}</mark>${esc(s.nach)} …</span></div>`; })() : ""}
+        <div class="meta">${offline ? `<button class="chip" data-tr-lesen="${esc(key)}" style="cursor:pointer">📖 Transkript lesen (offline)</button>` : `<span class="flag">nur online</span>`}<a class="chip" href="${esc(p.transkript)}" target="_blank" rel="noopener">▶ Online öffnen ↗</a></div>
+        <div class="trpanel" id="tr-${esc(key)}" hidden></div>
+      </div>`).join("") || `<p class="empty">Keine Transkripte im aktuellen Filter.</p>`}</div>`;
 
     const progHtml = () => `<div class="sess">${prog.map(p => `<div class="sessrow">
       <div class="t">${esc(p.titel)}</div>
@@ -458,12 +539,19 @@ const RADAR = (function () {
         <div class="actions"><button class="btn small" data-pj-dl="${esc(r.id)}">Herunterladen</button><button class="btn small" data-pj-edit="${esc(r.id)}">Bearbeiten</button><button class="btn small" data-pj-del="${esc(r.id)}">Löschen</button></div>
       </div>`).join("") || `<p class="empty">Noch keine Einträge in diesem Projekt${q ? " (im aktuellen Suchfilter)" : ""}.</p>`}</div>`;
 
-    return z.bereich === "programm" ? progHtml() : z.bereich === "speaker" ? spkHtml() : z.bereich === "aussteller" ? ausHtml() : z.bereich === "projekt" ? pjHtml() : wsHtml();
+    return z.bereich === "programm" ? progHtml() : z.bereich === "transkripte" ? trHtml() : z.bereich === "speaker" ? spkHtml() : z.bereich === "aussteller" ? ausHtml() : z.bereich === "projekt" ? pjHtml() : wsHtml();
   }
 
   // Bindings nur für den Inhaltsbereich (wird bei Suche/Bereichswechsel neu aufgebaut)
   function bindInhalt(D) {
     const z = D.z;
+    // Transkript-Bereich: Filter-/Sortier-Selects + Zurücksetzen
+    $$("#archivInhalt [data-trf]").forEach(sel => sel.addEventListener("change", () => {
+      z[sel.dataset.trf] = sel.value;
+      zeichneArchivInhalt();
+    }));
+    const trReset = $("#archivInhalt [data-trf-reset]");
+    if (trReset) trReset.addEventListener("click", () => { z.trThema = z.trKat = z.trTag = ""; zeichneArchivInhalt(); });
     const pjDatei = $("#pjDatei");
     if (pjDatei) pjDatei.addEventListener("change", async () => { const n = await projDateien(pjDatei.files, "upload"); if (n) { irToast(n + " Datei(en) gespeichert"); zeichneArchivInhalt(); } });
     const pjClip = $("#pjClip"); if (pjClip) pjClip.addEventListener("click", projZwischenablage);
