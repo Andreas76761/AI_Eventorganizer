@@ -378,20 +378,44 @@ A.kontoDialog = function () {
   openModal("Konto & Daten", `
     ${u ? `<p class="hinweis" style="margin-bottom:12px">Angemeldet als <b>${esc(u.name)}</b> ${u.email ? "&lt;" + esc(u.email) + "&gt;" : ""} · Modus: ${cloud ? "Cloud (Supabase)" : "lokal (nur dieser Browser)"}</p>` : `<p class="hinweis" style="margin-bottom:12px">Nicht angemeldet · Modus: ${cloud ? "Cloud (Supabase)" : "lokal (nur dieser Browser)"}</p>`}
     <div class="knopf-reihe" style="flex-direction:column;align-items:stretch">
-      <button class="btn" onclick="A.datenExport()">${ikon("download",15)} Alle Daten als JSON exportieren (Art. 20 DSGVO)</button>
+      <button class="btn" onclick="A.datenExport()">${ikon("download",15)} Alle Daten als JSON exportieren – inkl. Dateien, Bilder &amp; Projekte (Art. 20 DSGVO)</button>
       <label class="btn datei-btn" style="text-align:center">${ikon("upload",15)} Daten aus JSON-Export importieren<input type="file" accept=".json,application/json" onchange="A.datenImport(this)"></label>
       ${cloud && u ? `<button class="btn" onclick="A.mfaEinrichtenDialog()">${ikon("schloss",15)} Zwei-Faktor-Authentifizierung (MFA) einrichten</button>` : ""}
       ${u ? `<button class="btn gefahr" onclick="A.kontoLoeschen()">${ikon("loeschen",15)} Mein Konto und meine Inhalte löschen (Art. 17 DSGVO)</button>` : ""}
       <button class="btn gefahr" onclick="A.allesLoeschen()">⚠️ Alle lokalen App-Daten dieses Browsers löschen</button>
     </div>
+    <p class="hinweis">Der Cloud-Sync (Supabase) überträgt nur den App-Zustand – Dateien, Bilder und Projekteinträge sichert der JSON-Export.</p>
     <p class="hinweis">Rechtliches: <a href="datenschutz.html" target="_blank">Datenschutz</a> · <a href="rechtliches.html" target="_blank">Impressum &amp; EU AI Act</a></p>`);
 };
 
-A.datenExport = function () {
-  const blob = new Blob([JSON.stringify(S, null, 2)], { type: "application/json" });
+function blobZuBase64(blob) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = () => rej(r.error); r.readAsDataURL(blob); });
+}
+function base64ZuBlob(b64, mime) {
+  const bin = atob(b64); const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new Blob([u8], { type: mime || "application/octet-stream" });
+}
+
+A.datenExport = async function () {
+  // Vollbackup: App-Zustand + alle Dateien/Bilder/Projekteinträge aus IndexedDB (Blobs als Base64)
+  const dateien = [];
+  try {
+    for (const r of await dbAlleDateien()) {
+      const kopie = Object.assign({}, r);
+      if (kopie.blob) {
+        kopie.blobBase64 = await blobZuBase64(kopie.blob);
+        kopie.blobTyp = kopie.blob.type || kopie.mime || "";
+        delete kopie.blob;
+      }
+      dateien.push(kopie);
+    }
+  } catch (e) { alert("Hinweis: Dateien aus IndexedDB konnten nicht gelesen werden – der Export enthält nur den App-Zustand. (" + e.message + ")"); }
+  const paket = { __format: "aimg-export/2", exportiert: new Date().toISOString(), stand: S, dateien };
+  const blob = new Blob([JSON.stringify(paket)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "ai-messe-guide-datenexport.json";
+  a.download = "ai-messe-guide-datenexport-" + new Date().toISOString().slice(0, 10) + ".json";
   a.click();
   URL.revokeObjectURL(a.href);
 };
@@ -400,18 +424,29 @@ A.datenImport = function (input) {
   const datei = input.files[0];
   if (!datei) return;
   const leser = new FileReader();
-  leser.onload = () => {
+  leser.onload = async () => {
     input.value = "";
     try {
-      const daten = JSON.parse(leser.result);
-      if (!Array.isArray(daten.events) || !Array.isArray(daten.users)) {
+      const roh = JSON.parse(leser.result);
+      const neuesFormat = roh && roh.__format === "aimg-export/2";
+      const daten = neuesFormat ? roh.stand : roh;
+      const dateien = neuesFormat && Array.isArray(roh.dateien) ? roh.dateien : [];
+      if (!daten || !Array.isArray(daten.events) || !Array.isArray(daten.users)) {
         throw new Error("Das ist keine Exportdatei des AI Messe Guide.");
       }
-      if (!confirm(`Import ersetzt die aktuellen Daten (${S.events.length} Veranstaltungen, ${S.users.length} Mitglieder) durch den Dateiinhalt (${daten.events.length} Veranstaltungen, ${daten.users.length} Mitglieder). Vorher exportieren? Abbrechen = nichts passiert.`)) return;
+      if (!confirm(`Import ersetzt die aktuellen Daten (${S.events.length} Veranstaltungen, ${S.users.length} Mitglieder) durch den Dateiinhalt (${daten.events.length} Veranstaltungen, ${daten.users.length} Mitglieder${dateien.length ? ", " + dateien.length + " Dateien/Projekteinträge" : ""}). Vorher exportieren? Abbrechen = nichts passiert.`)) return;
       localStorage.setItem(NS, JSON.stringify(daten));
       S = loadState(); // inkl. Seed-Migration, falls der Export von einer älteren Version stammt
+      let dateiFehler = 0;
+      for (const d of dateien) {
+        try {
+          const rec = Object.assign({}, d);
+          if (rec.blobBase64) { rec.blob = base64ZuBlob(rec.blobBase64, rec.blobTyp || rec.mime); delete rec.blobBase64; delete rec.blobTyp; }
+          await dbPutFile(rec);
+        } catch (e) { dateiFehler++; }
+      }
       closeModal(); render();
-      alert("Import abgeschlossen. Hinweis: Dateien/Bilder (IndexedDB) sind nicht Teil des JSON-Exports.");
+      alert("Import abgeschlossen." + (dateien.length ? ` ${dateien.length - dateiFehler} von ${dateien.length} Dateien/Projekteinträgen wiederhergestellt.` : " (Älteres Exportformat ohne Dateien – Dateien/Bilder blieben unverändert.)"));
     } catch (e) {
       alert("Import fehlgeschlagen: " + e.message);
     }

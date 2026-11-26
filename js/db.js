@@ -55,6 +55,16 @@ async function dbDeleteFile(id) {
   });
 }
 
+async function dbAlleDateien() {
+  const db = await dbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, "readonly");
+    const req = tx.objectStore(DB_STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
 async function dbGetFile(id) {
   const db = await dbOpen();
   return new Promise((resolve, reject) => {
