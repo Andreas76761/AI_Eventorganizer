@@ -347,7 +347,21 @@ const RADAR = (function () {
     try { projekte = await dbFilesForEvent(projKey(), "projekt"); } catch (e) { }
     const q = z.q.trim().toLowerCase();
     const filt = (arr, felder) => !q ? arr : arr.filter(x => felder.some(f => String(x[f] || "").toLowerCase().includes(q)));
-    const prog = filt(J.programm || [], ["titel", "speaker", "buehne", "track", "tag"]);
+    // Volltextsuche in Offline-Transkripten (falls aktiviert und geladen)
+    const hatTranskripte = (J.programm || []).some(p => p.transkript);
+    const T = z.inTranskripten && hatTranskripte ? (cacheQuellen.__transkripte || null) : null;
+    const trVolltext = p => { if (!T || !p.transkript) return ""; const t = T.talks[p.transkript.split("/").pop()]; return t ? ((t.transkript || "") + " " + (t.summary || "")).toLowerCase() : ""; };
+    const PROG_FELDER = ["titel", "speaker", "buehne", "track", "tag"];
+    const nurTrTreffer = new Set();
+    let prog;
+    if (q && T) {
+      prog = (J.programm || []).filter(p => {
+        const normal = PROG_FELDER.some(f => String(p[f] || "").toLowerCase().includes(q));
+        const tr = !normal && trVolltext(p).includes(q);
+        if (tr) nurTrTreffer.add(p.transkript);
+        return normal || tr;
+      });
+    } else prog = filt(J.programm || [], PROG_FELDER);
     const spk = filt(J.speaker || [], ["name", "firma", "position"]);
     const aus = filt(J.aussteller || [], ["name", "branche", "stand", "beschreibung"]);
     const ws = filt(J.workshops || [], ["titel", "untertitel", "raum", "tag"]);
@@ -365,7 +379,7 @@ const RADAR = (function () {
       <div class="meta">${p.tag ? `<span class="chip">${esc(p.tag)}${p.start ? " · " + esc(p.start) + (p.ende ? "–" + esc(p.ende) : "") : ""}</span>` : ""}${p.buehne ? `<span>${esc(p.buehne)}</span>` : ""}${p.track ? `<span>${esc(p.track)}</span>` : ""}${p.format ? `<span class="flag">${esc(p.format)}</span>` : ""}</div>
       ${p.speaker ? `<div class="meta"><span>${esc(p.speaker)}</span></div>` : ""}
       ${p.inhalt ? `<div class="meta"><span>${esc(p.inhalt)}</span></div>` : ""}
-      ${p.transkript ? (() => { const lbl = p.transkript.split("/").pop(); return `<div class="meta"><button class="chip" data-tr-lesen="${esc(lbl)}" style="cursor:pointer">📖 Transkript lesen (offline)</button><a class="chip" href="${esc(p.transkript)}" target="_blank" rel="noopener">▶ Online öffnen ↗</a></div><div class="trpanel" id="tr-${esc(lbl)}" hidden></div>`; })() : ""}
+      ${p.transkript ? (() => { const lbl = p.transkript.split("/").pop(); return `<div class="meta"><button class="chip" data-tr-lesen="${esc(lbl)}" style="cursor:pointer">📖 Transkript lesen (offline)</button><a class="chip" href="${esc(p.transkript)}" target="_blank" rel="noopener">▶ Online öffnen ↗</a>${nurTrTreffer.has(p.transkript) ? `<span class="flag">Treffer im Transkript</span>` : ""}</div><div class="trpanel" id="tr-${esc(lbl)}" hidden></div>`; })() : ""}
     </div>`).join("") || `<p class="empty">Keine Treffer.</p>`}</div>`;
 
     const spkHtml = () => `<div class="firmen">${spk.map(s => `<div class="firma"><b>${esc(s.name)}</b>
@@ -427,7 +441,8 @@ const RADAR = (function () {
         ${(J.links || []).length ? `<div><h3>Unterlagen &amp; Quellen</h3><div class="related">${J.links.map(l => `<a class="chip" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join("")}</div></div>` : ""}
       </div>
       ${bereiche.length ? `<div class="bar"><span class="chipline">${bereiche.map(b => `<button class="btn small${z.bereich === b[0] ? " on" : ""}" data-bereich="${b[0]}">${esc(b[1])}</button>`).join("")}</span>
-        <div class="grow"><input type="search" id="archivSuche" placeholder="Suchen (Titel, Speaker, Firma, Bühne) …" value="${esc(z.q)}"></div></div>
+        <div class="grow"><input type="search" id="archivSuche" placeholder="Suchen (Titel, Speaker, Firma, Bühne) …" value="${esc(z.q)}"></div>
+        ${hatTranskripte ? `<label title="Volltextsuche über alle offline gesicherten Vortrags-Mitschriften"><input type="checkbox" id="trSuche" ${z.inTranskripten ? "checked" : ""}> auch in Transkripten</label>` : ""}</div>
       <div class="card">${z.bereich === "programm" ? progHtml() : z.bereich === "speaker" ? spkHtml() : z.bereich === "aussteller" ? ausHtml() : z.bereich === "projekt" ? pjHtml() : wsHtml()}</div>` :
       `<div class="card"><p class="empty">Für ${esc(String(J.jahr))} ist kein detailliertes Programm mehr öffentlich verfügbar – die Eckdaten und Quellen oben fassen zusammen, was dokumentiert ist.</p></div>`}
       <footer class="irfoot"><p><b>Quelle:</b> ${esc(ARCHIV.quelle || "")}</p></footer>
@@ -449,6 +464,15 @@ const RADAR = (function () {
       irToast("Information gespeichert"); zeichneArchiv();
     });
     const pjForm = $("#pjFormular"); if (pjForm) pjForm.addEventListener("paste", projEinfuegeEvent);
+    const trS = $("#trSuche");
+    if (trS) trS.addEventListener("change", async () => {
+      z.inTranskripten = trS.checked;
+      if (trS.checked && !cacheQuellen.__transkripte) {
+        irToast("Lade Transkripte für die Volltextsuche …");
+        try { await ladeTranskripte(); } catch (e) { irToast("Transkripte nicht ladbar: " + e.message); z.inTranskripten = false; }
+      }
+      zeichneArchiv();
+    });
     const pjEx = $("#pjExport"); if (pjEx) pjEx.addEventListener("click", projExport);
     const pjIm = $("#pjImport"); if (pjIm) pjIm.addEventListener("change", () => projImport(pjIm.files[0]));
     $$("[data-tr-lesen]").forEach(b => b.addEventListener("click", () => transkriptToggle(b.dataset.trLesen, b)));

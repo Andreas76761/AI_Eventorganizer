@@ -178,7 +178,7 @@ Das Register **Insight Radar** zeigt, welche Themen auf einer Veranstaltung wirk
 ## 9. Konto, Datenschutz & Sicherheit
 
 Über **⚙ Konto & Daten** (Seitenleiste):
-- **📤 Datenexport:** sämtliche App-Daten als JSON (DSGVO Art. 20).
+- **📤 Datenexport:** sämtliche App-Daten als JSON (DSGVO Art. 20) – inklusive Dateien, Bilder und Projekteinträge aus IndexedDB; der Import stellt alles wieder her. Hinweis: Der Cloud-Sync überträgt nur den App-Zustand, Binärdaten sichert der JSON-Export.
 - **🛡 MFA einrichten** (Cloud-Modus): QR-Code mit Authenticator-App scannen, Code bestätigen – ab dann verlangt jeder Login den zweiten Faktor.
 - **🗑 Konto löschen:** entfernt dein Profil und alle deine Inhalte (Beiträge, Nachrichten, Mitfahrten, eigene Dateien); im Cloud-Modus zusätzlich das Supabase-Konto (DSGVO Art. 17). Zweifache Sicherheitsabfrage.
 - **⚠️ Alle lokalen Daten löschen:** setzt die App in den Auslieferungszustand zurück.
@@ -193,4 +193,4 @@ Rechtliche Informationen: „Datenschutz“ und „Impressum / EU AI Act“ unte
 - **Daten weg nach Browserwechsel?** Lokale Daten gelten pro Browser und Gerät. Für geräteübergreifende Nutzung den Cloud-Modus einrichten (README, Abschnitt Veröffentlichung).
 - **Code beim Demo-Login vertippt?** Einfach erneut „Anmelden“ wählen – es wird ein neuer Code erzeugt.
 - **Speicherplatz:** Browser begrenzen IndexedDB (meist mehrere GB). Sehr große Videodateien besser extern ablegen und in Notizen verlinken.
-- **Backup:** regelmäßig ⚙ → Datenexport nutzen; die JSON-Datei sichert die komplette Planung (ohne Binärdateien).
+- **Backup:** regelmäßig ⚙ → Datenexport nutzen; die JSON-Datei sichert die komplette Planung **inklusive aller Dateien, Bilder und Projekteinträge** (seit 26.11.2026) und lässt sich auf jedem Gerät wieder importieren.
