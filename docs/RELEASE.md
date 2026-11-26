@@ -2,6 +2,7 @@
 
 ## Version 1.2 · 26. November 2026
 
+- **Jahresfilter:** Dashboard und „Kosten & Budget" lassen sich per Chip auf ein Jahr umschalten (Alle Jahre / 2026 / 2027 …); Kennzahlen, Kostenaufteilung je Veranstaltung und CSV-Export (Dateiname inklusive) folgen der Auswahl. Titel und Oberfläche sind nicht mehr auf 2026 festgelegt – die App läuft jahresübergreifend
 - **Vollbackup:** Der JSON-Export unter „Konto & Daten“ sichert jetzt auch alle Dateien, Bilder und Projekteinträge (IndexedDB) und stellt sie beim Import wieder her (Format `aimg-export/2`, alte Exporte bleiben lesbar); zusätzlich **ZIP-Backup** (deutlich kompakter, Dateien nativ statt Base64) mit Export und Import
 - **Cloud-Datei-Backup:** angemeldete Nutzer sichern Dateien, Bilder und Projekteinträge per Knopf in ihren privaten Supabase-Storage-Ordner und stellen sie auf jedem Gerät wieder her (RLS: nur der eigene Ordner)
 - **Sync-Konfliktschutz:** der Zustands-Sync erkennt, wenn ein anderes Gerät zwischenzeitlich gespeichert hat (Versionszähler + Gerätekennung), und fragt nach statt still zu überschreiben

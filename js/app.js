@@ -126,13 +126,13 @@ function kostenZeilen(evId) {
   return zeilen;
 }
 function kostenSumme(evId) { return kostenZeilen(evId).reduce((s, z) => s + z.betrag, 0); }
-function kostenNachKategorie() {
+function kostenNachKategorie(events = S.events) {
   const sums = {};
   KOSTEN_KATEGORIEN.forEach(k => sums[k] = 0);
-  S.events.forEach(e => kostenZeilen(e.id).forEach(z => { sums[z.kategorie] = (sums[z.kategorie] || 0) + z.betrag; }));
+  events.forEach(e => kostenZeilen(e.id).forEach(z => { sums[z.kategorie] = (sums[z.kategorie] || 0) + z.betrag; }));
   return sums;
 }
-function gesamtKosten() { return S.events.reduce((s, e) => s + kostenSumme(e.id), 0); }
+function gesamtKosten(events = S.events) { return events.reduce((s, e) => s + kostenSumme(e.id), 0); }
 function kostenProEventNachKategorie(evId) {
   const s = {};
   KOSTEN_KATEGORIEN.forEach(k => s[k] = 0);
@@ -679,25 +679,49 @@ function render() {
 
 /* ---------------- Ansicht: Dashboard ---------------- */
 
+/* ---------------- Jahresfilter (Dashboard & Kosten) ---------------- */
+// Sitzungs-Einstellung (nicht Teil des synchronisierten Zustands):
+// Veranstaltungen laufen inzwischen über mehrere Jahre, Kennzahlen bleiben so pro Jahr lesbar.
+let jahrFilter = "alle";
+A.jahrWahl = function (j) { jahrFilter = String(j); render(); };
+function eventJahre() {
+  return [...new Set(S.events.map(e => String(e.start || "").slice(0, 4)).filter(j => /^\d{4}$/.test(j)))].sort();
+}
+function eventsImJahr() {
+  if (jahrFilter === "alle" || !eventJahre().includes(jahrFilter)) return S.events;
+  return S.events.filter(e => String(e.start || "").startsWith(jahrFilter));
+}
+function jahrText() { return jahrFilter === "alle" ? "alle Jahre" : jahrFilter; }
+function jahrChips() {
+  const jahre = eventJahre();
+  if (jahre.length < 2) return "";
+  return `<div class="chip-reihe" style="margin-bottom:14px">
+    ${[["alle", "Alle Jahre"], ...jahre.map(j => [j, j])].map(([w, l]) =>
+      `<span class="chip waehlbar${jahrFilter === w ? " gewaehlt" : ""}" style="padding:4px 12px" onclick="A.jahrWahl('${w}')">${l}</span>`).join("")}
+  </div>`;
+}
+
 function vDashboard() {
   const jetzt = heute();
-  const kommend = S.events.filter(e => e.end >= jetzt && statusVon(e.id) !== "Abgesagt").sort((a, b) => a.start.localeCompare(b.start));
-  const angemeldet = S.events.filter(e => ["Angemeldet", "Bezahlt", "Besucht"].includes(statusVon(e.id)));
+  const evs = eventsImJahr();
+  const kommend = evs.filter(e => e.end >= jetzt && statusVon(e.id) !== "Abgesagt").sort((a, b) => a.start.localeCompare(b.start));
+  const angemeldet = evs.filter(e => ["Angemeldet", "Bezahlt", "Besucht"].includes(statusVon(e.id)));
   const naechste = kommend[0];
   let countdown = "";
   if (naechste) {
     const tage = Math.ceil((new Date(naechste.start) - new Date(jetzt)) / 86400000);
     countdown = tage <= 0 ? "läuft gerade!" : "in " + tage + " Tag" + (tage === 1 ? "" : "en");
   }
-  const sums = kostenNachKategorie();
+  const sums = kostenNachKategorie(evs);
   const max = Math.max(...Object.values(sums), 1);
 
   return `
-  <div class="kopf"><h1>Dashboard</h1><p class="unter">Deine AI-Messen, Konferenzen &amp; Reisen 2026 im Überblick</p></div>
+  <div class="kopf"><h1>Dashboard</h1><p class="unter">Deine AI-Messen, Konferenzen &amp; Reisen im Überblick</p></div>
+  ${jahrChips()}
   <div class="kpi-reihe">
-    <div class="kpi"><div class="kpi-wert">${S.events.length}</div><div class="kpi-label">Veranstaltungen</div></div>
+    <div class="kpi"><div class="kpi-wert">${evs.length}</div><div class="kpi-label">Veranstaltungen (${jahrText()})</div></div>
     <div class="kpi"><div class="kpi-wert">${angemeldet.length}</div><div class="kpi-label">Angemeldet / besucht</div></div>
-    <div class="kpi"><div class="kpi-wert">${fmtEUR(gesamtKosten())}</div><div class="kpi-label">Gesamtkosten 2026</div></div>
+    <div class="kpi"><div class="kpi-wert">${fmtEUR(gesamtKosten(evs))}</div><div class="kpi-label">Gesamtkosten (${jahrText()})</div></div>
     <div class="kpi akzent"><div class="kpi-wert">${naechste ? esc(naechste.kurz || naechste.name) : "–"}</div><div class="kpi-label">${naechste ? "Nächste Veranstaltung " + countdown : "Keine anstehend"}</div></div>
   </div>
   <div class="kpi-reihe">
@@ -742,7 +766,8 @@ function vDashboard() {
 }
 
 function vKostenAufteilung() {
-  const mitKosten = S.events
+  const evs = eventsImJahr();
+  const mitKosten = evs
     .map(e => ({ e, s: kostenProEventNachKategorie(e.id), summe: kostenSumme(e.id) }))
     .filter(x => x.summe > 0)
     .sort((a, b) => b.summe - a.summe);
@@ -768,7 +793,7 @@ function vKostenAufteilung() {
         <tr class="summen-zeile">
           <td><b>Summe</b></td>
           ${KOSTEN_KATEGORIEN.map(k => `<td class="rechts"><b>${fmtEUR(tot[k])}</b></td>`).join("")}
-          <td class="rechts"><b>${fmtEUR(gesamtKosten())}</b></td>
+          <td class="rechts"><b>${fmtEUR(gesamtKosten(evs))}</b></td>
         </tr>
       </tbody>
     </table>
@@ -919,7 +944,7 @@ function vAuswahl() {
   const jaSumme = ja.reduce((s, k) => s + (Number(kandidatKosten(k)) || 0), 0);
   return `
   <div class="kopf"><h1>Auswahlliste AI-Veranstaltungen</h1>
-    <p class="unter">2025 &amp; 2026 – aus Web-Recherche und deinem Google-Kalender. Teilnahme wählen, Kosten anpassen – „Ja" übernimmt die Veranstaltung in die App.</p></div>
+    <p class="unter">2025 bis 2027 – aus Web-Recherche und deinem Google-Kalender. Teilnahme wählen, Kosten anpassen – „Ja" übernimmt die Veranstaltung in die App.</p></div>
   <div class="kpi-reihe">
     <div class="kpi"><div class="kpi-wert">${ja.length}</div><div class="kpi-label">Teilnahme: Ja</div></div>
     <div class="kpi"><div class="kpi-wert" style="color:#fbbf24">${vielleicht.length}</div><div class="kpi-label">Vielleicht</div></div>
@@ -1344,14 +1369,16 @@ A.eventLoeschen = function (evId) {
 /* ---------------- Ansicht: Kosten (global) ---------------- */
 
 function vKosten() {
-  const sums = kostenNachKategorie();
+  const evs = eventsImJahr();
+  const sums = kostenNachKategorie(evs);
   const max = Math.max(...Object.values(sums), 1);
-  const gesamt = gesamtKosten();
-  const mitKosten = S.events.map(e => ({ e, zeilen: kostenZeilen(e.id), summe: kostenSumme(e.id) })).filter(x => x.zeilen.length).sort((a, b) => b.summe - a.summe);
+  const gesamt = gesamtKosten(evs);
+  const mitKosten = evs.map(e => ({ e, zeilen: kostenZeilen(e.id), summe: kostenSumme(e.id) })).filter(x => x.zeilen.length).sort((a, b) => b.summe - a.summe);
   return `
   <div class="kopf"><h1>Kosten &amp; Budget</h1><p class="unter">Eintritt, Fahrt, Übernachtung und Verpflegung über alle Veranstaltungen</p></div>
+  ${jahrChips()}
   <div class="kpi-reihe">
-    <div class="kpi akzent"><div class="kpi-wert">${fmtEUR(gesamt)}</div><div class="kpi-label">Gesamtkosten</div></div>
+    <div class="kpi akzent"><div class="kpi-wert">${fmtEUR(gesamt)}</div><div class="kpi-label">Gesamtkosten (${jahrText()})</div></div>
     ${KOSTEN_KATEGORIEN.slice(0, 3).map(k => `<div class="kpi"><div class="kpi-wert">${fmtEUR(sums[k])}</div><div class="kpi-label">${k}</div></div>`).join("")}
   </div>
   <div class="karte">
@@ -1379,13 +1406,13 @@ function vKosten() {
 A.csvExport = function () {
   const zahl = n => n == null ? "" : String(n).replace(".", ",");
   const zeilen = [["Veranstaltung", "Kategorie", "Beschreibung", "Datum", "Netto (EUR)", "USt (EUR)", "USt-Satz (%)", "Brutto (EUR)", "Währung", "Betrag Original", "Kurs"]];
-  S.events.forEach(e => kostenZeilen(e.id).forEach(z =>
+  eventsImJahr().forEach(e => kostenZeilen(e.id).forEach(z =>
     zeilen.push([e.name, z.kategorie, z.beschreibung, z.datum, zahl(z.netto), zahl(z.ust), zahl(z.ustSatz), zahl(z.betrag), z.waehrung || "EUR", zahl(z.betragOriginal ?? z.betrag), zahl(z.kurs ?? 1)])));
   const csv = zeilen.map(r => r.map(c => '"' + String(c ?? "").replace(/"/g, '""') + '"').join(";")).join("\r\n");
   const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "ai-messe-kosten-2026.csv";
+  a.download = "ai-messe-kosten-" + (jahrFilter === "alle" ? "alle-jahre" : jahrFilter) + ".csv";
   a.click();
   URL.revokeObjectURL(a.href);
 };
