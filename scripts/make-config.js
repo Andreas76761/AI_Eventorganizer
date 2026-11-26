@@ -1,8 +1,10 @@
 // Vercel-Build: erzeugt js/config.js aus Umgebungsvariablen (SUPABASE_URL, SUPABASE_ANON_KEY).
 // Lokal bleibt die gitignorierte js/config.js maßgeblich; ohne Env-Variablen läuft die App im Lokalmodus.
 const fs = require("fs");
-const url = process.env.SUPABASE_URL;
-const key = process.env.SUPABASE_ANON_KEY;
+// BOM/Whitespace entfernen (kann je nach Shell beim Setzen der Variable mitkommen)
+const sauber = v => (v || "").replace(/^﻿/, "").trim();
+const url = sauber(process.env.SUPABASE_URL);
+const key = sauber(process.env.SUPABASE_ANON_KEY);
 if (!url || !key) {
   console.log("make-config: SUPABASE_URL/SUPABASE_ANON_KEY nicht gesetzt – Deployment läuft im Lokalmodus.");
   process.exit(0);
