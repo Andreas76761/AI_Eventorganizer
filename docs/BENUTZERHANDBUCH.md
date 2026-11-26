@@ -165,6 +165,10 @@ Das Register **Insight Radar** zeigt, welche Themen auf einer Veranstaltung wirk
 
 **Filter** (Absenderrolle, Beitragsart, Evidenzgrad, Tag, Track) wirken live auf Zählung, Score und Ringe – so siehst du z. B., welche Trends übrig bleiben, wenn nur **Anwender**-Sessions zählen. ⚠-Markierungen kennzeichnen unsichere Zuordnungen, „Paraphrase“ nicht wörtlich auffindbare Zitate.
 
+**Event-Archive (nach Jahren getrennt):** Auf der Event-Auswahl findest du zusätzlich Archive je Veranstaltung mit Jahres-Tabs 2024 · 2025 · 2026, Eckdaten, Quellen-Links und einer Live-Suche über alle Bereiche:
+- **AI Week Frankfurt – Archiv:** 2026 mit komplettem Programm – bei 124 Vorträgen führt **„▶ Transkript & Summary“** direkt zum Mitschnitt-Text (Original + Übersetzung auf phont.ai) –, dazu 178 Speaker, 22 Aussteller mit Standnummern/Websites und die Workshops; 2025 und 2024 mit Highlights (Aftermovie, Boardroom, Expo) und allem, was noch öffentlich dokumentiert ist
+- **WeAreDevelopers World Congress – Archiv:** 2026 mit allen 241 Sessions (Tag 0–2, Bühnen, Tracks) und 270 Speakern; 2025 und 2024 mit Eckdaten, After-Movies und Recaps
+
 ## 9. Konto, Datenschutz & Sicherheit
 
 Über **⚙ Konto & Daten** (Seitenleiste):

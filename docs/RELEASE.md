@@ -9,6 +9,9 @@
   - Ansichten **Sessions & Firmen** (Vortrags- und Ausstellerverzeichnis), **Alle Trends** (Tabelle), **Suche** (Volltext über Aussagen, Zitate, Speaker, Firmen), **Methodenblatt**
   - **Live-Filter** (Absenderrolle, Beitragsart, Evidenz, Tag, Track) rechnen Score und Ringe neu
   - **Import** weiterer Events als JSON-Export oder generierte Radar-HTML; Datensätze bleiben lokal (IndexedDB)
+- **Event-Archive im Insight Radar** (26.11.2026) – je Event nach Jahren getrennt (2024 · 2025 · 2026), mit Jahres-Tabs, Bereichs-Filter und Live-Suche:
+  - **AI Week Frankfurt:** 2026 mit vollem Programm (188 Punkte, **124 Vorträge mit Transkript- & Summary-Link** auf phont.ai), 178 Speakern, 22 Ausstellern mit Standnummern und Websites sowie 31 Workshops; 2025/2024 mit Eckdaten, Highlights und Quellen-Links (Recap, Aftermovie, Fotos)
+  - **WeAreDevelopers World Congress:** 2026 mit 241 Sessions und 270 Speakern aus der Agenda (Keynote Thomas Dohmke), 2025/2024 mit Eckdaten (15.000 Teilnehmer, ~500 Talks), After-Movies und Recaps
 
 ## Daten-Update · 21. November 2026 (Seed v6)
 

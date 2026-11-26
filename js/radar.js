@@ -7,13 +7,21 @@ const RADAR_QUELLEN = [
   { id: "aiw26", url: "data/radar-aiw26.json", name: "AI Week Frankfurt 2026", termin: "26.–30.10.2026", ort: "Frankfurt", info: "115 Sessions · 1.053 Signale · 13 Makro- / 91 Mikrotrends", stand: "06.11.2026" }
 ];
 
+// Event-Archive: Programm, Transkripte, Speaker, Aussteller – nach Jahren getrennt (recherchiert 26.11.2026)
+const ARCHIV_QUELLEN = [
+  { id: "aiw", url: "data/aiw-archiv.json", name: "AI Week Frankfurt – Archiv", zeitraum: "2024 · 2025 · 2026", info: "Programm mit Transkript-Links (124 Talks 2026), 178 Speaker, 22 Aussteller mit Ständen, Workshops, Fotos & Recaps" },
+  { id: "wad", url: "data/wad-archiv.json", name: "WeAreDevelopers World Congress – Archiv", zeitraum: "2024 · 2025 · 2026", info: "241 Sessions und 270 Speaker (2026) aus der Agenda, Keynotes, After-Movies & Recaps der Vorjahre" }
+];
+
 const RADAR = (function () {
   "use strict";
 
   let ROOT = null;        // #ir-wrap der aktuellen Ansicht
-  let DATA = null;        // geöffneter Datensatz
+  let DATA = null;        // geöffneter Radar-Datensatz
+  let ARCHIV = null;      // geöffnetes Event-Archiv
   let aktiveQuelle = "";  // Beschriftung der Quelle (für Zurück-Leiste)
   const cacheQuellen = {}; // gefetchte Built-in-Datensätze
+  const archivZustand = { jahr: null, bereich: "programm", q: "" };
 
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const fmt = n => Number(n).toLocaleString("de-DE", { maximumFractionDigits: 1 });
@@ -39,6 +47,7 @@ const RADAR = (function () {
     if (!ROOT) return;
     ROOT.classList.toggle("dunkel", istDunkel());
     if (DATA) { startViewer(); return; }
+    if (ARCHIV) { zeichneArchiv(); return; }
     let importe = [];
     try { importe = await dbFilesForEvent("__radar__", "radar"); } catch (e) { /* IDB nicht verfügbar */ }
     if (!ROOT.isConnected) return;
@@ -55,6 +64,12 @@ const RADAR = (function () {
           <p>${esc(q.info)}</p>
           <div class="aktion"><button class="btn" data-quelle="${esc(q.id)}">Radar öffnen</button></div>
         </div>`).join("")}
+        ${ARCHIV_QUELLEN.map(q => `<div class="startkarte">
+          <h3>${esc(q.name)}</h3>
+          <div class="meta">${esc(q.zeitraum)}</div>
+          <p>${esc(q.info)}</p>
+          <div class="aktion"><button class="btn" data-archiv="${esc(q.id)}">Archiv öffnen</button></div>
+        </div>`).join("")}
         ${importe.map(r => `<div class="startkarte">
           <h3>${esc(r.name || r.id)}</h3>
           <div class="meta">Import · Stand ${esc((r.datum || "").slice(0, 10))}</div>
@@ -70,6 +85,7 @@ const RADAR = (function () {
       </div>
     </div>`;
     $$("[data-quelle]").forEach(b => b.addEventListener("click", () => oeffneQuelle(b.dataset.quelle)));
+    $$("[data-archiv]").forEach(b => b.addEventListener("click", () => oeffneArchiv(b.dataset.archiv)));
     $$("[data-import]").forEach(b => b.addEventListener("click", () => oeffneImport(b.dataset.import)));
     $$("[data-loesch]").forEach(b => b.addEventListener("click", async () => {
       if (!confirm("Diesen importierten Radar-Datensatz entfernen?")) return;
@@ -124,7 +140,92 @@ const RADAR = (function () {
     } catch (e) { irToast("Import fehlgeschlagen: " + e.message); }
   }
 
-  function schliessen() { DATA = null; aktiveQuelle = ""; init(); }
+  function schliessen() { DATA = null; ARCHIV = null; aktiveQuelle = ""; init(); }
+
+  /* ================= Event-Archiv (Programm, Transkripte, Speaker, Aussteller) ================= */
+
+  async function oeffneArchiv(id) {
+    const q = ARCHIV_QUELLEN.find(x => x.id === id); if (!q) return;
+    try {
+      if (!cacheQuellen["archiv_" + id]) {
+        irToast("Lade Archiv …");
+        const resp = await fetch(q.url);
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        cacheQuellen["archiv_" + id] = await resp.json();
+      }
+      ARCHIV = cacheQuellen["archiv_" + id]; aktiveQuelle = q.name;
+      const jahre = ARCHIV.jahre.map(j => j.jahr).sort((a, b) => b - a);
+      archivZustand.jahr = jahre[0]; archivZustand.bereich = "programm"; archivZustand.q = "";
+      zeichneArchiv();
+    } catch (e) { irToast("Archiv konnte nicht geladen werden: " + e.message); }
+  }
+
+  function zeichneArchiv() {
+    const z = archivZustand;
+    const jahre = ARCHIV.jahre.slice().sort((a, b) => b.jahr - a.jahr);
+    const J = jahre.find(j => j.jahr === z.jahr) || jahre[0]; z.jahr = J.jahr;
+    const q = z.q.trim().toLowerCase();
+    const filt = (arr, felder) => !q ? arr : arr.filter(x => felder.some(f => String(x[f] || "").toLowerCase().includes(q)));
+    const prog = filt(J.programm || [], ["titel", "speaker", "buehne", "track", "tag"]);
+    const spk = filt(J.speaker || [], ["name", "firma", "position"]);
+    const aus = filt(J.aussteller || [], ["name", "branche", "stand", "beschreibung"]);
+    const ws = filt(J.workshops || [], ["titel", "untertitel", "raum", "tag"]);
+    const bereiche = [["programm", `Programm (${prog.length})`, (J.programm || []).length],
+      ["speaker", `Speaker (${spk.length})`, (J.speaker || []).length],
+      ["aussteller", `Aussteller (${aus.length})`, (J.aussteller || []).length],
+      ["workshops", `Workshops (${ws.length})`, (J.workshops || []).length]].filter(b => b[2] > 0);
+    if (bereiche.length && !bereiche.some(b => b[0] === z.bereich)) z.bereich = bereiche[0][0];
+    const nTr = (J.programm || []).filter(p => p.transkript).length;
+
+    const progHtml = () => `<div class="sess">${prog.map(p => `<div class="sessrow">
+      <div class="t">${esc(p.titel)}</div>
+      <div class="meta">${p.tag ? `<span class="chip">${esc(p.tag)}${p.start ? " · " + esc(p.start) + (p.ende ? "–" + esc(p.ende) : "") : ""}</span>` : ""}${p.buehne ? `<span>${esc(p.buehne)}</span>` : ""}${p.track ? `<span>${esc(p.track)}</span>` : ""}${p.format ? `<span class="flag">${esc(p.format)}</span>` : ""}</div>
+      ${p.speaker ? `<div class="meta"><span>${esc(p.speaker)}</span></div>` : ""}
+      ${p.transkript ? `<div class="meta"><a class="chip" href="${esc(p.transkript)}" target="_blank" rel="noopener">▶ Transkript &amp; Summary ↗</a></div>` : ""}
+    </div>`).join("") || `<p class="empty">Keine Treffer.</p>`}</div>`;
+
+    const spkHtml = () => `<div class="firmen">${spk.map(s => `<div class="firma"><b>${esc(s.name)}</b>
+      <small>${esc(s.position)}${s.firma ? (s.position ? " · " : "") + esc(s.firma) : ""}</small>
+      ${s.bio ? `<small>${esc(s.bio)}</small>` : ""}
+      ${s.linkedin ? `<div><a class="chip" href="${esc(s.linkedin)}" target="_blank" rel="noopener">LinkedIn ↗</a></div>` : ""}
+    </div>`).join("") || `<p class="empty">Keine Treffer.</p>`}</div>`;
+
+    const ausHtml = () => `<div class="firmen">${aus.map(a => `<div class="firma"><b>${esc(a.name)}</b>
+      <small>${a.stand ? "Stand " + esc(a.stand) : ""}${a.branche ? (a.stand ? " · " : "") + esc(a.branche) : ""}${a.tier ? " · " + esc(a.tier) : ""}</small>
+      ${a.beschreibung ? `<small>${esc(a.beschreibung)}</small>` : ""}
+      ${a.website ? `<div><a class="chip" href="${esc(a.website)}" target="_blank" rel="noopener">Website ↗</a></div>` : ""}
+    </div>`).join("") || `<p class="empty">Keine Treffer.</p>`}</div>`;
+
+    const wsHtml = () => `<div class="sess">${ws.map(w => `<div class="sessrow">
+      <div class="t">${esc(w.titel)}</div>
+      <div class="meta">${w.tag ? `<span class="chip">${esc(w.tag)}${w.start ? " · " + esc(w.start) + (w.ende ? "–" + esc(w.ende) : "") : ""}</span>` : ""}${w.raum ? `<span>${esc(w.raum)}</span>` : ""}</div>
+      ${w.untertitel ? `<div class="meta"><span>${esc(w.untertitel)}</span></div>` : ""}
+    </div>`).join("") || `<p class="empty">Keine Treffer.</p>`}</div>`;
+
+    ROOT.innerHTML = `<div class="wrap">
+      <div class="chipline" style="margin-bottom:10px"><button class="btn small" id="irZurueck">← Anderes Event wählen</button><span class="chip">${esc(aktiveQuelle)}</span><span class="chip">Stand ${esc(ARCHIV.stand || "")}</span></div>
+      <header class="top"><div>
+        <div class="brand">Event-Archiv</div>
+        <h1>${esc(J.titel)}</h1>
+        <div class="eyebrow"><span>${esc(J.termin)}</span><span>${esc(J.ort)}</span><span>${esc(J.veranstalter || "")}</span>${nTr ? `<span>${nTr} Vorträge mit Transkript</span>` : ""}</div>
+      </div></header>
+      <nav class="views" aria-label="Jahre">${jahre.map(j => `<button class="btn${j.jahr === z.jahr ? " on" : ""}" data-jahr="${j.jahr}">${j.jahr}</button>`).join("")}</nav>
+      <div class="card" style="margin-bottom:18px">
+        <div><h3>Eckdaten ${esc(String(J.jahr))}</h3><ul style="margin:0;padding-left:20px;display:grid;gap:3px">${(J.fakten || []).map(f => `<li>${esc(f)}</li>`).join("")}</ul></div>
+        ${(J.links || []).length ? `<div><h3>Unterlagen &amp; Quellen</h3><div class="related">${J.links.map(l => `<a class="chip" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join("")}</div></div>` : ""}
+      </div>
+      ${bereiche.length ? `<div class="bar"><span class="chipline">${bereiche.map(b => `<button class="btn small${z.bereich === b[0] ? " on" : ""}" data-bereich="${b[0]}">${esc(b[1])}</button>`).join("")}</span>
+        <div class="grow"><input type="search" id="archivSuche" placeholder="Suchen (Titel, Speaker, Firma, Bühne) …" value="${esc(z.q)}"></div></div>
+      <div class="card">${z.bereich === "programm" ? progHtml() : z.bereich === "speaker" ? spkHtml() : z.bereich === "aussteller" ? ausHtml() : wsHtml()}</div>` :
+      `<div class="card"><p class="empty">Für ${esc(String(J.jahr))} ist kein detailliertes Programm mehr öffentlich verfügbar – die Eckdaten und Quellen oben fassen zusammen, was dokumentiert ist.</p></div>`}
+      <footer class="irfoot"><p><b>Quelle:</b> ${esc(ARCHIV.quelle || "")}</p></footer>
+    </div>`;
+    $("#irZurueck").addEventListener("click", schliessen);
+    $$("[data-jahr]").forEach(b => b.addEventListener("click", () => { z.jahr = parseInt(b.dataset.jahr, 10); z.q = ""; zeichneArchiv(); }));
+    $$("[data-bereich]").forEach(b => b.addEventListener("click", () => { z.bereich = b.dataset.bereich; zeichneArchiv(); }));
+    const su = $("#archivSuche");
+    if (su) su.addEventListener("input", () => { z.q = su.value; const pos = su.selectionStart; zeichneArchiv(); const su2 = $("#archivSuche"); if (su2) { su2.focus(); su2.setSelectionRange(pos, pos); } });
+  }
 
   /* ================= Viewer (Port des Event Insight Radar) ================= */
 
@@ -606,6 +707,6 @@ const RADAR = (function () {
     })();
   }
 
-  return { init, oeffneQuelle, oeffneImport, importDatei, schliessen };
+  return { init, oeffneQuelle, oeffneImport, oeffneArchiv, importDatei, schliessen };
 })();
 window.RADAR = RADAR;
