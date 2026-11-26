@@ -16,7 +16,13 @@ const ARCHIV_QUELLEN = [
   { id: "roai", url: "data/roai-archiv.json", name: "Rise of AI Conference – Archiv", zeitraum: "2025 · 2026", info: "10. Ausgabe 2026 im Humboldt Carré (Meta + Applied AI Stage); 2025 „Good news from Europe“ mit Wissing", eventIds: { 2026: "ev_roai26" } },
   { id: "bdaiw", url: "data/bdaiw-archiv.json", name: "Big Data & AI World Frankfurt – Archiv", zeitraum: "2025 · 2026", info: "Tech Show Frankfurt: 150+ Sessions auf 7 Bühnen, BARC-Keynotes, Speaker-Verzeichnis; 2025 mit 7.000+ Besuchern", eventIds: { 2026: "ev_bdaiw26" } },
   { id: "aidaq", url: "data/aidaq-archiv.json", name: "AIDAQ (Bitkom) – Archiv", zeitraum: "2025 · 2026", info: "2026: 2.500+ Teilnehmer, 220 Speaker, 140 Sessions, Keynote Dorothee Bär, Schirmherrschaft BMFTR", eventIds: { 2026: "ev_bdai26" } },
-  { id: "bp", url: "data/bp-archiv.json", name: "Bits & Pretzels – Archiv", zeitraum: "2025 · 2026", info: "2026 „Human after all“ mit Trevor Noah & Steven Bartlett; 2025 „Connecting Europe“ mit 21.000 Investorengesprächen", eventIds: { 2026: "ev_bp26" } }
+  { id: "bp", url: "data/bp-archiv.json", name: "Bits & Pretzels – Archiv", zeitraum: "2025 · 2026", info: "2026 „Human after all“ mit Trevor Noah & Steven Bartlett; 2025 „Connecting Europe“ mit 21.000 Investorengesprächen", eventIds: { 2026: "ev_bp26" } },
+  { id: "dld", url: "data/dld-archiv.json", name: "DLD Munich – Archiv", zeitraum: "2025 · 2026", info: "2026: 200+ Speaker (Whittaker, Russell, Vestager …), alle Talks als Video; 2025: 20-Jahre-Jubiläum", eventIds: { 2026: "ev_dld26" } },
+  { id: "nue", url: "data/nue-archiv.json", name: "NUEdigital – Archiv", zeitraum: "2025 · 2026", info: "2026 „Recode the Future“: 240+ Events von 260 Partnern inkl. Bayerischer Digitalgipfel; dezentral in Nürnberg & Region", eventIds: { 2026: "ev_ndf26" } },
+  { id: "ipai", url: "data/ipai-archiv.json", name: "KI Festival Heilbronn (IPAI) – Archiv", zeitraum: "2025 · 2026", info: "5. Ausgabe 2026: 50+ Speaker, 20+ Workshops, Eintritt frei, bis 13.500 Besucher; 2025 mit 10.000+", eventIds: { 2026: "ev_ipai26" } },
+  { id: "mlcon", url: "data/mlcon-archiv.json", name: "MLcon – Archiv", zeitraum: "2025 · 2026", info: "GenAI- & ML-Konferenz (Berlin Nov. + München Juni): Bootcamps, Workshops, RAG/MLOps/Agenten", eventIds: { 2026: "ev_mlcon26" } },
+  { id: "hpi", url: "data/hpi-archiv.json", name: "AI@HPI Conference – Archiv", zeitraum: "2025 · 2026", info: "2026 (2.–3.12., Potsdam): Keynote Scheiter, Panel mit BMFTR; 2025 „Shaping AI Sovereignty“ mit allen Videos", eventIds: { 2026: "ev_hpi26" } },
+  { id: "kix", url: "data/kix-archiv.json", name: "KI-X HR Convention – Archiv", zeitraum: "2025 · 2026", info: "KI für HR im Colosseum Berlin: Keynotes, Hands-on-Workshops, Ethik-Schwerpunkt", eventIds: { 2026: "ev_kixhr26" } }
 ];
 
 const RADAR = (function () {
@@ -256,6 +262,77 @@ const RADAR = (function () {
     if (!confirm("Diesen Projekt-Eintrag löschen?")) return;
     await dbDeleteFile(id); irToast("Eintrag gelöscht"); zeichneArchiv();
   }
+  // ---------- Offline-Transkripte (AI Week Frankfurt 2026) ----------
+  async function ladeTranskripte() {
+    if (!cacheQuellen.__transkripte) {
+      const resp = await fetch("data/aiw-transkripte-2026.json");
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      cacheQuellen.__transkripte = await resp.json();
+    }
+    return cacheQuellen.__transkripte;
+  }
+  async function transkriptToggle(label, knopf) {
+    const panel = document.getElementById("tr-" + label);
+    if (!panel) return;
+    if (!panel.hidden) { panel.hidden = true; knopf.textContent = "📖 Transkript lesen (offline)"; return; }
+    if (!panel.dataset.geladen) {
+      knopf.textContent = "… lädt";
+      try {
+        const T = await ladeTranskripte();
+        const t = T.talks[label];
+        if (!t) { panel.innerHTML = `<p class="empty">Für diesen Programmpunkt liegt kein Offline-Transkript vor.</p>`; }
+        else {
+          panel.innerHTML = `${t.summary ? `<h4 style="margin:0 0 6px">Zusammenfassung</h4><div style="white-space:pre-wrap;margin-bottom:10px">${esc(t.summary)}</div>` : ""}
+          <h4 style="margin:0 0 6px">Transkript (automatische Mitschrift${t.summary ? "" : ", ohne Summary"})</h4><div style="white-space:pre-wrap">${esc(t.transkript)}</div>
+          <p class="abgr" style="margin-top:8px">Quelle: speech.phont.ai · lokal gesichert am ${esc((T.stand || "").slice(0, 10))} · Spracherkennung, kann Fehler enthalten</p>`;
+        }
+        panel.dataset.geladen = "1";
+      } catch (e) { panel.innerHTML = `<p class="empty">Offline-Transkripte konnten nicht geladen werden: ${esc(e.message)}</p>`; }
+    }
+    panel.hidden = false; knopf.textContent = "Transkript schließen";
+  }
+
+  // ---------- Projekt gesamt exportieren / importieren ----------
+  async function projExport() {
+    const alle = await dbFilesForEvent(projKey(), "projekt");
+    if (!alle.length) { irToast("Dieses Projekt ist leer."); return; }
+    const eintraege = [];
+    for (const r of alle) {
+      const kopie = Object.assign({}, r);
+      if (kopie.blob) {
+        kopie.blobBase64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(",")[1] || ""); fr.onerror = () => rej(fr.error); fr.readAsDataURL(kopie.blob); });
+        kopie.blobTyp = kopie.blob.type || kopie.mime || ""; delete kopie.blob;
+      }
+      eintraege.push(kopie);
+    }
+    const paket = { __format: "aimg-projekt/1", quelle: archivZustand.quelleId, jahr: archivZustand.jahr, exportiert: new Date().toISOString(), eintraege };
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(paket)], { type: "application/json" }));
+    a.download = `projekt-${archivZustand.quelleId}-${archivZustand.jahr}.json`;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400);
+    irToast(eintraege.length + " Einträge exportiert");
+  }
+  async function projImport(file) {
+    if (!file) return;
+    try {
+      const d = JSON.parse(await file.text());
+      if (d.__format !== "aimg-projekt/1" || !Array.isArray(d.eintraege)) throw new Error("kein Projekt-Export");
+      let n = 0;
+      for (const e of d.eintraege) {
+        const rec = Object.assign({}, e, { eventId: projKey(), typ: "projekt" });
+        if (rec.blobBase64) {
+          const bin = atob(rec.blobBase64); const u8 = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+          rec.blob = new Blob([u8], { type: rec.blobTyp || rec.mime || "application/octet-stream" });
+          delete rec.blobBase64; delete rec.blobTyp;
+        }
+        await dbPutFile(rec); n++;
+      }
+      irToast(n + " Einträge in dieses Projekt importiert (zusammengeführt)");
+      zeichneArchiv();
+    } catch (e) { irToast("Projekt-Import fehlgeschlagen: " + e.message); }
+  }
+
   async function projHerunterladen(id) {
     const r = await dbGetFile(id); if (!r) return;
     if (r.blob) { const a = document.createElement("a"); a.href = URL.createObjectURL(r.blob); a.download = r.name || "datei"; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400); }
@@ -288,7 +365,7 @@ const RADAR = (function () {
       <div class="meta">${p.tag ? `<span class="chip">${esc(p.tag)}${p.start ? " · " + esc(p.start) + (p.ende ? "–" + esc(p.ende) : "") : ""}</span>` : ""}${p.buehne ? `<span>${esc(p.buehne)}</span>` : ""}${p.track ? `<span>${esc(p.track)}</span>` : ""}${p.format ? `<span class="flag">${esc(p.format)}</span>` : ""}</div>
       ${p.speaker ? `<div class="meta"><span>${esc(p.speaker)}</span></div>` : ""}
       ${p.inhalt ? `<div class="meta"><span>${esc(p.inhalt)}</span></div>` : ""}
-      ${p.transkript ? `<div class="meta"><a class="chip" href="${esc(p.transkript)}" target="_blank" rel="noopener">▶ Transkript &amp; Summary ↗</a></div>` : ""}
+      ${p.transkript ? (() => { const lbl = p.transkript.split("/").pop(); return `<div class="meta"><button class="chip" data-tr-lesen="${esc(lbl)}" style="cursor:pointer">📖 Transkript lesen (offline)</button><a class="chip" href="${esc(p.transkript)}" target="_blank" rel="noopener">▶ Online öffnen ↗</a></div><div class="trpanel" id="tr-${esc(lbl)}" hidden></div>`; })() : ""}
     </div>`).join("") || `<p class="empty">Keine Treffer.</p>`}</div>`;
 
     const spkHtml = () => `<div class="firmen">${spk.map(s => `<div class="firma"><b>${esc(s.name)}</b>
@@ -323,6 +400,8 @@ const RADAR = (function () {
           <label class="btn small">Datei(en)/Fotos wählen<input type="file" id="pjDatei" multiple style="display:none"></label>
           <button class="btn small" id="pjClip">Aus Zwischenablage einfügen</button>
           <button class="btn small" id="pjText">Nur Notiz/Text speichern</button>
+          <button class="btn small" id="pjExport">Projekt exportieren (JSON)</button>
+          <label class="btn small">Projekt importieren<input type="file" id="pjImport" accept=".json,application/json" style="display:none"></label>
         </div>
       </div>
       <div class="sess" style="margin-top:12px">${pj.map(r => `<div class="sessrow">
@@ -370,6 +449,9 @@ const RADAR = (function () {
       irToast("Information gespeichert"); zeichneArchiv();
     });
     const pjForm = $("#pjFormular"); if (pjForm) pjForm.addEventListener("paste", projEinfuegeEvent);
+    const pjEx = $("#pjExport"); if (pjEx) pjEx.addEventListener("click", projExport);
+    const pjIm = $("#pjImport"); if (pjIm) pjIm.addEventListener("change", () => projImport(pjIm.files[0]));
+    $$("[data-tr-lesen]").forEach(b => b.addEventListener("click", () => transkriptToggle(b.dataset.trLesen, b)));
     $$("[data-pj-dl]").forEach(b => b.addEventListener("click", () => projHerunterladen(b.dataset.pjDl)));
     $$("[data-pj-edit]").forEach(b => b.addEventListener("click", () => projBearbeiten(b.dataset.pjEdit)));
     $$("[data-pj-del]").forEach(b => b.addEventListener("click", () => projLoeschen(b.dataset.pjDel)));

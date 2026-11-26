@@ -4,7 +4,7 @@
 // SEED_VERSION erhöhen, wenn Seed-Termine korrigiert werden – gespeicherte
 // Zustände übernehmen die Korrekturen dann einmalig (siehe migriereSeeds in app.js).
 
-const SEED_VERSION = 6; // v6 (21.11.2026): restliche 2027er-Ausgaben der wiederkehrenden Events
+const SEED_VERSION = 7; // v7 (26.11.2026): B&P-2027-Preise (Ticketshop offen, ab 270 €)
 
 const SEED_EVENTS = [
   {
@@ -166,7 +166,12 @@ const NEUE_TERMINE_V6 = [
       { typ: "Studierende", betrag: 120 }
     ], beschreibung: "Größter Entwicklerkongress Europas mit starkem AI-Track – Vorverkauf läuft bereits." },
   { id: "ev_aidaq27", name: "AIDAQ – AI, Data & Quantum Summit 2027", kurz: "AIDAQ", ort: "Berlin", venue: "wird angekündigt", start: "2027-09-21", end: "2027-09-22", kategorie: "Summit", preis: null, terminStatus: "unbestätigt", farbe: "#34d399", url: "https://aidaq.berlin", beschreibung: "Bitkom-Summit zu KI, Daten & Quantencomputing. Termin geschätzt (Ende September, Muster 2026); 2026: 600–700 €." },
-  { id: "ev_bp27", name: "Bits & Pretzels 2027", kurz: "B&P", ort: "München", venue: "wird angekündigt", start: "2027-09-27", end: "2027-09-29", kategorie: "Konferenz", preis: null, farbe: "#4ade80", url: "https://www.bitsandpretzels.com", beschreibung: "Founders-Festival zur Wiesn-Zeit. Termin vom Veranstalter bestätigt; Tickets noch offen (2026: ab 399 €)." }
+  { id: "ev_bp27", name: "Bits & Pretzels 2027", kurz: "B&P", ort: "München", venue: "Messegelände + Oktoberfest", start: "2027-09-27", end: "2027-09-29", kategorie: "Konferenz", preis: 270, preisStatus: "bestätigt", datenStand: "2026-11-26", farbe: "#4ade80", url: "https://www.bitsandpretzels.com", preise: [
+    { typ: "Startup Basic", betrag: 270, hinweis: "Frühbucher-/#bits26-Konditionen möglich" },
+    { typ: "Startup 3-Tage", betrag: 520 },
+    { typ: "Ecosystem", betrag: 670, hinweis: "je Kategorie bis 820 €" },
+    { typ: "Investor", betrag: 938, hinweis: "bis 1.820 €" }
+  ], beschreibung: "Founders-Festival zur Wiesn-Zeit. Ticketshop offen (geprüft 26.11.2026); Preise je nach Teilnehmerkategorie." }
 ].map(e => ({ ...e, land: "DE", farbe: e.farbe || "#38bdf8", seed: true, eingefuehrtVersion: 6, datenStand: "2026-11-21", quelleUrl: e.url, terminStatus: e.terminStatus || "bestätigt", preisStatus: e.preis == null ? "offen" : "bestätigt" }));
 SEED_EVENTS.push(...NEUE_TERMINE_V6);
 
